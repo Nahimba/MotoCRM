@@ -1,122 +1,106 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Shield, Bike, Loader2, User, Mail, KeyRound } from "lucide-react"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
+import Link from "next/link"
 
 export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const router = useRouter();
+  const [fullName, setFullName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    e.preventDefault()
+    setIsLoading(true)
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName, role: 'rider' }
+        }
+      })
+
+      if (error) throw error
+
+      toast.success("Account created! Check your email.")
+      router.push('/')
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsLoading(false)
     }
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // Redirect back to your app after email confirmation
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      setSuccess(true);
-      setLoading(false);
-    }
-  };
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Create Instructor Account</CardTitle>
-        </CardHeader>
-        
-        {success ? (
-          <CardContent className="space-y-4 py-6 text-center">
-            <div className="p-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg">
-              Registration successful! Please check your email to confirm your account before logging in.
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md space-y-8">
+        <div className="bg-[#111] border border-white/5 rounded-[2.5rem] p-10 shadow-2xl">
+          <div className="text-center space-y-6 mb-8">
+            <Bike className="text-primary mx-auto" size={32} />
+            <h2 className="text-white font-bold text-lg uppercase italic tracking-widest flex items-center justify-center gap-2">
+              <Shield size={16} className="text-primary" /> New Registration
+            </h2>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-600 uppercase ml-2">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                <input 
+                  type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-black border border-white/5 rounded-2xl p-4 pl-12 text-white text-xs font-bold outline-none"
+                  placeholder="Valentino Rossi"
+                />
+              </div>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => router.push('/login')}>
-              Go to Login
-            </Button>
-          </CardContent>
-        ) : (
-          <form onSubmit={handleRegister}>
-            <CardContent className="space-y-4">
-              {error && (
-                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded">
-                  {error}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="instructor@flightschool.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required 
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-600 uppercase ml-2">Email</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                <input 
+                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-black border border-white/5 rounded-2xl p-4 pl-12 text-white text-xs font-bold outline-none"
+                  placeholder="rider@motocrm.com"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-600 uppercase ml-2">Password</label>
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                <input 
+                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black border border-white/5 rounded-2xl p-4 pl-12 text-white text-xs font-bold outline-none"
+                  placeholder="••••••••"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input 
-                  id="confirm-password" 
-                  type="password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required 
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creating Account...' : 'Register'}
-              </Button>
-              <div className="text-sm text-center text-muted-foreground">
-                Already have an account?{' '}
-                <Link href="/login" className="text-primary hover:underline font-medium">
-                  Sign In
-                </Link>
-              </div>
-            </CardFooter>
+            </div>
+
+            <button 
+              type="submit" disabled={isLoading}
+              className="w-full bg-primary text-black py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2"
+            >
+              {isLoading ? <Loader2 className="animate-spin" size={16} /> : "Finalize Protocol"}
+            </button>
           </form>
-        )}
-      </Card>
+
+          <div className="text-center mt-6">
+            <Link href="/" className="text-[10px] font-bold text-slate-500 uppercase hover:text-white transition-colors">
+              Already Authorized? <span className="underline">Back to Entry</span>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
