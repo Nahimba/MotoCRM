@@ -1,43 +1,30 @@
 "use client"
 
-import { ReactNode, useState } from "react"
-import { Menu, X } from "lucide-react"
+import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // We remove the isMobileMenuOpen state entirely because the 
+  // Sidebar component now handles its own mobile view at the bottom.
 
   return (
-    <div className="flex min-h-screen bg-black text-white overflow-hidden">
-      {/* --- DESKTOP SIDEBAR --- */}
-      <div className="hidden lg:block shrink-0">
-        <Sidebar />
-      </div>
-
-      {/* --- MOBILE TRIGGER --- */}
-      <div className="lg:hidden fixed top-4 right-4 z-[110]">
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="p-3 bg-primary rounded-2xl text-black shadow-xl"
-        >
-          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {/* --- MOBILE NAV OVERLAY --- */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-[100] bg-black animate-in fade-in duration-200">
-           <Sidebar />
-        </div>
-      )}
+    <div className="flex min-h-screen bg-black text-white">
+      {/* SIDEBAR: 
+         - On Desktop: Stays on the left (lg:ml-64 handles the main content gap)
+         - On Mobile: Becomes the Bottom Dock automatically
+      */}
+      <Sidebar />
 
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        {/* Header displays Mode: "admin" */}
+        {/* The Header (displays "Mode: Admin") */}
         <Header />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        {/* MAIN:
+           - Added pb-32 so the content doesn't get hidden behind the Bottom Dock on mobile.
+        */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 lg:pb-8">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

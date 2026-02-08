@@ -1,43 +1,29 @@
 "use client"
 
-import { ReactNode, useState } from "react"
-import { Menu, X } from "lucide-react"
+import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  // We remove the state and the button logic entirely.
+  // Sidebar now manages its own mobile bottom dock.
 
   return (
-    <div className="flex min-h-screen bg-black text-white overflow-hidden">
-      {/* --- DESKTOP SIDEBAR --- */}
-      <div className="hidden lg:block shrink-0">
-        <Sidebar />
-      </div>
-
-      {/* --- MOBILE TRIGGER --- */}
-      <div className="lg:hidden fixed top-4 right-4 z-[110]">
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="p-3 bg-[#111] border border-white/10 rounded-2xl text-primary shadow-2xl"
-        >
-          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {/* --- MOBILE OVERLAY --- */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-[100] bg-black animate-in fade-in duration-200">
-           <Sidebar />
-        </div>
-      )}
+    <div className="flex min-h-screen bg-black text-white">
+      {/* Sidebar is now universal:
+         - lg:block hidden logic is removed here because Sidebar 
+           has its own responsive hidden/flex classes inside.
+      */}
+      <Sidebar />
 
       {/* --- MAIN CONTENT --- */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        {/* Header displays Mode: "rider" */}
         <Header />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        {/* Added pb-32 to ensure page content isn't 
+           blocked by the bottom dock on mobile devices.
+        */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 lg:pb-8">
           <div className="max-w-6xl mx-auto h-full">
             {children}
           </div>

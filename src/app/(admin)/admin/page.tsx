@@ -6,7 +6,8 @@ import { toCsvRows, downloadFile } from "@/lib/csv"
 import { 
   Zap, X, Loader2, Bike, Car, FileDown, 
   TrendingUp, Wallet, Users, PlusCircle, 
-  Calendar, Target, ArrowUpRight 
+  Calendar, Target, ArrowUpRight, BarChart3,
+  ShieldCheck
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -32,8 +33,6 @@ export default function UnifiedDashboard() {
   async function fetchData() {
     setLoading(true)
     try {
-      // 1. Fetch from Ledger for accurate financial totals
-      // Positives = Revenue, Negatives = Expenses
       const [ledgerRes, enrollmentRes] = await Promise.all([
         supabase.from("ledger_entries").select("amount"),
         supabase.from('enrollments').select(`
@@ -43,7 +42,6 @@ export default function UnifiedDashboard() {
         `).eq('status', 'active')
       ])
 
-      // Process Financials from the unified Ledger
       let totalInc = 0
       let totalExp = 0
       ledgerRes.data?.forEach(entry => {
@@ -53,7 +51,6 @@ export default function UnifiedDashboard() {
       })
       setStats({ income: totalInc, expenses: totalExp })
 
-      // Process Riders (Ensuring 'clients' mapping is correct)
       if (enrollmentRes.data) {
         const formatted: RiderStatus[] = enrollmentRes.data.map((item: any) => ({
           enrollment_id: item.id,
@@ -80,8 +77,6 @@ export default function UnifiedDashboard() {
     setIsLogging(true)
     try {
       const newBalance = selectedRider.remaining_hours - hours
-      
-      // Update the balance and create a history record
       const { error } = await supabase
         .from('enrollments')
         .update({ remaining_hours: newBalance })
@@ -128,15 +123,17 @@ export default function UnifiedDashboard() {
   )
 
   return (
-    <div className="space-y-10 pb-20">
+    <div className="space-y-10 pb-20 px-4 pt-6 max-w-7xl mx-auto">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-4xl font-black italic uppercase text-white tracking-tighter">Command Center</h1>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Fleet Operations & Financial Intelligence</p>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+            <ShieldCheck size={12} className="text-primary"/> Admin Intelligence Suite
+          </p>
         </div>
         <button onClick={handleExportCsv} disabled={exporting} className="bg-white/5 border border-white/10 p-3 px-6 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/10 transition-all active:scale-95">
-          <FileDown size={16} /> {exporting ? "Compiling..." : "Export Blackbox"}
+          <FileDown size={16} className="text-primary" /> {exporting ? "Compiling..." : "Export Blackbox"}
         </button>
       </div>
 
@@ -147,12 +144,15 @@ export default function UnifiedDashboard() {
         <StatCard label="Net Operations" value={`${(stats.income - stats.expenses).toLocaleString()} ₴`} icon={<ArrowUpRight size={16} className="text-primary" />} highlight />
       </div>
 
-      {/* QUICK NAV (Syncing paths to your actual files) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <NavButton href="/dashboard/clients" icon={<Users size={20}/>} label="Riders" sub={`${riders.length} Active`} />
-        <NavButton href="/dashboard/clients/new" icon={<PlusCircle size={20}/>} label="Recruit" sub="New Enrollment" />
-        <NavButton href="/dashboard/calendar" icon={<Calendar size={20}/>} label="Schedule" sub="Flight Deck" />
-        <NavButton href="/dashboard/expenses" icon={<Wallet size={20}/>} label="Expenses" sub="Log Outflow" />
+      {/* QUICK NAV - EXPANDED FOR ADMIN MANAGEMENT */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <NavButton href="/staff/clients" icon={<Users size={20}/>} label="Riders" sub={`${riders.length} Active`} />
+        <NavButton href="/staff/clients/new" icon={<PlusCircle size={20}/>} label="Recruit" sub="New Enrollment" />
+        <NavButton href="/staff/schedule" icon={<Calendar size={20}/>} label="Schedule" sub="Flight Deck" />
+        
+        <NavButton href="/admin/finances" icon={<BarChart3 size={20}/>} label="Finances" sub="P&L Ledger" />
+        <NavButton href="/admin/courses" icon={<Bike size={20}/>} label="Courses" sub="Program Setup" />
+        <NavButton href="/admin/instructors" icon={<Users size={20}/>} label="Instructors" sub="Fleet Staff" />
       </div>
 
       {/* ACTIVE FLEET */}
@@ -162,7 +162,7 @@ export default function UnifiedDashboard() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {riders.length === 0 ? (
-            <div className="col-span-full py-20 border-2 border-dashed border-white/5 rounded-[2.5rem] text-center">
+            <div className="col-span-full py-20 border-2 border-dashed border-white/5 rounded-[2.5rem] text-center bg-white/[0.02]">
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">No active deployments found</p>
             </div>
           ) : (
@@ -176,8 +176,8 @@ export default function UnifiedDashboard() {
       {/* LOGGING MODAL */}
       {selectedRider && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-          <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden">
-            <button onClick={() => setSelectedRider(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X /></button>
+          <div className="w-full max-w-sm bg-[#111] border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden shadow-2xl">
+            <button onClick={() => setSelectedRider(null)} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors"><X /></button>
             <div className="text-center mb-8">
               <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Log Training Block</p>
               <h2 className="text-2xl font-black text-white italic uppercase leading-tight">{selectedRider.full_name}</h2>
@@ -207,7 +207,7 @@ export default function UnifiedDashboard() {
 
 function StatCard({ label, value, icon, highlight }: any) {
   return (
-    <div className={`bg-[#111] border ${highlight ? 'border-primary/30 shadow-[0_0_30px_rgba(var(--primary-rgb),0.05)]' : 'border-white/5'} rounded-[2rem] p-8 space-y-2`}>
+    <div className={`bg-[#111] border ${highlight ? 'border-primary/40' : 'border-white/5'} rounded-[2rem] p-8 space-y-2 transition-all`}>
       <div className="flex justify-between items-center text-slate-500 uppercase font-black text-[9px] tracking-[0.2em]">
         {label} {icon}
       </div>
@@ -218,7 +218,7 @@ function StatCard({ label, value, icon, highlight }: any) {
 
 function NavButton({ href, icon, label, sub }: any) {
   return (
-    <Link href={href} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-white/[0.02] transition-all group text-center">
+    <Link href={href} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group text-center shadow-sm">
       <div className="text-slate-500 group-hover:text-primary transition-colors">{icon}</div>
       <p className="text-[10px] font-black text-white uppercase tracking-widest mt-2">{label}</p>
       <p className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">{sub}</p>
@@ -232,14 +232,14 @@ function RiderCard({ rider, onLog }: { rider: RiderStatus; onLog: () => void }) 
   const progress = Math.max(0, Math.min(100, (rider.remaining_hours / rider.total_hours) * 100))
 
   return (
-    <div className="bg-[#111] border border-white/5 rounded-[2rem] p-6 hover:border-white/10 transition-all group relative overflow-hidden">
+    <div className="bg-[#111] border border-white/5 rounded-[2rem] p-6 hover:border-white/10 transition-all group relative overflow-hidden shadow-sm text-white">
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div>
           <p className="flex items-center gap-1.5 text-[9px] font-black text-slate-500 uppercase mb-1 italic">
             {rider.course_type === 'Moto' ? <Bike size={12} className="text-primary" /> : <Car size={12} className="text-blue-400" />} 
             {rider.course_name}
           </p>
-          <h3 className="font-black text-lg text-white uppercase italic tracking-tight">{rider.full_name}</h3>
+          <h3 className="font-black text-lg text-white uppercase italic tracking-tight leading-none">{rider.full_name}</h3>
         </div>
         <div className={`h-2 w-2 rounded-full ${isOut ? 'bg-red-500' : isLow ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`} />
       </div>

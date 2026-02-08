@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from "react"
 import { usePathname } from 'next/navigation';
 import { 
-  LogOut, Home, Users, Wallet, ShieldCheck, 
-  User, Settings, ChevronUp, Shield, Bike, GraduationCap, BookOpen 
+  LogOut, Home, Users, BarChart3, ShieldCheck, 
+  User, Settings, Bike, 
+  GraduationCap, Calendar, MoreHorizontal,
+  LayoutDashboard, ClipboardList, ChevronUp
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
@@ -12,132 +14,183 @@ import Link from 'next/link';
 export default function Sidebar() {
   const { profile, loading, signOut } = useAuth();
   const pathname = usePathname();
+  
+  // States for both PC and Mobile popups
   const [showSettings, setShowSettings] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  
   const settingsRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Handle clicking outside settings popup to close it
+  // Handle clicks outside for both menus
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
         setShowSettings(false)
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setShowMobileMenu(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  if (loading) return <div className="w-64 bg-[#0a0a0a] h-screen border-r border-white/5" />;
+  useEffect(() => {
+    setShowSettings(false)
+    setShowMobileMenu(false)
+  }, [pathname])
 
+  if (loading) return null;
   const role = profile?.role || 'rider';
 
-  // Reliable Sign Out Handler
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Sign out protocol initiated");
-    sessionStorage.setItem('manualLogout', 'true');
-    await signOut();
-  };
-
   return (
-    <div className="w-64 bg-[#0a0a0a] text-white h-screen p-6 fixed left-0 top-0 border-r border-white/5 flex flex-col z-[100]">
-      {/* BRANDING */}
-      <div className="mb-10 flex items-center gap-3 px-2">
-        <Bike className="text-primary" size={24} />
-        <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
-          MOTO<span className="text-primary">CRM</span>
-        </h1>
-      </div>
+    <>
+      {/* --- DESKTOP SIDEBAR (PC) --- */}
+      <aside className="hidden lg:flex w-64 bg-[#0a0a0a] text-white h-screen p-6 fixed left-0 top-0 border-r border-white/5 flex-col z-[100]">
+        <div className="mb-10 flex items-center gap-3 px-2">
+          <Bike className="text-primary" size={24} />
+          <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
+            MOTO<span className="text-primary">CRM</span>
+          </h1>
+        </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto">
-        {/* --- DIRECTOR SECTION (Admin Only) --- */}
-        {role === 'admin' && (
-          <>
-            <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">Director</div>
-            <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label="Overview" active={pathname === '/admin'} />
-            <SidebarLink href="/admin/finance" icon={<Wallet size={16}/>} label="Finance" active={pathname === '/admin/finance'} />
-            <SidebarLink href="/admin/instructors" icon={<GraduationCap size={16}/>} label="Staff Mgmt" active={pathname === '/admin/instructors'} />
-          </>
-        )}
+        <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-2">
+          {/* DIRECTOR SECTION */}
+          {role === 'admin' && (
+            <>
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">Director</div>
+              <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label="Overview" active={pathname === '/admin'} />
+              <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label="Finances" active={pathname === '/admin/finances'} />
+              <SidebarLink href="/admin/courses" icon={<Bike size={16}/>} label="Courses" active={pathname === '/admin/courses'} />
+              <SidebarLink href="/admin/instructors" icon={<GraduationCap size={16}/>} label="Staff" active={pathname === '/admin/instructors'} />
+            </>
+          )}
 
-        {/* --- OPERATIONS SECTION (Admin & Instructors) --- */}
-        {(role === 'admin' || role === 'instructor') && (
-          <>
-            <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Operations</div>
-            <SidebarLink href="/staff" icon={<Home size={16}/>} label="Command" active={pathname === '/staff'} />
-            <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label="Roster" active={pathname === '/staff/clients'} />
-            {/* NEW LINK ADDED HERE */}
-            <SidebarLink href="/staff/packages" icon={<BookOpen size={16}/>} label="Packages" active={pathname === '/staff/packages'} />
-          </>
-        )}
+          {/* OPERATIONS SECTION */}
+          {(role === 'admin' || role === 'instructor') && (
+            <>
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Operations</div>
+              <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label="Schedule" active={pathname === '/staff/schedule'} />
+              <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label="Roster" active={pathname === '/staff/clients'} />
+            </>
+          )}
 
-        {/* --- PILOT SECTION (Riders Only) --- */}
-        {role === 'rider' && (
-          <>
-            <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Pilot</div>
-            <SidebarLink href="/account" icon={<Home size={16}/>} label="Overview" active={pathname === '/account'} />
-          </>
-        )}
+          {/* RIDER SECTION */}
+          <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Rider Central</div>
+          <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label="Dashboard" active={pathname === '/account'} />
+          <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label="Training Log" active={pathname === '/training'} />
+        </nav>
+
+        {/* PC SETTINGS POPUP AREA */}
+        <div className="pt-6 border-t border-white/5 mt-auto relative" ref={settingsRef}>
+          {showSettings && (
+            <div className="absolute bottom-full left-0 w-full mb-2 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+              <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+                <User size={16} />
+                <span className="text-xs font-bold uppercase italic">My Profile</span>
+              </Link>
+              <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all">
+                <LogOut size={16} />
+                <span className="text-xs font-bold uppercase italic">Sign Out</span>
+              </button>
+            </div>
+          )}
+          
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all ${showSettings ? 'bg-white/5 text-white' : 'text-slate-500 hover:text-white'}`}
+          >
+            <div className="flex items-center gap-3">
+              <Settings size={18} className={showSettings ? "rotate-90 transition-transform" : ""} />
+              <span className="font-bold text-sm italic uppercase">Settings</span>
+            </div>
+            <ChevronUp size={16} className={showSettings ? "rotate-180 transition-transform" : ""} />
+          </button>
+        </div>
+      </aside>
+
+      {/* --- MOBILE BOTTOM DOCK --- */}
+      <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[200]" ref={mobileMenuRef}>
+        <div className="relative w-full">
+          
+          {/* Mobile Pop-up Menu */}
+          {showMobileMenu && (
+            <div 
+              className="absolute bottom-[115%] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl"
+              style={{ animation: 'mobilePopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+            >
+              <div className="grid grid-cols-3 gap-3">
+                <MobileExtraLink href="/profile" icon={<User size={18}/>} label="Profile" />
+                <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label="Log" />
+                {role === 'admin' && (
+                  <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label="Finances" />
+                )}
+                <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all">
+                  <LogOut size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-tight">Exit</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Main Mobile Dock */}
+          <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
+            <MobileTab href={role === 'admin' ? '/admin' : '/account'} icon={<Home size={22}/>} active={pathname === '/admin' || pathname === '/account'} />
+            
+            {(role === 'admin' || role === 'instructor') && (
+              <MobileTab href="/staff/schedule" icon={<Calendar size={22}/>} active={pathname === '/staff/schedule'} />
+            )}
+
+            <button onClick={() => setShowMobileMenu(!showMobileMenu)} className={`flex-1 flex flex-col items-center justify-center py-4 transition-all ${showMobileMenu ? 'text-primary' : 'text-slate-500'}`}>
+              <MoreHorizontal size={22} />
+            </button>
+            
+            <Link href="/profile" className="flex-1 flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname === '/profile' ? 'border-primary' : 'border-white/10'}`}>
+                {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary/20 flex items-center justify-center"><User size={18} className="text-primary" /></div>}
+              </div>
+            </Link>
+          </div>
+        </div>
       </nav>
 
-      {/* FOOTER: SETTINGS & SIGN OUT */}
-      <div className="pt-6 border-t border-white/5 mt-auto relative" ref={settingsRef}>
-        
-        {/* SETTINGS POPUP */}
-        {showSettings && (
-          <div className="absolute bottom-32 left-0 right-0 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl z-[110] animate-in fade-in slide-in-from-bottom-2">
-            <Link 
-              href="/profile"
-              onClick={() => setShowSettings(false)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest"
-            >
-              <User size={14} /> My Profile
-            </Link>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest">
-              <Shield size={14} /> Security
-            </button>
-          </div>
-        )}
-
-        {/* SETTINGS TOGGLE */}
-        <button 
-          onClick={() => setShowSettings(!showSettings)}
-          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all mb-2 ${
-            showSettings ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white hover:bg-white/5'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Settings size={18} className={`transition-transform duration-500 ${showSettings ? "text-primary rotate-90" : ""}`} />
-            <span className="font-bold text-sm tracking-tight">Settings</span>
-          </div>
-          <ChevronUp size={14} className={`transition-transform duration-300 ${showSettings ? 'rotate-180' : ''}`} />
-        </button>
-
-        {/* SIGN OUT BUTTON */}
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-400/5 transition-all cursor-pointer group outline-none border-none bg-transparent"
-        >
-          <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
-          <span className="text-sm font-bold tracking-tight">Sign Out</span>
-        </button>
-      </div>
-    </div>
+      <style jsx global>{`
+        @keyframes mobilePopUp {
+          from { opacity: 0; transform: translateY(15px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+      `}</style>
+    </>
   );
 }
 
+// Helpers
 function SidebarLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
   return (
-    <Link 
-      href={href} 
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
-        active 
-          ? 'bg-primary text-black shadow-[0_0_20px_rgba(255,165,0,0.2)]' 
-          : 'text-slate-400 hover:text-white hover:bg-white/5'
-      }`}
-    >
+    <Link href={href} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
       {icon}
-      <span className="text-[13px] font-bold tracking-tight">{label}</span>
+      <span className="text-[13px] font-bold uppercase tracking-tight">{label}</span>
     </Link>
   );
+}
+
+function MobileTab({ href, icon, active }: { href: string, icon: React.ReactNode, active: boolean }) {
+  return (
+    <Link href={href} className={`flex-1 flex items-center justify-center py-4 transition-all ${active ? 'text-primary' : 'text-slate-500'}`}>
+      {icon}
+    </Link>
+  )
+}
+
+function MobileExtraLink({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) {
+  return (
+    <Link href={href} className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all">
+      {icon}
+      <span className="text-[10px] font-black uppercase tracking-tight">{label}</span>
+    </Link>
+  )
 }
