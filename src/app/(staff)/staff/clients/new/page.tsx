@@ -1,3 +1,5 @@
+"use client"
+
 import RiderForm from "../form-component"
 
 export default function NewRiderPage() {

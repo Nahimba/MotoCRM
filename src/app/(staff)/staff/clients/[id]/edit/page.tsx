@@ -4,7 +4,7 @@ import { useEffect, useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import RiderForm from "../../form-component"
-import { Loader2, AlertTriangle, ShieldAlert } from "lucide-react"
+import { Loader2, ShieldAlert, Bike } from "lucide-react"
 
 // Next.js 15 Type Definition
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
 }
 
 export default function EditRiderPage({ params }: Props) {
-  // 1. Unwrap the params Promise (Next.js 15 requirement)
+  // Unwrap the params Promise for Next.js 15
   const resolvedParams = use(params)
   const id = resolvedParams.id
   
@@ -81,14 +81,14 @@ export default function EditRiderPage({ params }: Props) {
           <div className="space-y-2">
             <h2 className="text-white font-black uppercase italic tracking-tighter text-2xl">Target Not Found</h2>
             <p className="text-slate-500 text-xs leading-relaxed px-4">
-              The rider with the specified ID could not be located or has been decommissioned.
+              The rider with the specified ID could not be located or has been decommissioned from the fleet.
             </p>
           </div>
           <button 
-            onClick={() => router.push('/dashboard/clients')}
-            className="w-full bg-white/5 hover:bg-white/10 text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest border border-white/5 transition-all"
+            onClick={() => router.push('/staff/clients')}
+            className="w-full bg-white/5 hover:bg-white text-white hover:text-black font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest border border-white/5 transition-all"
           >
-            Back to Roster
+            Return to Roster
           </button>
         </div>
       </div>
@@ -98,8 +98,16 @@ export default function EditRiderPage({ params }: Props) {
   // --- SUCCESS STATE: RENDERS THE FORM ---
   return (
     <div className="min-h-screen bg-black">
-      <div className="container mx-auto py-12 px-4">
-        {/* We pass the existing rider data and the ID to the form */}
+      <div className="container mx-auto py-12 px-4 max-w-5xl">
+        <div className="mb-8 flex items-center gap-4">
+            <div className="p-3 bg-primary/10 rounded-2xl">
+                <Bike className="text-primary" size={24} />
+            </div>
+            <div>
+                <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">Modify Intel</h1>
+                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Updating data for: {rider.name} {rider.last_name}</p>
+            </div>
+        </div>
         <RiderForm initialData={rider} id={id} />
       </div>
     </div>

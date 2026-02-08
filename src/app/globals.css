@@ -33,8 +33,14 @@
 
 @layer base {
   * { @apply border-border; }
-  body { @apply bg-background text-foreground antialiased; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    /* Only transition background/colors after the initial load */
+    transition: background-color 0.4s ease, border-color 0.4s ease;
+  }
 }
+
+
 /* @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
