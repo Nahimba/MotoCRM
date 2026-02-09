@@ -152,15 +152,18 @@ export default function Sidebar() {
             >
               <div className="grid grid-cols-3 gap-3">
                 <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
-                {/* ADDED PACKAGES TO MOBILE EXTRA MENU */}
+                
+                {/* Staff Specific Links */}
                 {(role === 'admin' || role === 'instructor') && (
                   <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
                 )}
                 
+                {/* Rider Specific Links */}
                 {(role === 'rider') && (
                   <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
                 )}
                 
+                {/* Language Toggle */}
                 <button 
                   onClick={toggleLanguage}
                   className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all"
@@ -171,6 +174,7 @@ export default function Sidebar() {
                   </span>
                 </button>
 
+                {/* Sign Out */}
                 <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all">
                   <LogOut size={18} />
                   <span className="text-[10px] font-black uppercase tracking-tight">{t('exit')}</span>
@@ -179,20 +183,51 @@ export default function Sidebar() {
             </div>
           )}
 
+          {/* --- Main Dock Bar --- */}
           <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
-            <MobileTab href={role === 'admin' ? '/admin' : '/account'} icon={<Home size={22}/>} active={pathname === '/admin' || pathname === '/account'} />
             
+            {/* 1. Dynamic Home Tab Logic */}
+            <MobileTab 
+              href={
+                role === 'admin' ? '/admin' : 
+                role === 'instructor' ? '/staff' : 
+                '/account' // for riders
+              } 
+              icon={<Home size={22}/>} 
+              active={
+                pathname === '/admin' || 
+                pathname === '/staff' || 
+                pathname === '/account'
+              } 
+            />
+            
+            {/* 2. Schedule Access (Staff/Admins only) */}
             {(role === 'admin' || role === 'instructor') && (
-              <MobileTab href="/staff/schedule" icon={<Calendar size={22}/>} active={pathname.startsWith('/staff/schedule')} />
+              <MobileTab 
+                href="/staff/schedule" 
+                icon={<Calendar size={22}/>} 
+                active={pathname.startsWith('/staff/schedule')} 
+              />
             )}
 
-            <button onClick={() => setShowMobileMenu(!showMobileMenu)} className={`flex-1 flex flex-col items-center justify-center py-4 transition-all ${showMobileMenu ? 'text-primary' : 'text-slate-500'}`}>
+            {/* 3. More Menu Toggle */}
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)} 
+              className={`flex-1 flex flex-col items-center justify-center py-4 transition-all ${showMobileMenu ? 'text-primary' : 'text-slate-500'}`}
+            >
               <MoreHorizontal size={22} />
             </button>
             
+            {/* 4. Profile Section */}
             <Link href="/profile" className="flex-1 flex items-center justify-center">
               <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" /> : <div className="w-full h-full bg-primary/20 flex items-center justify-center"><User size={18} className="text-primary" /></div>}
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" />
+                ) : (
+                  <div className="w-full h-full bg-primary/20 flex items-center justify-center">
+                    <User size={18} className="text-primary" />
+                  </div>
+                )}
               </div>
             </Link>
           </div>
