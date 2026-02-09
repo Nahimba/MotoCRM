@@ -90,11 +90,17 @@ export default function Sidebar() {
           )}
 
           {/* RIDER SECTION */}
-          <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
-            {t('clientHome')}
-          </div>
-          <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
-          <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
+          
+          {(role === 'rider') && (
+            <>
+            <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
+              {t('clientHome')}
+            </div>
+            <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
+          
+            <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
+            </>
+          )}
         </nav>
 
         {/* PC SETTINGS POPUP AREA */}
@@ -150,7 +156,10 @@ export default function Sidebar() {
                 {(role === 'admin' || role === 'instructor') && (
                   <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
                 )}
-                <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                
+                {(role === 'rider') && (
+                  <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                )}
                 
                 <button 
                   onClick={toggleLanguage}
