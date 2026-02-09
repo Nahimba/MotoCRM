@@ -1,0 +1,82 @@
+{
+  "Metadata": {
+    "title": "Moto CRM | Management",
+    "description": "The professional tool for rider management."
+  },
+  "Sidebar": {
+    "director": "Director",
+    "operations": "Operations",
+    "packages": "Packages",
+    "clientHome": "Rider Central",
+    "overview": "Overview",
+    "finances": "Finances",
+    "courses": "Courses",
+    "staff": "Staff",
+    "schedule": "Schedule",
+    "roster": "Roster",
+    "dashboard": "Dashboard",
+    "trainingLog": "Training Log",
+    "settings": "Settings",
+    "profile": "My Profile",
+    "signOut": "Sign Out",
+    "exit": "Exit",
+    "log": "Log",
+    "money": "Money"
+  },
+  "Staff": {
+    "command": "COMMAND",
+    "status": "Instructor Online",
+    "dailyStudents": "Daily Students",
+    "trackStatus": "Track Status",
+    "trackHot": "HOT",
+    "roster": "Today's Training Roster",
+    "curriculum": "Curriculum",
+    "tools": "Instructor Tools",
+    "evaluate": "Quick Evaluate",
+    "incidents": "Track Incidents",
+    "myStudents": "My Students",
+    "studentDesc": "Access your full database of past riders and their skill history.",
+    "viewAll": "View All"
+  },
+  "Packages": {
+    "title": "Training",
+    "subtitle": "Packages",
+    "description": "Active Contracts & Hour Tracking",
+    "newPackage": "New Package",
+    "searchPlaceholder": "SEARCH RIDER NAME...",
+    "hoursLeft": "{remaining} / {total} Hours Left",
+    "cost": "Cost",
+    "noPackages": "No active packages found",
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filters": {
+      "all": "All Packages",
+      "mine": "My Students",
+      "instructor": "Instructor"
+    }
+  },
+  "NewPackage": {
+    "title": "New",
+    "subtitle": "Contract",
+    "description": "Deploy training hours and initial payment",
+    "back": "Back to Packages",
+    "rider": "Rider Account",
+    "course": "Course Type",
+    "hours": "Hours",
+    "price": "Price (UAH)",
+    "totalValue": "Total Contract Value",
+    "paymentToday": "Payment Received Today",
+    "activate": "Activate Contract",
+    "success": "Contract Active! 🏁",
+    "selectRider": "Select a rider",
+    "selectCourse": "Select course",
+    "errors": {
+      "riderRequired": "Choose Rider",
+      "courseRequired": "Choose Course",
+      "minHours": "min 1 hour"
+    }
+  }
+}

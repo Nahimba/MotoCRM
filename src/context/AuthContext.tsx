@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('CRITICAL: Supabase RLS or Connection Error:', error);
+        console.error('CRITICAL: Profile Fetch Error:', error);
         return;
       }
 
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data);
       }
     } catch (err) {
-      console.error('Unexpected Auth Error:', err);
+      console.error('Unexpected Profile Error:', err);
     } finally {
       setLoading(false);
     }
@@ -58,10 +58,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-        await fetchProfile(session.user.id);
+      // --- SECURE FIX: Using getUser() instead of getSession() ---
+      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
+      
+      if (verifiedUser && !error) {
+        setUser(verifiedUser);
+        await fetchProfile(verifiedUser.id);
       } else {
         setLoading(false);
       }
@@ -70,10 +72,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
+      // Logic for event-based changes
+      if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
         setLoading(false);
@@ -83,20 +86,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- THE FIX: Updated signOut ---
   const signOut = async () => {
     try {
-      // Set the flag FIRST
       sessionStorage.setItem('manualLogout', 'true');
-      
-      // Perform Supabase sign out
       await supabase.auth.signOut();
       
-      // Clear local state
       setUser(null);
       setProfile(null);
 
-      // Force a hard reload to ensure the Landing Page sees the fresh sessionStorage
+      // Force refresh ensures proxy/middleware runs on the server to clear data
       window.location.href = '/';
     } catch (err) {
       console.error('Sign out failed:', err);

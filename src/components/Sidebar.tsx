@@ -1,28 +1,35 @@
 'use client';
 
 import { useState, useRef, useEffect } from "react"
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, Link } from '@/i18n/routing';
 import { 
   LogOut, Home, Users, BarChart3, ShieldCheck, 
   User, Settings, Bike, 
   GraduationCap, Calendar, MoreHorizontal,
-  LayoutDashboard, ClipboardList, ChevronUp
+  LayoutDashboard, ClipboardList, ChevronUp, Languages,
+  Package // Imported for Training Packages
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
+import { useTranslations, useLocale } from 'next-intl';
 
 export default function Sidebar() {
-  const { profile, loading, signOut } = useAuth();
+  const t = useTranslations('Sidebar');
+  const locale = useLocale();
+  const router = useRouter();
   const pathname = usePathname();
+  const { profile, loading, signOut } = useAuth();
   
-  // States for both PC and Mobile popups
   const [showSettings, setShowSettings] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   
   const settingsRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // Handle clicks outside for both menus
+  const toggleLanguage = () => {
+    const newLocale = locale === 'en' ? 'ru' : 'en';
+    router.replace(pathname, { locale: newLocale });
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
@@ -59,40 +66,59 @@ export default function Sidebar() {
           {/* DIRECTOR SECTION */}
           {role === 'admin' && (
             <>
-              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">Director</div>
-              <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label="Overview" active={pathname === '/admin'} />
-              <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label="Finances" active={pathname === '/admin/finances'} />
-              <SidebarLink href="/admin/courses" icon={<Bike size={16}/>} label="Courses" active={pathname === '/admin/courses'} />
-              <SidebarLink href="/admin/instructors" icon={<GraduationCap size={16}/>} label="Staff" active={pathname === '/admin/instructors'} />
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">
+                {t('director')}
+              </div>
+              <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label={t('overview')} active={pathname === '/admin'} />
+              <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/admin/finances')} />
+              <SidebarLink href="/admin/courses" icon={<Bike size={16}/>} label={t('courses')} active={pathname.startsWith('/admin/courses')} />
+              <SidebarLink href="/admin/instructors" icon={<GraduationCap size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
             </>
           )}
 
           {/* OPERATIONS SECTION */}
           {(role === 'admin' || role === 'instructor') && (
             <>
-              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Operations</div>
-              <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label="Schedule" active={pathname === '/staff/schedule'} />
-              <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label="Roster" active={pathname === '/staff/clients'} />
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
+                {t('operations')}
+              </div>
+              <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
+              <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
+              {/* TRAINING PACKAGES LINK */}
+              <SidebarLink href="/staff/packages" icon={<Package size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
             </>
           )}
 
           {/* RIDER SECTION */}
-          <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">Rider Central</div>
-          <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label="Dashboard" active={pathname === '/account'} />
-          <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label="Training Log" active={pathname === '/training'} />
+          <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
+            {t('clientHome')}
+          </div>
+          <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
+          <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
         </nav>
 
         {/* PC SETTINGS POPUP AREA */}
         <div className="pt-6 border-t border-white/5 mt-auto relative" ref={settingsRef}>
           {showSettings && (
             <div className="absolute bottom-full left-0 w-full mb-2 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2">
+              <button 
+                onClick={toggleLanguage}
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-primary hover:bg-white/5 transition-all"
+              >
+                <Languages size={16} />
+                <span className="text-xs font-bold uppercase italic">
+                  {locale === 'en' ? 'Русский' : 'English'}
+                </span>
+              </button>
+
               <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
                 <User size={16} />
-                <span className="text-xs font-bold uppercase italic">My Profile</span>
+                <span className="text-xs font-bold uppercase italic">{t('profile')}</span>
               </Link>
+
               <button onClick={() => signOut()} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition-all">
                 <LogOut size={16} />
-                <span className="text-xs font-bold uppercase italic">Sign Out</span>
+                <span className="text-xs font-bold uppercase italic">{t('signOut')}</span>
               </button>
             </div>
           )}
@@ -103,7 +129,7 @@ export default function Sidebar() {
           >
             <div className="flex items-center gap-3">
               <Settings size={18} className={showSettings ? "rotate-90 transition-transform" : ""} />
-              <span className="font-bold text-sm italic uppercase">Settings</span>
+              <span className="font-bold text-sm italic uppercase">{t('settings')}</span>
             </div>
             <ChevronUp size={16} className={showSettings ? "rotate-180 transition-transform" : ""} />
           </button>
@@ -113,33 +139,42 @@ export default function Sidebar() {
       {/* --- MOBILE BOTTOM DOCK --- */}
       <nav className="lg:hidden fixed bottom-6 left-4 right-4 z-[200]" ref={mobileMenuRef}>
         <div className="relative w-full">
-          
-          {/* Mobile Pop-up Menu */}
           {showMobileMenu && (
             <div 
               className="absolute bottom-[115%] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl"
               style={{ animation: 'mobilePopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
             >
               <div className="grid grid-cols-3 gap-3">
-                <MobileExtraLink href="/profile" icon={<User size={18}/>} label="Profile" />
-                <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label="Log" />
-                {role === 'admin' && (
-                  <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label="Finances" />
+                <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
+                {/* ADDED PACKAGES TO MOBILE EXTRA MENU */}
+                {(role === 'admin' || role === 'instructor') && (
+                  <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
                 )}
+                <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                
+                <button 
+                  onClick={toggleLanguage}
+                  className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all"
+                >
+                  <Languages size={18} />
+                  <span className="text-[10px] font-black uppercase tracking-tight">
+                    {locale === 'en' ? 'RU' : 'EN'}
+                  </span>
+                </button>
+
                 <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all">
                   <LogOut size={18} />
-                  <span className="text-[10px] font-black uppercase tracking-tight">Exit</span>
+                  <span className="text-[10px] font-black uppercase tracking-tight">{t('exit')}</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Main Mobile Dock */}
           <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
             <MobileTab href={role === 'admin' ? '/admin' : '/account'} icon={<Home size={22}/>} active={pathname === '/admin' || pathname === '/account'} />
             
             {(role === 'admin' || role === 'instructor') && (
-              <MobileTab href="/staff/schedule" icon={<Calendar size={22}/>} active={pathname === '/staff/schedule'} />
+              <MobileTab href="/staff/schedule" icon={<Calendar size={22}/>} active={pathname.startsWith('/staff/schedule')} />
             )}
 
             <button onClick={() => setShowMobileMenu(!showMobileMenu)} className={`flex-1 flex flex-col items-center justify-center py-4 transition-all ${showMobileMenu ? 'text-primary' : 'text-slate-500'}`}>
@@ -147,8 +182,8 @@ export default function Sidebar() {
             </button>
             
             <Link href="/profile" className="flex-1 flex items-center justify-center">
-              <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname === '/profile' ? 'border-primary' : 'border-white/10'}`}>
-                {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary/20 flex items-center justify-center"><User size={18} className="text-primary" /></div>}
+              <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
+                {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" /> : <div className="w-full h-full bg-primary/20 flex items-center justify-center"><User size={18} className="text-primary" /></div>}
               </div>
             </Link>
           </div>
@@ -168,8 +203,9 @@ export default function Sidebar() {
   );
 }
 
-// Helpers
-function SidebarLink({ href, icon, label, active }: { href: string; icon: React.ReactNode; label: string; active: boolean }) {
+// ... helper components same as before ...
+
+function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
   return (
     <Link href={href} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
       {icon}
@@ -178,7 +214,7 @@ function SidebarLink({ href, icon, label, active }: { href: string; icon: React.
   );
 }
 
-function MobileTab({ href, icon, active }: { href: string, icon: React.ReactNode, active: boolean }) {
+function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, active: boolean }) {
   return (
     <Link href={href} className={`flex-1 flex items-center justify-center py-4 transition-all ${active ? 'text-primary' : 'text-slate-500'}`}>
       {icon}
@@ -186,7 +222,7 @@ function MobileTab({ href, icon, active }: { href: string, icon: React.ReactNode
   )
 }
 
-function MobileExtraLink({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) {
+function MobileExtraLink({ href, icon, label }: { href: any, icon: React.ReactNode, label: string }) {
   return (
     <Link href={href} className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all">
       {icon}
