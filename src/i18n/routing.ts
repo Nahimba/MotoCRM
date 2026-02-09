@@ -7,7 +7,7 @@ export const routing = defineRouting({
   locales: ['en', 'ru'],
   
   // Used when no locale matches
-  defaultLocale: 'en',
+  defaultLocale: 'ru',
   
   // Prefix URLs with the locale (e.g. /en/admin)
   localePrefix: 'always'
