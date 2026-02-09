@@ -51,7 +51,8 @@
     "deleteConfirm": "Удалить этот урок?",
     "deleted": "Удалено",
     "editLesson": "Правка урока",
-    "scheduleLesson": "Назначить урок"
+    "scheduleLesson": "Назначить урок",
+    "addLesson": "Назначить урок"
   },
     "Staff": {
     "command": "УПРАВЛЕНИЕ",

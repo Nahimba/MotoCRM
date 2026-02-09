@@ -51,7 +51,8 @@
     "deleteConfirm": "Remove this lesson?",
     "deleted": "Deleted",
     "editLesson": "Edit Lesson",
-    "scheduleLesson": "Schedule Lesson"
+    "scheduleLesson": "Schedule Lesson",
+    "addLesson": "Add Lesson"
   },
   "Staff": {
     "command": "COMMAND",
