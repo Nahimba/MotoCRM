@@ -93,10 +93,10 @@ export default function Sidebar() {
           {(role === 'rider') && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
-                {t('clientHome')}
+                {t('clientHome') || 'Tactical'}
               </div>
-              <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
-              <SidebarLink href="/account/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/account/training')} />
+              <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard') || 'Dashboard'} active={pathname === '/account'} />
+              <SidebarLink href="/account/training" icon={<ClipboardList size={16}/>} label={t('trainingLog') || 'Log'} active={pathname.startsWith('/account/training')} />
             </>
           )}
         </nav>
@@ -153,8 +153,8 @@ export default function Sidebar() {
                 {/* ADMIN EXTRAS */}
                 {role === 'admin' && (
                   <>
+                    <MobileExtraLink href="/admin" icon={<ShieldCheck size={18}/>} label={t('overview')} />
                     <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
-                    <MobileExtraLink href="/admin/courses" icon={<Bike size={18}/>} label={t('courses')} />
                     <MobileExtraLink href="/admin/instructors" icon={<GraduationCap size={18}/>} label={t('staff')} />
                   </>
                 )}
@@ -171,8 +171,8 @@ export default function Sidebar() {
                 {/* RIDER EXTRAS */}
                 {role === 'rider' && (
                   <>
-                    <MobileExtraLink href="/account" icon={<LayoutDashboard size={18}/>} label={t('dashboard')} />
-                    <MobileExtraLink href="/account/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                    <MobileExtraLink href="/account" icon={<LayoutDashboard size={18}/>} label={t('dashboard') || 'Home'} />
+                    <MobileExtraLink href="/account/training" icon={<ClipboardList size={18}/>} label={t('trainingLog') || 'Log'} />
                   </>
                 )}
 
@@ -201,10 +201,11 @@ export default function Sidebar() {
 
           {/* --- Main Dock Bar --- */}
           <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
+            {/* Primary Tab: Logic-driven Home */}
             <MobileTab 
               href={
                 role === 'admin' ? '/admin' : 
-                role === 'instructor' ? '/staff' : 
+                role === 'instructor' ? '/staff' : // Instructors land on Lessons
                 '/account'
               } 
               icon={<Home size={22}/>} 
@@ -215,7 +216,14 @@ export default function Sidebar() {
               } 
             />
             
-            {(role === 'admin' || role === 'instructor') && (
+            {/* Contextual Second Tab: Logic-driven Operations */}
+            {role === 'rider' ? (
+               <MobileTab 
+                href="/account/training" 
+                icon={<ClipboardList size={22}/>} 
+                active={pathname.startsWith('/account/training')} 
+              />
+            ) : (
               <MobileTab 
                 href="/staff/schedule" 
                 icon={<Calendar size={22}/>} 
@@ -257,6 +265,7 @@ export default function Sidebar() {
     </>
   );
 }
+
 
 function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
   return (
