@@ -96,7 +96,7 @@ export default function Sidebar() {
                 {t('clientHome')}
               </div>
               <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
-              <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
+              <SidebarLink href="/account/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/account/training')} />
             </>
           )}
         </nav>
@@ -172,7 +172,7 @@ export default function Sidebar() {
                 {role === 'rider' && (
                   <>
                     <MobileExtraLink href="/account" icon={<LayoutDashboard size={18}/>} label={t('dashboard')} />
-                    <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                    <MobileExtraLink href="/account/training" icon={<ClipboardList size={18}/>} label={t('log')} />
                   </>
                 )}
 
