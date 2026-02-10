@@ -1,4 +1,5 @@
 // http://localhost:3000/en/staff/packages/new
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -13,7 +14,8 @@ import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { ChevronLeft, Clock, Wallet, Bike } from "lucide-react"
+import { ChevronLeft, Clock, Wallet, ShieldCheck } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 const formSchema = z.object({
   account_id: z.string().min(1, "Required"),
@@ -28,10 +30,11 @@ type FormValues = z.infer<typeof formSchema>
 export default function NewPackagePage() {
   const router = useRouter()
   const t = useTranslations("NewPackage")
+  const { user } = useAuth()
   const [accounts, setAccounts] = useState<{ id: string; account_label: string }[]>([])
   const [courses, setCourses] = useState<{ id: string; name: string; base_price: number; total_hours: number }[]>([])
+  const [instructorId, setInstructorId] = useState<string | null>(null)
 
-  // FORCE: Cast resolver to any
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
@@ -43,20 +46,23 @@ export default function NewPackagePage() {
     },
   })
 
-  // FORCE: Double-cast control to silence TS
   const control = form.control as unknown as Control<FormValues>
 
   useEffect(() => {
     async function fetchData() {
-      const [accRes, courRes] = await Promise.all([
+      const [accRes, courRes, instRes] = await Promise.all([
         supabase.from("accounts").select("id, account_label").order("account_label"),
-        supabase.from("courses").select("id, name, base_price, total_hours").eq("is_active", true)
+        supabase.from("courses").select("id, name, base_price, total_hours").eq("is_active", true),
+        // Get the internal instructor ID for the current logged-in user
+        supabase.from("instructors").select("id").eq("profile_id", user?.id).single()
       ])
+      
       if (accRes.data) setAccounts(accRes.data)
       if (courRes.data) setCourses(courRes.data)
+      if (instRes.data) setInstructorId(instRes.data.id)
     }
-    fetchData()
-  }, [])
+    if (user?.id) fetchData()
+  }, [user])
 
   const onCourseChange = (courseId: string) => {
     const selected = courses.find(c => c.id === courseId)
@@ -68,24 +74,32 @@ export default function NewPackagePage() {
 
   async function onSubmit(values: FormValues) {
     try {
-      const { error: pkgErr } = await supabase.from("course_packages").insert({
-        account_id: values.account_id,
-        course_id: values.course_id,
-        contract_price: values.contract_price,
-        total_hours: values.total_hours,
-        remaining_hours: values.total_hours,
-        status: "active",
-      })
+      // 1. Create the Package
+      const { data: pkgData, error: pkgErr } = await supabase
+        .from("course_packages")
+        .insert({
+          account_id: values.account_id,
+          course_id: values.course_id,
+          instructor_id: instructorId, // Link to the current instructor
+          contract_price: values.contract_price,
+          total_hours: values.total_hours,
+          remaining_hours: values.total_hours,
+          status: "active",
+        })
+        .select()
+        .single()
 
       if (pkgErr) throw pkgErr
 
+      // 2. Log initial payment if any
       if (values.amount_paid_today > 0) {
-        await supabase.from("payments").insert({
+        const { error: payErr } = await supabase.from("payments").insert({
           account_id: values.account_id,
           amount: values.amount_paid_today,
           entry_type: "payment",
-          description: `Initial payment: ${values.total_hours}h`
+          description: `Initial payment for ${values.total_hours}h package`
         })
+        if (payErr) console.error("Payment log failed", payErr)
       }
 
       toast.success(t("success"))
@@ -96,135 +110,142 @@ export default function NewPackagePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <Link href="/staff/packages" className="flex items-center gap-2 text-slate-500 hover:text-white mb-8 transition-colors text-xs font-bold uppercase tracking-widest">
-        <ChevronLeft size={16} /> {t("back")}
-      </Link>
+    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12">
+      <div className="max-w-2xl mx-auto">
+        <Link href="/staff/packages" className="inline-flex items-center gap-2 text-slate-500 hover:text-primary mb-12 transition-all text-[10px] font-black uppercase tracking-[0.3em]">
+          <ChevronLeft size={14} /> {t("back")}
+        </Link>
 
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">
-          {t("title")} <span className="text-primary">{t("subtitle")}</span>
-        </h1>
-        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{t("description")}</p>
-      </div>
-      
-      <Form {...(form as any)}>
-        <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6 bg-[#080808] border border-white/5 p-8 rounded-[2rem] shadow-2xl">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={control}
-              name="account_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("rider")}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+        <div className="mb-12">
+          <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-none mb-2">
+            {t("title")} <span className="text-primary">{t("subtitle")}</span>
+          </h1>
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em]">{t("description")}</p>
+        </div>
+        
+        <Form {...(form as any)}>
+          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={control}
+                name="account_id"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("rider")}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-[#0A0A0A] border-white/5 h-16 text-white rounded-xl focus:ring-primary/20">
+                          <SelectValue placeholder={t("selectRider")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                        {accounts.map(a => (
+                          <SelectItem key={a.id} value={a.id} className="focus:bg-primary focus:text-black font-bold uppercase text-[10px] tracking-widest">
+                            {a.account_label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-[10px] uppercase font-bold text-red-500" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name="course_id"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("course")}</FormLabel>
+                    <Select onValueChange={(v) => { field.onChange(v); onCourseChange(v); }} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-[#0A0A0A] border-white/5 h-16 text-white rounded-xl focus:ring-primary/20">
+                          <SelectValue placeholder={t("selectCourse")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                        {courses.map(c => (
+                          <SelectItem key={c.id} value={c.id} className="focus:bg-primary focus:text-black font-bold uppercase text-[10px] tracking-widest">
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-[10px] uppercase font-bold text-red-500" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <FormField
+                control={control}
+                name="total_hours"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                      <Clock size={12}/> {t("hours")}
+                    </FormLabel>
                     <FormControl>
-                      <SelectTrigger className="bg-black border-white/10 h-12 text-white">
-                        <SelectValue placeholder={t("selectRider")} />
-                      </SelectTrigger>
+                      <Input type="number" {...field} className="bg-[#0A0A0A] border-white/5 h-16 text-white font-black text-lg focus:border-primary rounded-xl" />
                     </FormControl>
-                    <SelectContent className="bg-[#0a0a0a] border-white/10 text-white">
-                      {accounts.map(a => (
-                        <SelectItem key={a.id} value={a.id}>{a.account_label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-[10px] uppercase font-bold" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={control}
-              name="course_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("course")}</FormLabel>
-                  <Select onValueChange={(v) => { field.onChange(v); onCourseChange(v); }} value={field.value}>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="contract_price"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel className="text-[10px] font-black uppercase text-slate-500">{t("price")}</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="bg-black border-white/10 h-12 text-white">
-                        <SelectValue placeholder={t("selectCourse")} />
-                      </SelectTrigger>
+                      <Input type="number" {...field} className="bg-[#0A0A0A] border-white/5 h-16 text-white font-black text-lg focus:border-primary rounded-xl" />
                     </FormControl>
-                    <SelectContent className="bg-[#0a0a0a] border-white/10 text-white">
-                      {courses.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-[10px] uppercase font-bold" />
-                </FormItem>
-              )}
-            />
-          </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <div className="grid grid-cols-2 gap-6">
+            {/* Summary Box */}
+            <div className="p-8 bg-primary/5 rounded-[2rem] border border-primary/10 flex justify-between items-center relative overflow-hidden group">
+               <div className="relative z-10">
+                  <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-2">{t("totalValue")}</p>
+                  <div className="text-4xl font-black italic text-primary uppercase tracking-tighter">
+                     {Number(form.watch("contract_price") || 0).toLocaleString()} <span className="text-xs not-italic text-primary/40 ml-2">UAH</span>
+                  </div>
+               </div>
+               <ShieldCheck className="text-primary/10 group-hover:text-primary/20 transition-colors absolute -right-4 -bottom-4" size={120} />
+            </div>
+
             <FormField
               control={control}
-              name="total_hours"
+              name="amount_paid_today"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
-                    <Clock size={12}/> {t("hours")}
+                <FormItem className="space-y-3">
+                  <FormLabel className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]">
+                    <Wallet size={12}/> {t("paymentToday")}
                   </FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} className="bg-black border-white/10 h-12 text-white focus:border-primary" />
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      className="bg-black border-primary/30 h-20 text-2xl font-black italic text-primary focus:ring-1 focus:ring-primary rounded-2xl transition-all" 
+                    />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={control}
-              name="contract_price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] font-black uppercase text-slate-500">{t("price")}</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} className="bg-black border-white/10 h-12 text-white focus:border-primary" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
 
-          <div className="p-6 bg-white/5 rounded-2xl border border-white/5 flex justify-between items-center">
-             <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("totalValue")}</p>
-                <div className="text-3xl font-black italic text-primary uppercase tracking-tighter">
-                   {Number(form.watch("contract_price") || 0).toLocaleString()} <span className="text-xs not-italic text-slate-500">UAH</span>
-                </div>
-             </div>
-             <Bike className="opacity-10 text-white" size={40} />
-          </div>
-
-          <FormField
-            control={control}
-            name="amount_paid_today"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-[10px] font-black uppercase text-primary flex items-center gap-2">
-                  <Wallet size={12}/> {t("paymentToday")}
-                </FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    className="bg-black border-primary/30 h-14 text-lg font-black italic text-primary focus:ring-1 focus:ring-primary" 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" className="w-full bg-primary text-black font-black uppercase py-8 rounded-2xl hover:bg-white hover:scale-[1.01] transition-all shadow-xl shadow-primary/10">
-            {t("activate")} 🏁
-          </Button>
-        </form>
-      </Form>
+            <Button 
+              type="submit" 
+              className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(var(--primary-rgb),0.15)] text-sm tracking-[0.3em]"
+            >
+              {t("activate")} 🏁
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }

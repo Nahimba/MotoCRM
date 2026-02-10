@@ -12,6 +12,7 @@
     "finances": "Финансы",
     "courses": "Курсы",
     "staff": "Персонал",
+    "lessons": "Занятия",
     "schedule": "Расписание",
     "roster": "Списки",
     "dashboard": "Панель",
@@ -33,8 +34,11 @@
     "chooseStudent": "Выберите ученика...",
     "myAssigned": "МОИ УЧЕНИКИ",
     "unassigned": "НЕРАСПРЕДЕЛЕННЫЕ",
+    "viewDossier": "Досье",
     "contact": "Контакт",
+    "homeAddress": "Адрес",
     "pickup": "Место сбора",
+    "lessonLocation": "Локация",
     "startTime": "Время начала",
     "duration": "Длительность",
     "notes": "Заметки к уроку",
@@ -52,9 +56,24 @@
     "deleted": "Удалено",
     "editLesson": "Правка урока",
     "scheduleLesson": "Назначить урок",
-    "addLesson": "Назначить урок"
+    "addLesson": "Назначить урок",
+    "dossier": "Досье"
   },
-    "Staff": {
+  "StaffDashboard": {
+    "title": "ШТАБ ИНСТРУКТОРОВ",
+    "assignments": "Задания",
+    "noPhone": "НЕТ ТЕЛЕФОНА",
+    "baseOps": "БАЗА",
+    "awaitingBriefing": "Ожидание брифинга...",
+    "call": "Позвонить",
+    "dossier": "Досье",
+    "newEvaluation": "Новая Оценка",
+    "activeRoster": "Активный Список",
+    "rosterDesc": "Доступ к историческим заметкам.",
+    "accessIntel": "Данные Интел",
+    "noMissionNotes": "Заметки по миссии отсутствуют..."
+  },
+  "Staff": {
     "command": "УПРАВЛЕНИЕ",
     "status": "Инструктор Онлайн",
     "dailyStudents": "Студенты на сегодня",
@@ -86,7 +105,9 @@
     "filters": {
       "all": "All Packages",
       "mine": "My Students",
-      "instructor": "Instructor"
+      "instructor": "Instructor",
+      "active": "Активен",
+      "archived": "Завершен"
     }
   },
   "NewPackage": {

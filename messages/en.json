@@ -12,6 +12,7 @@
     "finances": "Finances",
     "courses": "Courses",
     "staff": "Staff",
+    "lessons": "Lessons",
     "schedule": "Schedule",
     "roster": "Roster",
     "dashboard": "Dashboard",
@@ -33,8 +34,11 @@
     "chooseStudent": "Choose student...",
     "myAssigned": "MY ASSIGNED",
     "unassigned": "UNASSIGNED",
+    "viewDossier": "Dossier",
     "contact": "Contact",
+    "homeAddress": "Address",
     "pickup": "Pickup",
+    "lessonLocation": "Location",
     "startTime": "Start Time",
     "duration": "Duration",
     "notes": "Lesson Notes",
@@ -52,7 +56,22 @@
     "deleted": "Deleted",
     "editLesson": "Edit Lesson",
     "scheduleLesson": "Schedule Lesson",
-    "addLesson": "Add Lesson"
+    "addLesson": "Add Lesson",
+    "dossier": "Dossier"
+  },
+  "StaffDashboard": {
+    "title": "STAFF COMMAND",
+    "assignments": "Assignments",
+    "noPhone": "NO PHONE",
+    "baseOps": "BASE OPS",
+    "awaitingBriefing": "Awaiting briefing...",
+    "call": "Call",
+    "dossier": "Dossier",
+    "newEvaluation": "New Evaluation",
+    "activeRoster": "Active Roster",
+    "rosterDesc": "Access historical intelligence notes.",
+    "accessIntel": "Access Intel",
+    "noMissionNotes": "No mission notes provided..."
   },
   "Staff": {
     "command": "COMMAND",
@@ -86,7 +105,9 @@
     "filters": {
       "all": "All Packages",
       "mine": "My Students",
-      "instructor": "Instructor"
+      "instructor": "Instructor",
+      "active": "Active",
+      "archived": "Archived"
     }
   },
   "NewPackage": {

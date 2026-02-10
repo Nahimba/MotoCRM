@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -20,18 +20,21 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType>({ 
-  user: null, 
-  profile: null, 
-  loading: true,
-  signOut: async () => {} 
+  user: null, profile: null, loading: true, signOut: async () => {} 
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track last fetched ID to prevent AbortError from race conditions
+  const lastFetchedId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
+    if (lastFetchedId.current === userId) return;
+    lastFetchedId.current = userId;
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -40,15 +43,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('CRITICAL: Profile Fetch Error:', error);
+        // Better error logging to debug the "{}" issue
+        console.error('CRITICAL: Profile Fetch Error:', error.message, error.details);
         return;
       }
 
-      if (!data) {
-        setProfile({ id: userId, full_name: 'New User', role: 'rider' });
-      } else {
-        setProfile(data);
-      }
+      setProfile(data || { id: userId, full_name: 'New User', role: 'rider' });
     } catch (err) {
       console.error('Unexpected Profile Error:', err);
     } finally {
@@ -57,28 +57,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const initAuth = async () => {
-      // --- SECURE FIX: Using getUser() instead of getSession() ---
-      const { data: { user: verifiedUser }, error } = await supabase.auth.getUser();
-      
-      if (verifiedUser && !error) {
-        setUser(verifiedUser);
-        await fetchProfile(verifiedUser.id);
+    // 1. Initial Load
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser(user);
+        fetchProfile(user.id);
       } else {
         setLoading(false);
       }
-    };
+    });
 
-    initAuth();
-
+    // 2. Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Logic for event-based changes
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setProfile(null);
+        lastFetchedId.current = null;
         setLoading(false);
       }
     });
@@ -87,18 +84,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    try {
-      sessionStorage.setItem('manualLogout', 'true');
-      await supabase.auth.signOut();
-      
-      setUser(null);
-      setProfile(null);
-
-      // Force refresh ensures proxy/middleware runs on the server to clear data
-      window.location.href = '/';
-    } catch (err) {
-      console.error('Sign out failed:', err);
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    window.location.href = '/';
   };
 
   return (

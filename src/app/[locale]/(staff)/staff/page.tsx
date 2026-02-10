@@ -1,151 +1,167 @@
-// http://localhost:3000/en/staff
-
 "use client"
 
-import { useEffect, useState } from "react"
-import { 
-  Users, 
-  Clock, 
-  ChevronRight, 
-  Play, 
-  ClipboardCheck,
-  Flag
-} from "lucide-react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase"
-import { useTranslations } from "next-intl"
+import { ClipboardCheck, Users, Phone, MapPin, Contact2 } from "lucide-react"
+import { format, startOfDay, endOfDay, eachHourOfInterval, setHours } from "date-fns"
+import { useAuth } from "@/context/AuthContext"
+import { ClientProfileModal } from "@/components/staff/ClientProfileModal"
+import { useTranslations } from "next-intl" // Adjust if using different i18n lib
 
-export default function StaffDashboard() {
-  const t = useTranslations("Staff")
-  const [sessions, setSessions] = useState<any[]>([])
+const HOUR_HEIGHT = 100 
+const HOURS = eachHourOfInterval({
+  start: setHours(startOfDay(new Date()), 7),
+  end: setHours(startOfDay(new Date()), 22)
+})
+
+export default function StaffLandingPage() {
+  const t = useTranslations("StaffDashboard")
+  const { profile } = useAuth()
+  const [instructorId, setInstructorId] = useState<string | null>(null)
+  const [lessons, setLessons] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedClient, setSelectedClient] = useState<any | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    async function fetchTodaySessions() {
-      // Example query: Fetching schedules for today
-      const today = new Date().toISOString().split('T')[0]
-      const { data, error } = await supabase
-        .from("schedules")
-        .select(`
-          id,
-          start_time,
-          status,
-          accounts (account_label, skill_level)
-        `)
-        .eq('date', today)
-        .order('start_time', { ascending: true })
-
-      if (!error && data) {
-        setSessions(data)
-      }
-      setLoading(false)
+    let isMounted = true
+    if (!profile) return
+    const initIdentity = async () => {
+      try {
+        let id = null
+        if (profile.role === 'instructor') {
+          const { data } = await supabase.from('instructors').select('id').eq('profile_id', profile.id).maybeSingle()
+          id = data?.id
+        } else if (profile.role === 'admin') {
+          const { data } = await supabase.from('instructors').select('id').limit(1).maybeSingle()
+          id = data?.id
+        }
+        if (isMounted && id) setInstructorId(id)
+      } catch (err) { console.error(err) }
     }
+    initIdentity()
+    return () => { isMounted = false }
+  }, [profile])
 
-    fetchTodaySessions()
+  const fetchTodayLessons = useCallback(async (id: string) => {
+    if (abortControllerRef.current) abortControllerRef.current.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('staff_dashboard_lessons')
+        .select('*')
+        .eq('instructor_id', id)
+        .gte('session_date', startOfDay(new Date()).toISOString())
+        .lte('session_date', endOfDay(new Date()).toISOString())
+        .order('session_date', { ascending: true })
+        .abortSignal(controller.signal)
+      if (!error) setLessons(data || [])
+    } catch (err: any) {
+      if (err.name !== 'AbortError') console.error(err)
+    } finally { setLoading(false) }
   }, [])
 
+  useEffect(() => {
+    if (instructorId) fetchTodayLessons(instructorId)
+    return () => abortControllerRef.current?.abort()
+  }, [fetchTodayLessons, instructorId])
+
+  const getLessonStyles = (startTime: string, duration: number) => {
+    const date = new Date(startTime)
+    const top = (date.getHours() - 7) * HOUR_HEIGHT + (date.getMinutes() / 60) * HOUR_HEIGHT
+    return { 
+      top: `${top}px`, 
+      minHeight: '170px', // Slightly taller for Cyrillic line-heights
+      left: '12px', 
+      right: '12px',
+      position: 'absolute' as const,
+      zIndex: 40
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-10 font-sans">
-      {/* --- STAFF HEADER --- */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">{t('status')}</p>
-          </div>
-          <h1 className="text-4xl font-black italic uppercase tracking-tight">
-            STAFF<span className="text-primary">{t('command')}</span>
-          </h1>
+          <h1 className="text-3xl font-black italic uppercase tracking-tighter">{t('title')}</h1>
+          <p className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em]">{format(new Date(), 'EEEE, dd MMMM')}</p>
         </div>
-        
-        <div className="flex gap-3">
-          <div className="bg-[#111] border border-white/5 p-4 rounded-2xl text-center min-w-[100px]">
-            <p className="text-[9px] text-slate-500 font-bold uppercase">{t('dailyStudents')}</p>
-            <p className="text-xl font-black">{sessions.length.toString().padStart(2, '0')}</p>
-          </div>
-          <div className="bg-[#111] border border-white/5 p-4 rounded-2xl text-center min-w-[100px]">
-            <p className="text-[9px] text-slate-500 font-bold uppercase">{t('trackStatus')}</p>
-            <p className="text-xl font-black text-primary italic underline underline-offset-4">{t('trackHot')}</p>
-          </div>
+        <div className="bg-[#111] border border-white/10 px-5 py-2 rounded-xl text-center">
+          <p className="text-xl font-black italic text-primary leading-none">{lessons.length}</p>
+          <p className="text-[7px] font-black uppercase text-slate-500 mt-1">{t('assignments')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* --- LEFT: ACTIVE SESSION / ROSTER --- */}
-        <div className="lg:col-span-2 space-y-6">
-          <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
-            <Clock size={14} /> {t('roster')}
-          </h2>
-          
-          <div className="space-y-3">
-            {loading ? (
-              <div className="animate-pulse space-y-3">
-                {[1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-3xl" />)}
+        <div className="lg:col-span-2">
+          <div className="relative overflow-y-auto bg-[#080808] rounded-[2rem] border border-white/5 h-[750px] custom-scrollbar shadow-2xl">
+            <div className="relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+              
+              <div className="absolute left-0 w-16 h-full border-r border-white/5 z-20 bg-black/60 backdrop-blur-md">
+                {HOURS.map(h => (
+                  <div key={h.toString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
+                    {format(h, 'HH:mm')}
+                  </div>
+                ))}
               </div>
-            ) : (
-              sessions.map((session) => (
-                <div 
-                  key={session.id} 
-                  className="bg-[#111] border border-white/5 hover:border-primary/30 transition-all rounded-3xl p-6 flex items-center justify-between group cursor-pointer"
-                >
-                  <div className="flex items-center gap-6">
-                    <div className="h-14 w-14 rounded-2xl bg-white/5 flex items-center justify-center font-black text-lg italic text-slate-400">
-                      {session.start_time?.substring(0, 5) || "00:00"}
+
+              <div className="absolute left-16 right-0 h-full z-30">
+                {!loading && lessons.map((l) => (
+                  <div key={l.lesson_id} style={getLessonStyles(l.session_date, l.hours_spent)}
+                    className="group bg-[#111] border border-white/10 rounded-2xl p-4 flex flex-col shadow-2xl active:border-primary/40 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-2 shrink-0">
+                      <div className="min-w-0">
+                        <h4 className="text-lg font-black uppercase italic tracking-tighter leading-tight truncate">
+                          {l.client_name} <span className="text-primary">{l.client_last_name}</span>
+                        </h4>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                           <span className="tabular-nums text-primary/80">{format(new Date(l.session_date), 'HH:mm')}</span>
+                           <span className="opacity-30">•</span>
+                           <span className="flex items-center gap-1 uppercase tracking-tighter">
+                             <MapPin size={10} /> {l.location || t('baseOps')}
+                           </span>
+                        </div>
+                      </div>
+                      <div className="bg-white/5 px-2 py-1 rounded text-[9px] font-black text-slate-400 border border-white/5">
+                        {l.hours_spent}H
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-black uppercase italic tracking-tight group-hover:text-primary transition-colors">
-                        {session.accounts?.account_label || "Unknown Student"}
-                      </h3>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        {t('curriculum')}: {session.accounts?.skill_level || "Standard"}
+
+                    <div className="flex-1 mb-3">
+                      <p className="text-[13px] text-slate-200 font-medium leading-snug italic line-clamp-4">
+                        {l.summary || t('noMissionNotes')}
                       </p>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="hidden md:block text-right">
-                      <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase ${
-                        session.status === 'ready' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-white/5 text-slate-500'
-                      }`}>
-                        {session.status}
-                      </span>
+
+                    <div className="grid grid-cols-2 gap-2 h-10 shrink-0 mt-auto">
+                      <a href={l.client_phone ? `tel:${l.client_phone}` : '#'} 
+                         className={`rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 text-black ${l.client_phone ? 'bg-primary' : 'bg-white/5 text-slate-700 cursor-not-allowed pointer-events-none'}`}
+                      >
+                        <Phone size={14} fill={l.client_phone ? "black" : "none"} />
+                        <span className="text-[10px] font-black uppercase tracking-tight">{t('call')}</span>
+                      </a>
+                      <button 
+                        onClick={() => setSelectedClient(l)}
+                        className="bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-white/5"
+                      >
+                        <Contact2 size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-tight">{t('dossier')}</span>
+                      </button>
                     </div>
-                    <button className="h-12 w-12 rounded-full bg-white text-black flex items-center justify-center hover:bg-primary transition-all active:scale-90">
-                      <Play size={18} fill="currentColor" />
-                    </button>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* --- RIGHT: INSTRUCTOR TOOLS --- */}
-        <div className="space-y-6">
-          <h2 className="text-xs font-black uppercase tracking-widest text-slate-500">{t('tools')}</h2>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <button className="flex items-center justify-between p-6 bg-primary text-black rounded-[2rem] font-black uppercase italic text-sm hover:scale-[1.02] active:scale-95 transition-all">
-              {t('evaluate')} <ClipboardCheck size={20} />
-            </button>
-            
-            <button className="flex items-center justify-between p-6 bg-[#111] border border-white/10 rounded-[2rem] font-black uppercase italic text-sm hover:bg-white/5 transition-colors">
-              {t('incidents')} <Flag size={20} className="text-red-500" />
-            </button>
-
-            <div className="p-8 bg-[#111] border border-white/5 rounded-[2.5rem]">
-              <Users className="text-slate-500 mb-4" size={24} />
-              <h4 className="font-black uppercase italic text-lg mb-2">{t('myStudents')}</h4>
-              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
-                {t('studentDesc')}
-              </p>
-              <button className="mt-6 text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2 hover:gap-3 transition-all">
-                {t('viewAll')} <ChevronRight size={14} />
-              </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+
+
       </div>
+
+      {selectedClient && <ClientProfileModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
     </div>
   )
 }

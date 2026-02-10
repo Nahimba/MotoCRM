@@ -7,7 +7,7 @@ import {
   User, Settings, Bike, 
   GraduationCap, Calendar, MoreHorizontal,
   LayoutDashboard, ClipboardList, ChevronUp, Languages,
-  Package // Imported for Training Packages
+  Package 
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -82,23 +82,21 @@ export default function Sidebar() {
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
                 {t('operations')}
               </div>
+              <SidebarLink href="/staff" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff'} />
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
               <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
-              {/* TRAINING PACKAGES LINK */}
               <SidebarLink href="/staff/packages" icon={<Package size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
             </>
           )}
 
           {/* RIDER SECTION */}
-          
           {(role === 'rider') && (
             <>
-            <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
-              {t('clientHome')}
-            </div>
-            <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
-          
-            <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
+              <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
+                {t('clientHome')}
+              </div>
+              <SidebarLink href="/account" icon={<LayoutDashboard size={16}/>} label={t('dashboard')} active={pathname === '/account'} />
+              <SidebarLink href="/training" icon={<ClipboardList size={16}/>} label={t('trainingLog')} active={pathname.startsWith('/training')} />
             </>
           )}
         </nav>
@@ -147,37 +145,55 @@ export default function Sidebar() {
         <div className="relative w-full">
           {showMobileMenu && (
             <div 
-              className="absolute bottom-[115%] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-6 shadow-2xl"
+              className="absolute bottom-[115%] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-4 shadow-2xl"
               style={{ animation: 'mobilePopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
             >
-              <div className="grid grid-cols-3 gap-3">
-                <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
+              <div className="grid grid-cols-3 gap-2">
                 
-                {/* Staff Specific Links */}
+                {/* ADMIN EXTRAS */}
+                {role === 'admin' && (
+                  <>
+                    <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
+                    <MobileExtraLink href="/admin/courses" icon={<Bike size={18}/>} label={t('courses')} />
+                    <MobileExtraLink href="/admin/instructors" icon={<GraduationCap size={18}/>} label={t('staff')} />
+                  </>
+                )}
+
+                {/* STAFF EXTRAS */}
                 {(role === 'admin' || role === 'instructor') && (
-                  <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
+                  <>
+                    <MobileExtraLink href="/staff" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} />
+                    <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
+                    <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
+                  </>
                 )}
-                
-                {/* Rider Specific Links */}
-                {(role === 'rider') && (
-                  <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+
+                {/* RIDER EXTRAS */}
+                {role === 'rider' && (
+                  <>
+                    <MobileExtraLink href="/account" icon={<LayoutDashboard size={18}/>} label={t('dashboard')} />
+                    <MobileExtraLink href="/training" icon={<ClipboardList size={18}/>} label={t('log')} />
+                  </>
                 )}
-                
-                {/* Language Toggle */}
+
+                {/* SHARED */}
+                <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
+
+                {/* LANGUAGE */}
                 <button 
                   onClick={toggleLanguage}
-                  className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all"
+                  className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all border border-white/5"
                 >
                   <Languages size={18} />
-                  <span className="text-[10px] font-black uppercase tracking-tight">
+                  <span className="text-[9px] font-black uppercase tracking-tight">
                     {locale === 'en' ? 'RU' : 'EN'}
                   </span>
                 </button>
 
-                {/* Sign Out */}
-                <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-2 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all">
+                {/* EXIT */}
+                <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all border border-red-500/10">
                   <LogOut size={18} />
-                  <span className="text-[10px] font-black uppercase tracking-tight">{t('exit')}</span>
+                  <span className="text-[9px] font-black uppercase tracking-tight">{t('exit')}</span>
                 </button>
               </div>
             </div>
@@ -185,13 +201,11 @@ export default function Sidebar() {
 
           {/* --- Main Dock Bar --- */}
           <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
-            
-            {/* 1. Dynamic Home Tab Logic */}
             <MobileTab 
               href={
                 role === 'admin' ? '/admin' : 
                 role === 'instructor' ? '/staff' : 
-                '/account' // for riders
+                '/account'
               } 
               icon={<Home size={22}/>} 
               active={
@@ -201,7 +215,6 @@ export default function Sidebar() {
               } 
             />
             
-            {/* 2. Schedule Access (Staff/Admins only) */}
             {(role === 'admin' || role === 'instructor') && (
               <MobileTab 
                 href="/staff/schedule" 
@@ -210,7 +223,6 @@ export default function Sidebar() {
               />
             )}
 
-            {/* 3. More Menu Toggle */}
             <button 
               onClick={() => setShowMobileMenu(!showMobileMenu)} 
               className={`flex-1 flex flex-col items-center justify-center py-4 transition-all ${showMobileMenu ? 'text-primary' : 'text-slate-500'}`}
@@ -218,7 +230,6 @@ export default function Sidebar() {
               <MoreHorizontal size={22} />
             </button>
             
-            {/* 4. Profile Section */}
             <Link href="/profile" className="flex-1 flex items-center justify-center">
               <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
                 {profile?.avatar_url ? (
@@ -247,8 +258,6 @@ export default function Sidebar() {
   );
 }
 
-// ... helper components same as before ...
-
 function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
   return (
     <Link href={href} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
@@ -268,9 +277,9 @@ function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, a
 
 function MobileExtraLink({ href, icon, label }: { href: any, icon: React.ReactNode, label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-2 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all">
+    <Link href={href} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5">
       {icon}
-      <span className="text-[10px] font-black uppercase tracking-tight">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">{label}</span>
     </Link>
   )
 }
