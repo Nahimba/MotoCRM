@@ -20,7 +20,10 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType>({ 
-  user: null, profile: null, loading: true, signOut: async () => {} 
+  user: null, 
+  profile: null, 
+  loading: true, 
+  signOut: async () => {} 
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -28,7 +31,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Track last fetched ID to prevent AbortError from race conditions
   const lastFetchedId = useRef<string | null>(null);
 
   const fetchProfile = async (userId: string) => {
@@ -43,8 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        // Better error logging to debug the "{}" issue
-        console.error('CRITICAL: Profile Fetch Error:', error.message, error.details);
+        console.error('CRITICAL: Profile Fetch Error:', error.message);
         return;
       }
 
@@ -57,7 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // 1. Initial Load
+    // 1. Initial Load Check
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         setUser(user);
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // 2. Listen for changes
+    // 2. Auth State Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
@@ -84,10 +85,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    window.location.href = '/';
+    try {
+      // CIRCUIT BREAKER: Tell the Landing Page NOT to auto-login
+      sessionStorage.setItem('manualLogout', 'true');
+      
+      await supabase.auth.signOut();
+      
+      setUser(null);
+      setProfile(null);
+      
+      // Force refresh to clear all internal state and hit the LandingPage logic
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    }
   };
 
   return (

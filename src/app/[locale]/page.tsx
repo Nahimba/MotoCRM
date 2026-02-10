@@ -24,27 +24,31 @@ export default function LandingPage() {
     const checkSession = async () => {
       const isLocal = window.location.hostname === "localhost"
       const justLoggedOut = sessionStorage.getItem('manualLogout')
-
+  
+      // IF MANUALLY LOGGED OUT: Stop everything and show the login form
       if (justLoggedOut) {
+        console.log("Protocol: Manual Logout Detected. Auto-login suppressed.");
         sessionStorage.removeItem('manualLogout')
-        setIsAutoLogging(false)
+        setIsAutoLogging(false) // This ensures the form shows up
         return 
       }
-
+  
+      // IF IN DEV MODE: Proceed with auto-login only if not just logged out
       if (isLocal) {
         setIsAutoLogging(true)
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session) {
-          const role = session.user.user_metadata.role
-          handleRedirect(role)
+          handleRedirect(session.user.user_metadata.role)
         } else {
+          // Only auto-login if we haven't just cleared the manualLogout flag
           await handleLogin(null, 'admin')
         }
       }
-    }
-    checkSession()
-  }, [])
+    };
+    
+    checkSession();
+  }, []);
 
   const handleRedirect = (role: string | undefined) => {
     
