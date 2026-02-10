@@ -1,11 +1,9 @@
-"use client"
+import ClientForm from "@/components/staff/ClientForm"
 
-import RiderForm from "../form-component"
-
-export default function NewRiderPage() {
+export default function NewClientPage() {
   return (
     <div className="container mx-auto py-10 px-4">
-      <RiderForm />
+      <ClientForm />
     </div>
   )
 }

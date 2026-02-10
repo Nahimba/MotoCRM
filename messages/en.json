@@ -1,13 +1,13 @@
 {
   "Metadata": {
     "title": "Moto CRM | Management",
-    "description": "The professional tool for rider management."
+    "description": "The professional tool for client management."
   },
   "Sidebar": {
     "director": "Director",
     "operations": "Operations",
     "packages": "Packages",
-    "clientHome": "Rider Central",
+    "clientHome": "Client Central",
     "overview": "Overview",
     "finances": "Finances",
     "courses": "Courses",
@@ -85,7 +85,7 @@
     "evaluate": "Quick Evaluate",
     "incidents": "Track Incidents",
     "myStudents": "My Students",
-    "studentDesc": "Access your full database of past riders and their skill history.",
+    "studentDesc": "Access your full database of past client and their skill history.",
     "viewAll": "View All"
   },
   "Packages": {
@@ -115,7 +115,7 @@
     "subtitle": "Contract",
     "description": "Deploy training hours and initial payment",
     "back": "Back to Packages",
-    "rider": "Rider Account",
+    "client": "Client Account",
     "course": "Course Type",
     "hours": "Hours",
     "price": "Price (UAH)",
@@ -123,12 +123,80 @@
     "paymentToday": "Payment Received Today",
     "activate": "Activate Contract",
     "success": "Contract Active! 🏁",
-    "selectRider": "Select a rider",
+    "selectClient": "Select a client",
     "selectCourse": "Select course",
     "errors": {
-      "riderRequired": "Choose Rider",
+      "clientRequired": "Choose Client",
       "courseRequired": "Choose Course",
       "minHours": "min 1 hour"
+    }
+  },
+  "Clients": {
+    "list": {
+      "title": "Clients",
+      "subtitle": "Roster",
+      "active_count": "{count} Active Dossiers",
+      "search_placeholder": "SEARCH BY NAME OR PHONE...",
+      "recruit_btn": "Recruit",
+      "sync_data": "Synchronizing Fleet Data...",
+      "no_contact": "NO CONTACT",
+      "dossier": "Dossier",
+      "hours_left": "Left",
+      "hours": "{count} HOURS",
+      "standard_unit": "Standard Unit",
+      "cleared": "CLEARED",
+      "no_pilots": "No Pilots Detected",
+      "missing_data": "Target data is missing from current active roster"
+    },
+    "edit": {
+      "loading_auth": "Authenticating Access",
+      "loading_dossier": "Retrieving Client Dossier...",
+      "not_found_title": "Target Not Found",
+      "not_found_desc": "The Client with the specified ID could not be located or has been decommissioned.",
+      "return_roster": "Return to Roster",
+      "modify_intel": "Modify Intel",
+      "pilot_label": "Pilot",
+      "id_label": "ID"
+    },
+    "form": {
+      "abort": "Abort Mission",
+      "modify_title": "Modify Dossier",
+      "recruit_title": "Recruit Client",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "notes": "Tactical Notes",
+      "notes_placeholder": "ANY SPECIFIC NOTES...",
+      "transmission": "Transmission",
+      "update_btn": "Update Dossier",
+      "recruit_btn": "Recruit Client",
+      "success_update": "Dossier updated successfully",
+      "success_create": "New pilot recruited to the roster"
+    },
+    "details": {
+      "loading": "Accessing Dossier...",
+      "lost_signal": "Client Signal Lost",
+      "return": "Return to Fleet Roster",
+      "modify": "Modify Intel",
+      "core_intel": "Core Intel",
+      "comms": "Comms",
+      "network": "Network",
+      "sector": "Sector",
+      "transmission": "Transmission Spec",
+      "rem_time": "Remaining Time",
+      "fin_standing": "Financial Standing",
+      "deployment": "of {total}H deployment",
+      "outstanding": "Outstanding Balance",
+      "settled": "Account Settled",
+      "active_module": "Active Training Module",
+      "live_session": "Live Session",
+      "valuation": "Valuation",
+      "completion": "Completion",
+      "no_deployment": "No Deployment Active",
+      "unspecified": "UNSPECIFIED",
+      "active_status": "Active Personnel"
     }
   }
 }
