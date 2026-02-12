@@ -63,6 +63,7 @@
     "completed": "Completed",
     "cancelled": "Cancelled",
     "locationPlaceholder": "Location",
+    "location": "Location",
     "allStudents": "Students"
   },
   "StaffDashboard": {
@@ -159,7 +160,7 @@
     "columnDate": "Date",
     "columnStatus": "Status",
     "columnEdit": "Edit",
-    
+
     "payment": {
       "method": {
         "card_online": "Online",

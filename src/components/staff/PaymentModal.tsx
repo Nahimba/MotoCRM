@@ -32,7 +32,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
   
   const [formData, setFormData] = useState({
     course_package_id: "",
-    account_id: "", // Critical: payments table needs this
+    account_id: "",
     amount: "",
     payment_plan_id: "",
     payment_method_id: "",
@@ -45,7 +45,6 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
     if (!isOpen) return;
 
     const fetchData = async () => {
-      // Query for active packages - Note: account_id must be in the view!
       let pkgQuery = supabase
         .from('staff_packages_view')
         .select(`id, account_id, account_label, contract_price, total_paid, instructor_id, status`)
@@ -100,6 +99,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
     )
   }, [packages, searchTerm])
 
+  // 2. Submit Logic (Handles both Payment and Allocation)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -113,7 +113,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
 
     try {
       const payload = {
-        account_id: formData.account_id, // Ensure payment is linked to the client account
+        account_id: formData.account_id,
         amount: amountNum,
         payment_plan_id: formData.payment_plan_id,
         payment_method_id: formData.payment_method_id,
@@ -123,16 +123,28 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
       }
 
       if (editPayment) {
-        const { error: pError } = await supabase.from('payments').update(payload).eq('id', paymentId)
+        // Update Payment Record
+        const { error: pError } = await supabase
+          .from('payments')
+          .update(payload)
+          .eq('id', paymentId)
+        
         if (pError) throw pError
 
-        await supabase.from('course_payment_allocations').update({
-          amount_allocated: amountNum,
-          course_package_id: formData.course_package_id
-        }).eq('payment_id', paymentId)
+        // Update Allocation (Crucial for Package Changes)
+        const { error: aError } = await supabase
+          .from('course_payment_allocations')
+          .update({
+            amount_allocated: amountNum,
+            course_package_id: formData.course_package_id
+          })
+          .eq('payment_id', paymentId)
+        
+        if (aError) throw aError
 
         toast.success(t('updateSuccess'))
       } else {
+        // Create New Payment
         const { data: newPayment, error: pError } = await supabase
           .from('payments')
           .insert([payload])
@@ -140,17 +152,23 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
 
         if (pError) throw pError
 
-        await supabase.from('course_payment_allocations').insert([{
-          payment_id: newPayment.id,
-          course_package_id: formData.course_package_id,
-          amount_allocated: amountNum
-        }])
+        // Create New Allocation
+        const { error: aError } = await supabase
+          .from('course_payment_allocations')
+          .insert([{
+            payment_id: newPayment.id,
+            course_package_id: formData.course_package_id,
+            amount_allocated: amountNum
+          }])
+        
+        if (aError) throw aError
 
         toast.success(t('logSuccess'))
       }
       onSuccess() 
       onClose()
     } catch (error: any) {
+      console.error("Payment Error:", error)
       toast.error(error.message)
     } finally {
       setLoading(false)
@@ -207,7 +225,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
                   setFormData({
                     ...formData, 
                     course_package_id: e.target.value,
-                    account_id: pkg ? pkg.account_id : "", // Set the account_id here
+                    account_id: pkg ? pkg.account_id : "",
                     amount: pkg ? pkg.balance_due.toString() : "" 
                   });
                 }}

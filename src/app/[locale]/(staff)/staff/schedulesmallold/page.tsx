@@ -20,7 +20,7 @@ export default function InstructorSchedulePage() {
 
   async function loadInstructorData() {
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser() // !!!!!!!!!!!! wrong??
     
     if (!user) {
       toast.error("Not authenticated")
