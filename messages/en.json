@@ -7,6 +7,7 @@
     "director": "Director",
     "operations": "Operations",
     "packages": "Packages",
+    "payments": "Payments",
     "clientHome": "Client Central",
     "overview": "Overview",
     "finances": "Finances",
@@ -57,7 +58,12 @@
     "editLesson": "Edit Lesson",
     "scheduleLesson": "Schedule Lesson",
     "addLesson": "Add Lesson",
-    "dossier": "Dossier"
+    "dossier": "Dossier",
+    "planned": "Planned",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "locationPlaceholder": "Location",
+    "allStudents": "Students"
   },
   "StaffDashboard": {
     "title": "STAFF COMMAND",
@@ -108,14 +114,24 @@
       "instructor": "Instructor",
       "active": "Active",
       "archived": "Archived"
+    },
+    "table": {
+      "student": "Student",
+      "instructor": "Instructor",
+      "progress": "Progress",
+      "payment": "Payment"
     }
+  },
+  "Payments": {
+    "title": "Payments",
+    "addPayment": "Add Payment"
   },
   "NewPackage": {
     "title": "New",
     "subtitle": "Contract",
     "description": "Deploy training hours and initial payment",
     "back": "Back to Packages",
-    "client": "Client Account",
+    "client": "Client",
     "course": "Course Type",
     "hours": "Hours",
     "price": "Price (UAH)",

@@ -14,7 +14,7 @@ interface LessonCardProps {
 export function LessonCard({ lesson, onEdit, onDossier, getStyles, viewMode, hourHeight }: LessonCardProps) {
   const client = lesson.course_packages?.accounts?.clients
   const isWeek = viewMode === 'week'
-  const pixelHeight = lesson.hours_spent * hourHeight
+  const pixelHeight = lesson.duration * hourHeight
   const hasSpace = pixelHeight > 80 
 
   return (
@@ -23,7 +23,7 @@ export function LessonCard({ lesson, onEdit, onDossier, getStyles, viewMode, hou
         e.stopPropagation();
         onEdit(lesson);
       }}
-      style={getStyles(lesson.session_date, lesson.hours_spent)}
+      style={getStyles(lesson.session_date, lesson.duration)}
       className={`absolute bg-[#121212] border border-white/10 border-l-[4px] border-l-primary rounded-xl group hover:bg-[#1A1A1A] hover:border-primary/40 transition-all cursor-pointer overflow-hidden z-30 
         ${isWeek ? 'p-2' : 'p-4 md:p-5'}`}
     >
@@ -36,7 +36,7 @@ export function LessonCard({ lesson, onEdit, onDossier, getStyles, viewMode, hou
             </h4>
           </div>
           <span className="bg-primary/10 border border-primary/20 text-primary px-1.5 py-0.5 rounded font-black text-[8px] md:text-[9px] uppercase tabular-nums ml-2">
-            {lesson.hours_spent}h
+            {lesson.duration}h
           </span>
         </div>
 

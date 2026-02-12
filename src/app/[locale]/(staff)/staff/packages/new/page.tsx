@@ -1,5 +1,4 @@
 // http://localhost:3000/en/staff/packages/new
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -14,7 +13,7 @@ import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { ChevronLeft, Clock, Wallet, ShieldCheck } from "lucide-react"
+import { ChevronLeft, Clock, Wallet, ShieldCheck, Loader2 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
 const formSchema = z.object({
@@ -30,7 +29,8 @@ type FormValues = z.infer<typeof formSchema>
 export default function NewPackagePage() {
   const router = useRouter()
   const t = useTranslations("NewPackage")
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const [loading, setLoading] = useState(false)
   const [accounts, setAccounts] = useState<{ id: string; account_label: string }[]>([])
   const [courses, setCourses] = useState<{ id: string; name: string; base_price: number; total_hours: number }[]>([])
   const [instructorId, setInstructorId] = useState<string | null>(null)
@@ -53,13 +53,13 @@ export default function NewPackagePage() {
       const [accRes, courRes, instRes] = await Promise.all([
         supabase.from("accounts").select("id, account_label").order("account_label"),
         supabase.from("courses").select("id, name, base_price, total_hours").eq("is_active", true),
-        // Get the internal instructor ID for the current logged-in user
-        supabase.from("instructors").select("id").eq("profile_id", user?.id).single()
+        // Get the instructor record linked to current user
+        supabase.from("instructors").select("id").eq("profile_id", user?.id).maybeSingle()
       ])
       
       if (accRes.data) setAccounts(accRes.data)
       if (courRes.data) setCourses(courRes.data)
-      if (instRes.data) setInstructorId(instRes.data.id)
+      if (instRes.data) setInstructorId(instRes.data?.id || null)
     }
     if (user?.id) fetchData()
   }, [user])
@@ -73,17 +73,18 @@ export default function NewPackagePage() {
   }
 
   async function onSubmit(values: FormValues) {
+    setLoading(true)
     try {
-      // 1. Create the Package
+      // 1. Create the Course Package 
+      // Note: No 'remaining_hours' because we calculate it from lessons.duration
       const { data: pkgData, error: pkgErr } = await supabase
         .from("course_packages")
         .insert({
           account_id: values.account_id,
           course_id: values.course_id,
-          instructor_id: instructorId, // Link to the current instructor
+          instructor_id: instructorId,
           contract_price: values.contract_price,
           total_hours: values.total_hours,
-          remaining_hours: values.total_hours,
           status: "active",
         })
         .select()
@@ -91,21 +92,43 @@ export default function NewPackagePage() {
 
       if (pkgErr) throw pkgErr
 
-      // 2. Log initial payment if any
+      // 2. Handle Initial Payment (The Bridge Logic)
       if (values.amount_paid_today > 0) {
-        const { error: payErr } = await supabase.from("payments").insert({
-          account_id: values.account_id,
-          amount: values.amount_paid_today,
-          entry_type: "payment",
-          description: `Initial payment for ${values.total_hours}h package`
-        })
-        if (payErr) console.error("Payment log failed", payErr)
+        // A. Insert into payments table
+        const { data: payData, error: payErr } = await supabase
+          .from("payments")
+          .insert({
+            account_id: values.account_id,
+            amount: values.amount_paid_today,
+            payment_method: "cash", 
+            status: "completed",
+            notes: `Initial payment for package activation`,
+            created_by_profile_id: profile?.id
+          })
+          .select()
+          .single()
+
+        if (payErr) throw payErr
+
+        // B. Link payment to package via allocation bridge
+        const { error: allocErr } = await supabase
+          .from("course_payment_allocations")
+          .insert({
+            payment_id: payData.id,
+            course_package_id: pkgData.id,
+            amount_allocated: values.amount_paid_today
+          })
+
+        if (allocErr) throw allocErr
       }
 
       toast.success(t("success"))
       router.push("/staff/packages")
     } catch (e: any) {
+      console.error("Submission error:", e)
       toast.error(e.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -127,16 +150,17 @@ export default function NewPackagePage() {
           <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* RIDER SELECT */}
               <FormField
                 control={control}
                 name="account_id"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("rider")}</FormLabel>
+                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("client")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-[#0A0A0A] border-white/5 h-16 text-white rounded-xl focus:ring-primary/20">
-                          <SelectValue placeholder={t("selectRider")} />
+                          <SelectValue placeholder={t("selectClient")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
@@ -152,6 +176,7 @@ export default function NewPackagePage() {
                 )}
               />
 
+              {/* COURSE SELECT */}
               <FormField
                 control={control}
                 name="course_id"
@@ -179,6 +204,7 @@ export default function NewPackagePage() {
             </div>
 
             <div className="grid grid-cols-2 gap-6">
+              {/* HOURS */}
               <FormField
                 control={control}
                 name="total_hours"
@@ -193,6 +219,7 @@ export default function NewPackagePage() {
                   </FormItem>
                 )}
               />
+              {/* PRICE */}
               <FormField
                 control={control}
                 name="contract_price"
@@ -207,7 +234,7 @@ export default function NewPackagePage() {
               />
             </div>
 
-            {/* Summary Box */}
+            {/* Summary Visual Box */}
             <div className="p-8 bg-primary/5 rounded-[2rem] border border-primary/10 flex justify-between items-center relative overflow-hidden group">
                <div className="relative z-10">
                   <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-2">{t("totalValue")}</p>
@@ -218,6 +245,7 @@ export default function NewPackagePage() {
                <ShieldCheck className="text-primary/10 group-hover:text-primary/20 transition-colors absolute -right-4 -bottom-4" size={120} />
             </div>
 
+            {/* PAYMENT TODAY */}
             <FormField
               control={control}
               name="amount_paid_today"
@@ -239,9 +267,10 @@ export default function NewPackagePage() {
 
             <Button 
               type="submit" 
+              disabled={loading}
               className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white hover:scale-[1.02] transition-all shadow-[0_20px_40px_rgba(var(--primary-rgb),0.15)] text-sm tracking-[0.3em]"
             >
-              {t("activate")} 🏁
+              {loading ? <Loader2 className="animate-spin" /> : `${t("activate")} 🏁`}
             </Button>
           </form>
         </Form>

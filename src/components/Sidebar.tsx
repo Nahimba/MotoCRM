@@ -7,7 +7,7 @@ import {
   User, Settings, Bike, 
   GraduationCap, Calendar, MoreHorizontal,
   LayoutDashboard, ClipboardList, ChevronUp, Languages,
-  Package 
+  Package, Banknote 
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -86,6 +86,7 @@ export default function Sidebar() {
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
               <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
               <SidebarLink href="/staff/packages" icon={<Package size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
+              <SidebarLink href="/staff/payments" icon={<Banknote size={16}/>} label={t('payments') || 'Payments'} active={pathname.startsWith('/staff/payments')} />
             </>
           )}
 
@@ -159,12 +160,12 @@ export default function Sidebar() {
                   </>
                 )}
 
-                {/* STAFF EXTRAS */}
+                {/* STAFF EXTRAS (Included Payments here) */}
                 {(role === 'admin' || role === 'instructor') && (
                   <>
                     <MobileExtraLink href="/staff" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} />
+                    <MobileExtraLink href="/staff/payments" icon={<Banknote size={18}/>} label={t('payments') || 'Payments'} />
                     <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
-                    <MobileExtraLink href="/staff/packages" icon={<Package size={18}/>} label={t('packages')} />
                   </>
                 )}
 
@@ -201,11 +202,10 @@ export default function Sidebar() {
 
           {/* --- Main Dock Bar --- */}
           <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
-            {/* Primary Tab: Logic-driven Home */}
             <MobileTab 
               href={
                 role === 'admin' ? '/admin' : 
-                role === 'instructor' ? '/staff' : // Instructors land on Lessons
+                role === 'instructor' ? '/staff' : 
                 '/account'
               } 
               icon={<Home size={22}/>} 
@@ -216,7 +216,6 @@ export default function Sidebar() {
               } 
             />
             
-            {/* Contextual Second Tab: Logic-driven Operations */}
             {role === 'rider' ? (
                <MobileTab 
                 href="/account/training" 
@@ -265,6 +264,7 @@ export default function Sidebar() {
     </>
   );
 }
+
 
 
 function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {

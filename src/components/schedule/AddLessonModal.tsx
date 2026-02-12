@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { format, parseISO, addMinutes, isWithinInterval } from "date-fns"
-import { ru, enUS } from "date-fns/locale"
 import { X, Check, Trash2, Calendar as CalendarIcon, User, Phone, MapPin, FileText, Loader2, Contact2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
-import { useTranslations, useLocale } from "next-intl"
+import { useTranslations } from "next-intl"
+import { useAuth } from "@/context/AuthContext"
 
 interface AddLessonModalProps {
   isOpen: boolean
@@ -23,28 +23,39 @@ export function AddLessonModal({
   isOpen, onClose, instructorId, initialDate, onSuccess, onOpenDossier, editLesson, existingLessons 
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
-  const locale = useLocale()
+  const { profile } = useAuth()
   
   const [loading, setLoading] = useState(false)
   const [packages, setPackages] = useState<any[]>([])
   const [selectedPackageId, setSelectedPackageId] = useState("")
   const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [startTime, setStartTime] = useState("12:00")
-  const [duration, setDuration] = useState("2")
+  const [duration, setDuration] = useState("2") // This holds the string value for the UI
   const [location, setLocation] = useState("")
   const [summary, setSummary] = useState("")
+  const [status, setStatus] = useState<'planned' | 'completed' | 'cancelled'>('planned')
 
-  const abortRef = useRef<AbortController | null>(null)
+  // Find the selected package and extract the nested client data
   const selectedPkg = packages.find(p => p.id === selectedPackageId)
+  const clientData = selectedPkg?.accounts?.clients
 
   useEffect(() => {
     if (isOpen) {
       const fetchPkgs = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('course_packages')
-          .select(`id, instructor_id, accounts(clients(*))`)
+          .select(`
+            id, 
+            instructor_id, 
+            accounts (
+              clients (
+                id, name, last_name, phone, address, email, avatar_url, notes
+              )
+            )
+          `)
           .eq('status', 'active')
-        setPackages(data || [])
+        
+        if (!error) setPackages(data || [])
       }
       fetchPkgs()
 
@@ -53,19 +64,23 @@ export function AddLessonModal({
         setSelectedPackageId(editLesson.course_package_id)
         setLessonDate(format(dateObj, "yyyy-MM-dd"))
         setStartTime(format(dateObj, "HH:mm"))
-        setDuration(editLesson.hours_spent.toString())
+        
+        // FIX: Use duration and safely handle .toString()
+        setDuration(editLesson.duration?.toString() || "2")
+        
         setLocation(editLesson.location || "")
         setSummary(editLesson.summary || "")
+        setStatus(editLesson.status || 'planned')
       } else {
         setSelectedPackageId("")
         setLessonDate(format(initialDate, "yyyy-MM-dd"))
-        setStartTime("12:00")
+        setStartTime(format(initialDate, "HH:mm"))
         setDuration("2")
         setLocation("")
         setSummary("")
+        setStatus('planned')
       }
     }
-    return () => abortRef.current?.abort()
   }, [isOpen, editLesson, initialDate])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,10 +92,12 @@ export function AddLessonModal({
     const [h, m] = startTime.split(':').map(Number)
     const finalDate = new Date(year, month - 1, day, h, m)
 
+    // Conflict detection logic using strictly duration
     const hasConflict = existingLessons.some((l: any) => {
       if (editLesson && l.id === editLesson.id) return false
       const s = parseISO(l.session_date)
-      const e = addMinutes(s, l.hours_spent * 60)
+      const lessonDuration = l.duration || 1
+      const e = addMinutes(s, lessonDuration * 60)
       const ns = finalDate
       const ne = addMinutes(ns, parseFloat(duration) * 60)
       
@@ -90,18 +107,21 @@ export function AddLessonModal({
       )
     })
 
-    if (hasConflict) {
+    if (hasConflict && status !== 'cancelled') {
       setLoading(false)
       return toast.error(t("conflict"))
     }
 
+    // FIX: Map payload to use 'duration' key
     const payload = {
       course_package_id: selectedPackageId,
       instructor_id: instructorId,
-      hours_spent: parseFloat(duration),
+      duration: parseFloat(duration), // Fixed from hours_spent
       session_date: finalDate.toISOString(),
       location: location,
-      summary
+      summary: summary,
+      status: status,
+      created_by_profile_id: profile?.id
     }
 
     const { error } = editLesson 
@@ -133,7 +153,7 @@ export function AddLessonModal({
   if (!isOpen) return null
 
   const myStudents = packages.filter(p => p.instructor_id === instructorId)
-  const unassigned = packages.filter(p => !p.instructor_id)
+  const otherStudents = packages.filter(p => p.instructor_id !== instructorId)
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
@@ -149,7 +169,7 @@ export function AddLessonModal({
               {editLesson ? t('editLesson') : t('scheduleLesson')}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-500">
             <X size={24} />
           </button>
         </div>
@@ -169,12 +189,20 @@ export function AddLessonModal({
                 <option value="" className="bg-black text-slate-500">{t('chooseStudent')}</option>
                 {myStudents.length > 0 && (
                   <optgroup label={t('myAssigned')} className="bg-black text-primary">
-                    {myStudents.map(p => <option key={p.id} value={p.id} className="bg-black text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</option>)}
+                    {myStudents.map(p => (
+                      <option key={p.id} value={p.id} className="bg-black text-white">
+                        {p.accounts?.clients?.name} {p.accounts?.clients?.last_name}
+                      </option>
+                    ))}
                   </optgroup>
                 )}
-                {unassigned.length > 0 && (
-                  <optgroup label={t('unassigned')} className="bg-black text-slate-500">
-                    {unassigned.map(p => <option key={p.id} value={p.id} className="bg-black text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</option>)}
+                {otherStudents.length > 0 && (
+                  <optgroup label={t('allStudents') || 'Other Students'} className="bg-black">
+                    {otherStudents.map(p => (
+                      <option key={p.id} value={p.id} className="bg-black text-white">
+                        {p.accounts?.clients?.name} {p.accounts?.clients?.last_name}
+                      </option>
+                    ))}
                   </optgroup>
                 )}
               </select>
@@ -182,45 +210,63 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* STUDENT DOSSIER QUICK-VIEW */}
-          {selectedPkg && (
+          {/* QUICK DOSSIER ACCESS */}
+          {clientData && (
             <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 space-y-4 animate-in fade-in zoom-in-95">
               <div className="flex justify-between items-center border-b border-primary/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center">
                     <User size={14} strokeWidth={3} />
                   </div>
-                  <span className="text-xs font-black uppercase italic text-white tracking-tight">Student File</span>
+                  <span className="text-xs font-black uppercase italic text-white tracking-tight">Active Dossier</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => onOpenDossier(selectedPkg.accounts.clients)}
-                  className="px-4 py-2 bg-primary text-black text-[10px] font-black uppercase rounded-xl flex items-center gap-2 hover:bg-white transition-all active:scale-95"
+                  onClick={() => onOpenDossier(clientData)}
+                  className="px-4 py-2 bg-primary text-black text-[10px] font-black uppercase rounded-xl flex items-center gap-2 hover:bg-white transition-all active:scale-95 shadow-lg shadow-primary/20"
                 >
-                  <Contact2 size={14} /> {t('viewDossier') || 'Dossier'}
+                  <Contact2 size={14} /> {t('viewDossier')}
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                    <p className="text-[8px] font-black text-primary uppercase flex items-center gap-1 opacity-70"><Phone size={8}/> {t('contact')}</p>
-                   <p className="text-xs font-bold tabular-nums">{selectedPkg.accounts?.clients?.phone || '—'}</p>
+                   <p className="text-xs font-bold tabular-nums">{clientData.phone || '—'}</p>
                  </div>
                  <div className="space-y-1">
-                   <p className="text-[8px] font-black text-primary uppercase flex items-center gap-1 opacity-70"><MapPin size={8}/> {t('homeAddress') || 'Home'}</p>
-                   <p className="text-xs font-bold truncate opacity-60 italic">{selectedPkg.accounts?.clients?.address || 'Standard'}</p>
+                   <p className="text-[8px] font-black text-primary uppercase flex items-center gap-1 opacity-70"><MapPin size={8}/> {t('location') || 'Home'}</p>
+                   <p className="text-xs font-bold truncate opacity-60 italic">{clientData.address || 'Central'}</p>
                  </div>
               </div>
             </div>
           )}
 
-          {/* DATE & TIME ROW */}
+          {/* STATUS SELECTION */}
+          <div className="grid grid-cols-3 gap-2">
+            {(['planned', 'completed', 'cancelled'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatus(s)}
+                className={`py-3 rounded-xl font-black text-[9px] uppercase tracking-tighter border transition-all ${
+                  status === s 
+                  ? 'bg-white text-black border-white' 
+                  : 'bg-white/5 border-white/5 text-slate-500'
+                }`}
+              >
+                {t(s) || s}
+              </button>
+            ))}
+          </div>
+
+          {/* DATE & TIME */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('lessonDate')}</label>
               <input 
                 type="date" 
                 required 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary" 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary transition-all" 
                 value={lessonDate} 
                 onChange={e => setLessonDate(e.target.value)} 
               />
@@ -230,14 +276,14 @@ export function AddLessonModal({
               <input 
                 type="time" 
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary" 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary transition-all" 
                 value={startTime} 
                 onChange={e => setStartTime(e.target.value)} 
               />
             </div>
           </div>
 
-          {/* DURATION */}
+          {/* DURATION SELECTOR */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
             <div className="grid grid-cols-3 gap-2">
@@ -248,7 +294,7 @@ export function AddLessonModal({
                   onClick={() => setDuration(val)}
                   className={`py-3 rounded-xl font-black text-xs transition-all border ${
                     duration === val 
-                    ? 'bg-primary text-black border-primary' 
+                    ? 'bg-primary text-black border-primary shadow-lg shadow-primary/10' 
                     : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
                   }`}
                 >
@@ -258,13 +304,13 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* LESSON SPECIFIC LOCATION */}
+          {/* LOCATION */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('lessonLocation') || 'LESSON LOCATION'}</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('lessonLocation')}</label>
             <div className="relative">
               <input 
                 type="text" 
-                placeholder={t('locationPlaceholder') || "Where is the meeting point?"}
+                placeholder={t('locationPlaceholder') || "Meeting point?"}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary transition-all" 
                 value={location} 
                 onChange={(e) => setLocation(e.target.value)} 
@@ -273,13 +319,13 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* NOTES */}
+          {/* SUMMARY / NOTES */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('notes')}</label>
             <div className="relative">
               <textarea 
                 placeholder={t('notesPlaceholder')} 
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[80px] resize-none" 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[100px] resize-none transition-all" 
                 value={summary} 
                 onChange={(e) => setSummary(e.target.value)} 
               />
@@ -287,13 +333,13 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* ACTIONS */}
+          {/* FOOTER ACTIONS */}
           <div className="flex gap-4 pt-4">
             {editLesson && (
               <button 
                 type="button" 
                 onClick={handleDelete} 
-                className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-lg shadow-red-500/5"
               >
                 <Trash2 size={20} />
               </button>
@@ -301,7 +347,7 @@ export function AddLessonModal({
             <button 
               type="submit" 
               disabled={loading} 
-              className="flex-1 py-5 bg-primary text-black font-black uppercase rounded-2xl hover:bg-white active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/10"
+              className="flex-1 py-5 bg-primary text-black font-black uppercase rounded-2xl hover:bg-white active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
             >
               {loading ? <Loader2 className="animate-spin" /> : <Check size={20} strokeWidth={3} />}
               {editLesson ? t('update') : t('confirm')}
