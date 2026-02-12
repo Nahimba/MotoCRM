@@ -124,7 +124,55 @@
   },
   "Payments": {
     "title": "Платежи",
-    "addPayment": "Добавить Платеж"
+    "addPayment": "Добавить Платеж",
+    "searchStudent": "Поиск студента или курса...",
+    "adjustTransaction": "Исправить транзакцию",
+    "logPayment": "Регистрация оплаты",
+    "targetPackage": "Пакет обучения",
+    "selectPackage": "Выберите пакет...",
+    "noMatches": "Совпадений не найдено",
+    "amountLabel": "Сумма",
+    "statusLabel": "Статус",
+    "paymentPlan": "План оплаты",
+    "paymentMethod": "Метод оплаты",
+    "notesLabel": "Заметки",
+    "notesPlaceholder": "Внутренняя информация...",
+    "confirmDelete": "Вы уверены, что хотите удалить эту транзакцию?",
+    "btnUpdate": "Обновить журнал",
+    "btnConfirm": "Подтвердить оплату",
+    "statusPaid": "ОПЛАЧЕНО",
+    "statusPending": "В ОЖИДАНИИ",
+    "statusVoid": "АННУЛИРОВАНО",
+    "fillRequired": "Пожалуйста, заполните все обязательные поля",
+    "updateSuccess": "Транзакция обновлена",
+    "logSuccess": "Оплата успешно зарегистрирована",
+    "method_cash": "Наличные",
+    "method_fop": "ФОП",
+    "method_card_online": "Картой",
+    "plan_full_prepayment": "Полная",
+    "plan_installments": "Рассрочка",
+    "plan_pay_as_you_go": "Разовая",
+
+    "columnStudent": "Студент",
+    "columnAmount": "Сумма",
+    "columnMethodPlan": "Метод / План",
+    "columnDate": "Дата",
+    "columnStatus": "Статус",
+    "columnEdit": "Ред.",
+
+    "payment": {
+      "method": {
+        "card_online": "Онлайн",
+        "terminal": "Терминал",
+        "fop": "ФОП",
+        "cash": "Наличные"
+      },
+      "plan": {
+        "deposit": "Депозит",
+        "per_lesson": "Разовая",
+        "full": "Полная"
+      }
+    }
   },
   "NewPackage": {
     "title": "Новый",

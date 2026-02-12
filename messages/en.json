@@ -124,7 +124,55 @@
   },
   "Payments": {
     "title": "Payments",
-    "addPayment": "Add Payment"
+    "addPayment": "Add Payment",
+    "searchStudent": "Search student or course...",
+    "adjustTransaction": "Adjust Transaction",
+    "logPayment": "Log Payment",
+    "targetPackage": "Target Course Package",
+    "selectPackage": "Select package...",
+    "noMatches": "No matches found",
+    "amountLabel": "Amount",
+    "statusLabel": "Status",
+    "paymentPlan": "Payment Plan",
+    "paymentMethod": "Payment Method",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Internal reference...",
+    "confirmDelete": "Are you sure you want to delete this transaction?",
+    "btnUpdate": "Update Ledger",
+    "btnConfirm": "Confirm Payment",
+    "statusPaid": "PAID",
+    "statusPending": "PENDING",
+    "statusVoid": "VOID",
+    "fillRequired": "Please fill all required fields",
+    "updateSuccess": "Transaction Updated",
+    "logSuccess": "Payment Logged Successfully",
+    "method_cash": "Cash",
+    "method_fop": "FOP (Bank Transfer)",
+    "method_card_online": "Card Online",
+    "plan_full_prepayment": "Full Prepayment",
+    "plan_installments": "Installments",
+    "plan_pay_as_you_go": "Pay as you go",
+
+    "columnStudent": "Student",
+    "columnAmount": "Amount",
+    "columnMethodPlan": "Method / Plan",
+    "columnDate": "Date",
+    "columnStatus": "Status",
+    "columnEdit": "Edit",
+    
+    "payment": {
+      "method": {
+        "card_online": "Online",
+        "terminal": "Terminal",
+        "fop": "FOP",
+        "cash": "Cash"
+      },
+      "plan": {
+        "deposit": "Deposit",
+        "per_lesson": "PerLesson",
+        "full": "Full"
+      }
+    }
   },
   "NewPackage": {
     "title": "New",
