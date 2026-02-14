@@ -1,6 +1,6 @@
 "use client"
 
-import { MapPin, Phone, FileText } from "lucide-react"
+import { MapPin, Phone, FileText, User } from "lucide-react"
 
 interface LessonCardProps {
   lesson: any
@@ -8,17 +8,23 @@ interface LessonCardProps {
   getStyles: (start: string, duration: number, status: string) => any 
   viewMode: 'day' | 'week'
   hourHeight: number
+  currentInstructorId?: string | null // Optional: to highlight own lessons
 }
 
-export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight }: LessonCardProps) {
+export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, currentInstructorId }: LessonCardProps) {
   const isWeek = viewMode === 'week'
   
-  // Strictly using duration
+  // Logic for space availability
   const duration = lesson.duration || 1
   const pixelHeight = duration * hourHeight
   const hasSpace = pixelHeight > 75 
+  const isVeryShort = pixelHeight < 50
 
   const displayLocation = lesson.location || 'BASE OPS'
+  
+  // Logic to check if this is a "substitute" lesson
+  // Assumes your view returns lesson_instructor_id and lead_instructor_id
+  const isSubstitute = lesson.instructor_id !== lesson.lead_instructor_id
 
   const getStatusColor = () => {
     switch (lesson.status) {
@@ -27,7 +33,8 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight }: 
       case 'completed': 
         return 'border-l-emerald-500 bg-[#0d1410]';
       default: 
-        return 'border-l-primary bg-[#111]';
+        // If it's a sub, maybe use a slightly different border or highlight
+        return isSubstitute ? 'border-l-amber-500 bg-[#111]' : 'border-l-primary bg-[#111]';
     }
   }
 
@@ -44,19 +51,33 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight }: 
         ${getStatusColor()} 
         ${isWeek ? 'p-2' : 'p-4 md:p-5'}`}
     >
+      {/* TOP ROW: Client Name & Duration */}
       <div className="flex justify-between items-start min-w-0">
         <div className="min-w-0 flex-1">
           <h4 className={`font-black uppercase italic text-white group-hover:text-primary transition-colors truncate 
             ${isWeek ? 'text-[10px] leading-tight' : 'text-sm md:text-lg'}`}>
             {lesson.client_name} {(!isWeek || hasSpace) && lesson.client_last_name}
           </h4>
+          
+          {/* INSTRUCTOR BADGE: Shows who is teaching */}
+          {(hasSpace || !isWeek) && lesson.lesson_instructor_name && (
+            <div className="flex items-center gap-1 mt-0.5">
+               <div className={`shrink-0 w-3 h-3 rounded-full flex items-center justify-center bg-white/10`}>
+                  <User size={8} className={isSubstitute ? "text-amber-500" : "text-primary"} />
+               </div>
+               <span className={`font-bold uppercase tracking-tighter text-slate-400 ${isWeek ? 'text-[7px]' : 'text-[9px]'}`}>
+                 {isSubstitute ? `Sub: ${lesson.lesson_instructor_name}` : lesson.lesson_instructor_name}
+               </span>
+            </div>
+          )}
         </div>
-        <span className="text-primary font-black text-[9px] md:text-[10px] uppercase tabular-nums ml-2 shrink-0">
+        <span className="text-primary font-black text-[9px] md:text-[10px] uppercase tabular-nums ml-2 shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">
           {duration}h
         </span>
       </div>
 
-      {(hasSpace || !isWeek) && (
+      {/* DETAILS ROW: Phone, Location, Summary */}
+      {(hasSpace || !isWeek) && !isVeryShort && (
         <div className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden mt-2">
           {lesson.client_phone && (
             <div className="flex items-center gap-1.5 text-slate-400">
