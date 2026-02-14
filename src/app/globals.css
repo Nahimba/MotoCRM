@@ -17,7 +17,8 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.6 0.2 45); /* Moto Orange */
+  /*--primary: oklch(0.6 0.2 45);  Moto Orange */
+  --primary: oklch(0.6 0.2 25); /* Moto Red */
   --card: oklch(1 0 0);
   --border: oklch(0.92 0.004 286.32);
 }
@@ -26,7 +27,8 @@
   --background: oklch(0.12 0.01 285); /* Deep Charcoal */
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.16 0.01 285);       /* Slightly lighter charcoal */
-  --primary: oklch(0.7 0.2 45);       /* Vivid Racing Orange */
+  /*--primary: oklch(0.7 0.2 45);        Vivid Racing Orange */
+  --primary: oklch(0.7 0.2 25);       /* Vivid Racing Red */
   --border: oklch(1 0 0 / 10%);
   --sidebar: oklch(0.14 0.01 285);
 }

@@ -1,20 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Paintbrush, Check, Pipette, LayoutGrid, RotateCcw } from "lucide-react"
+import { Paintbrush, Pipette, LayoutGrid, RotateCcw } from "lucide-react"
 
 const templates = [
+  { id: 'red', label: 'Ducati Red', primary: 'oklch(0.6 0.2 25)', bg: 'oklch(0.10 0.01 20)' },
   { id: 'orange', label: 'Safety Orange', primary: 'oklch(0.7 0.2 45)', bg: 'oklch(0.12 0.01 285)' },
   { id: 'yellow', label: 'Yellow', primary: 'oklch(0.85 0.189 113.42)', bg: 'oklch(0.10 0.01 20)' },
   { id: 'green', label: 'Kawasaki Green', primary: 'oklch(0.8 0.25 145)', bg: 'oklch(0.10 0.02 150)' },
   { id: 'blue', label: 'Yamaha Blue', primary: 'oklch(0.6 0.2 250)', bg: 'oklch(0.12 0.01 240)' },
-  { id: 'red', label: 'Ducati Red', primary: 'oklch(0.6 0.2 25)', bg: 'oklch(0.10 0.01 20)' },
 ]
 
 export function ThemeSwitcher() {
   const [open, setOpen] = useState(false)
-  const [activeId, setActiveId] = useState('orange')
-  const [customColor, setCustomColor] = useState("#ff8000")
+  const [activeId, setActiveId] = useState('red')
+  //const [customColor, setCustomColor] = useState("#ff8000")
+  const [customColor, setCustomColor] = useState("#E06D21")
 
   useEffect(() => {
     const saved = localStorage.getItem('app-livery')

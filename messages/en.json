@@ -5,7 +5,7 @@
   },
   "Sidebar": {
     "director": "Director",
-    "operations": "Operations",
+    "staffHome": "Instructor",
     "packages": "Packages",
     "payments": "Payments",
     "clientHome": "Client Central",
@@ -16,7 +16,7 @@
     "lessons": "Lessons",
     "schedule": "Schedule",
     "roster": "Roster",
-    "dashboard": "Dashboard",
+    "dashboard": "Courses",
     "trainingLog": "Training Log",
     "settings": "Settings",
     "profile": "My Profile",
@@ -24,6 +24,89 @@
     "exit": "Exit",
     "log": "Log",
     "money": "Money"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Command Center",
+      "subtitle": "Admin Intelligence Suite",
+      "export_btn": "Export Blackbox",
+      "export_loading": "Compiling...",
+      "stats": {
+        "revenue": "Gross Revenue",
+        "burn": "Business Burn",
+        "net": "Net Operations"
+      },
+      "nav": {
+        "riders": "Riders",
+        "riders_sub": "{count} Active",
+        "recruit": "Recruit",
+        "recruit_sub": "New Enrollment",
+        "schedule": "Schedule",
+        "schedule_sub": "Flight Deck",
+        "finances": "Finances",
+        "finances_sub": "P&L Ledger",
+        "courses": "Courses",
+        "courses_sub": "Program Setup",
+        "instructors": "Instructors",
+        "instructors_sub": "Fleet Staff"
+      },
+      "toasts": {
+        "sync_error": "Telemetry Offline: Data Sync Failed",
+        "export_success": "Blackbox Backup Exported",
+        "export_error": "Export Interrupted"
+      }
+    },
+"finances": {
+      "title": "Finances",
+      "system_label": "Financial System",
+      "add_expense": "Add Expense",
+      "chart_title": "Daily Analytics",
+      "tabs": {
+        "all": "All"
+      },
+      "stats": {
+        "income": "Income",
+        "income_sub": "Revenue for the period",
+        "expenses": "Expenses",
+        "expenses_sub": "Total costs",
+        "net_profit": "Net Profit",
+        "net_profit_sub": "Final result"
+      },
+      "table": {
+        "status": "S.",
+        "details": "Transaction Details",
+        "type": "Type",
+        "method": "Method",
+        "amount": "Amount"
+      },
+      "categories": {
+        "fuel": "Fuel",
+        "rent": "Rent",
+        "salary": "Salary",
+        "repair": "Repair",
+        "marketing": "Marketing",
+        "other": "Other",
+        "income_category": "Training"
+      },
+      "modal": {
+        "edit_title": "Edit Expense",
+        "new_title": "New Expense",
+        "subtitle": "Financial Accounting System",
+        "amount": "Amount (RUB)",
+        "date": "Date",
+        "method": "Payment Method",
+        "biz_type": "Biz Type",
+        "category": "Category",
+        "description": "Description",
+        "description_placeholder": "What did we pay for?",
+        "btn_confirm": "Confirm Expense",
+        "btn_update": "Update Record",
+        "btn_delete": "Delete Record",
+        "btn_processing": "Processing...",
+        "delete_confirm": "Are you sure you want to delete this record?",
+        "error_save": "Error saving data"
+      }
+    }
   },
   "Schedule": {
     "titleDay": "MMMM yyyy",

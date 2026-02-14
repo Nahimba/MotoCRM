@@ -5,7 +5,7 @@
   },
   "Sidebar": {
     "director": "Директор",
-    "operations": "Операции",
+    "staffHome": "Инструктор",
     "packages": "Пакеты",
     "payments": "Платежи",
     "clientHome": "Центр учеников",
@@ -16,7 +16,7 @@
     "lessons": "Занятия",
     "schedule": "Расписание",
     "roster": "Списки",
-    "dashboard": "Панель",
+    "dashboard": "Курсы",
     "trainingLog": "Журнал тренировок",
     "settings": "Настройки",
     "profile": "Мой профиль",
@@ -24,6 +24,89 @@
     "exit": "Выход",
     "log": "Лог",
     "money": "Деньги"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Командный центр",
+      "subtitle": "Панель административного управления",
+      "export_btn": "Выгрузка Blackbox",
+      "export_loading": "Компиляция...",
+      "stats": {
+        "revenue": "Общая выручка",
+        "burn": "Операционные расходы",
+        "net": "Чистая прибыль"
+      },
+      "nav": {
+        "riders": "Райдеры",
+        "riders_sub": "Активно: {count}",
+        "recruit": "Рекрутинг",
+        "recruit_sub": "Новая регистрация",
+        "schedule": "Расписание",
+        "schedule_sub": "Полетная палуба",
+        "finances": "Финансы",
+        "finances_sub": "P&L Ledger",
+        "courses": "Курсы",
+        "courses_sub": "Настройка программ",
+        "instructors": "Инструкторы",
+        "instructors_sub": "Штат флота"
+      },
+      "toasts": {
+        "sync_error": "Телеметрия оффлайн: ошибка синхронизации",
+        "export_success": "Резервная копия Blackbox экспортирована",
+        "export_error": "Экспорт прерван"
+      }
+    },
+"finances": {
+      "title": "Финансы",
+      "system_label": "Financial System",
+      "add_expense": "Добавить расход",
+      "chart_title": "Аналитика по дням",
+      "tabs": {
+        "all": "Все"
+      },
+      "stats": {
+        "income": "Доход",
+        "income_sub": "Выручка за период",
+        "expenses": "Расходы",
+        "expenses_sub": "Общие затраты",
+        "net_profit": "Чистая прибыль",
+        "net_profit_sub": "Итоговый результат"
+      },
+      "table": {
+        "status": "Статус",
+        "details": "Детали транзакции",
+        "type": "Тип",
+        "method": "Метод",
+        "amount": "Сумма"
+      },
+      "categories": {
+        "fuel": "Топливо",
+        "rent": "Аренда",
+        "salary": "Зарплата",
+        "repair": "Ремонт",
+        "marketing": "Маркетинг",
+        "other": "Прочее",
+        "income_category": "Обучение"
+      },
+      "modal": {
+        "edit_title": "Редактировать расход",
+        "new_title": "Новый расход",
+        "subtitle": "Система финансового учета",
+        "amount": "Сумма (RUB)",
+        "date": "Дата",
+        "method": "Метод оплаты",
+        "biz_type": "Тип бизнеса",
+        "category": "Категория",
+        "description": "Описание",
+        "description_placeholder": "За что платим?",
+        "btn_confirm": "Подтвердить расход",
+        "btn_update": "Обновить запись",
+        "btn_delete": "Удалить запись",
+        "btn_processing": "Обработка...",
+        "delete_confirm": "Вы уверены, что хотите удалить этот расход?",
+        "error_save": "Ошибка при сохранении данных"
+      }
+    }
   },
   "Schedule": {
     "titleDay": "MMMM yyyy",

@@ -80,7 +80,7 @@ export default function Sidebar() {
           {(role === 'admin' || role === 'instructor') && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
-                {t('operations')}
+                {t('staffHome')}
               </div>
               <SidebarLink href="/staff" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff'} />
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
