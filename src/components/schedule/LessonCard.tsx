@@ -20,7 +20,10 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, cu
   const hasSpace = pixelHeight > 75 
   const isVeryShort = pixelHeight < 50
 
-  const displayLocation = lesson.location || 'BASE OPS'
+  // Use the new location data from the view
+  const displayLocation = lesson.location_name || 'BASE OPS'
+  const locationColor = lesson.location_color || null
+  
   const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   
   // A substitute is when the teacher isn't the one who owns the client lead
@@ -35,7 +38,6 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, cu
     }
 
     // Color code based on Course Type (Moto vs Auto)
-    // Moto: Purple/Amber accent | Auto: Cyan/Primary accent
     if (isMoto) {
       return 'border-l-fuchsia-500 bg-[#130d14] shadow-fuchsia-500/5'
     }
@@ -108,9 +110,17 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, cu
             </div>
           )}
           
-          <div className="flex items-center gap-2 text-slate-200">
-            <MapPin size={isWeek ? 10 : 13} className={`${isMoto ? 'text-fuchsia-400' : 'text-primary'} shrink-0`} />
-            <span className={`font-black uppercase truncate ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
+          <div className="flex items-center gap-2">
+            {/* If location has a specific color, we apply it to the icon and text */}
+            <MapPin 
+                size={isWeek ? 10 : 13} 
+                style={{ color: locationColor || (isMoto ? '#e879f9' : '#3b82f6') }}
+                className="shrink-0" 
+            />
+            <span 
+                style={{ color: locationColor || '#e2e8f0' }}
+                className={`font-black uppercase truncate ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'}`}
+            >
               {displayLocation}
             </span>
           </div>

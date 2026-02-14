@@ -74,7 +74,7 @@ export default function SchedulePage() {
     init()
   }, [profile])
 
-  // 3. Fetch Lessons - Logic strictly limited to the performer (instructor_id)
+  // 3. Fetch Lessons
   const fetchLessons = useCallback(async () => {
     if (!targetInstructorId && !showAllInstructors) return
     
@@ -114,13 +114,12 @@ export default function SchedulePage() {
     return () => abortControllerRef.current?.abort()
   }, [fetchLessons])
 
-  // 4. getLessonStyles - HANDLES SIDE-BY-SIDE OVERLAPS
+  // 4. Layout logic for overlapping lessons
   const getLessonStyles = (lesson: any) => {
     const date = new Date(lesson.session_date)
     const duration = lesson.duration || 1
     const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight
     
-    // Check for other lessons in the same time slot on the same day
     const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date))
     const overlaps = dayLessons.filter(other => {
       if (other.id === lesson.id) return false
@@ -129,17 +128,16 @@ export default function SchedulePage() {
       const s2 = new Date(other.session_date).getTime()
       const e2 = s2 + ((other.duration || 1) * 3600000)
       return (s1 < e2 && e1 > s2)
-    }).sort((a, b) => a.id - b.id) // Sort to ensure consistent "left vs right" placement
+    }).sort((a, b) => a.id.localeCompare(b.id)) 
 
     const hasOverlap = overlaps.length > 0
-    // If this lesson's ID is greater than the one it overlaps with, shift it to the right
     const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id)
 
     const baseStyles: any = {
       position: 'absolute',
       top: `${top}px`,
       height: `${duration * hourHeight}px`,
-      zIndex: isShifted ? 31 : 30, // Slightly higher for shifted cards
+      zIndex: isShifted ? 31 : 30,
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     }
 
@@ -151,12 +149,9 @@ export default function SchedulePage() {
       }
     }
 
-    // WEEK VIEW POSITIONING
-    const dayIdx = (getDay(date) + 6) % 7 // Monday = 0
+    const dayIdx = (getDay(date) + 6) % 7 
     const colWidthPct = 100 / 7
     const columnStartBase = dayIdx * colWidthPct
-    
-    // Calculate precise width and left within the column
     const finalWidthPct = hasOverlap ? (colWidthPct * 0.47) : (colWidthPct * 0.96)
     const shiftOffset = isShifted ? (colWidthPct * 0.5) : 0
     const finalLeft = `calc(${columnStartBase + shiftOffset}% + 2px)`
@@ -250,7 +245,6 @@ export default function SchedulePage() {
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
         <div className="relative" style={{ minWidth: viewMode === 'day' ? '100%' : '1200px', height: `${HOURS.length * hourHeight}px` }}>
           
-          {/* TIME AXIS */}
           <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
             {HOURS.map(h => (
               <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
@@ -260,7 +254,6 @@ export default function SchedulePage() {
           </div>
 
           <div className="absolute left-16 top-0 right-0 h-full">
-            {/* GRID LINES */}
             <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
               {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, i) => (
                 <div key={i} className="border-r border-white/5 h-full relative">
@@ -271,7 +264,6 @@ export default function SchedulePage() {
               ))}
             </div>
 
-            {/* LESSON CARDS LAYER */}
             <div className="absolute inset-0 z-30">
               {!loading && lessons.map(l => (
                 <LessonCard 

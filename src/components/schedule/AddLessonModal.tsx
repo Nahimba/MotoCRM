@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { format, parseISO } from "date-fns"
 import { 
-  X, Check, Trash2, Calendar as CalendarIcon, User, Search,
+  X, Check, Trash2, Calendar as CalendarIcon, Search,
   MapPin, FileText, Loader2, Contact2, ChevronDown, Clock
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext"
 interface AddLessonModalProps {
   isOpen: boolean
   onClose: () => void
-  instructorId: string | null // Current instructor ID from parent context
+  instructorId: string | null
   initialDate: Date
   onSuccess: () => void
   onOpenDossier: (client: any) => void
@@ -30,17 +30,16 @@ export function AddLessonModal({
   
   const [loading, setLoading] = useState(false)
   const [packages, setPackages] = useState<any[]>([])
+  const [locations, setLocations] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
-  // Local state to track the instructor performing this specific lesson
   const [currentInstructorId, setCurrentInstructorId] = useState<string | null>(instructorId)
-
   const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [startTime, setStartTime] = useState("12:00")
   const [duration, setDuration] = useState("2") 
-  const [location, setLocation] = useState("")
+  const [locationId, setLocationId] = useState<string>("") // Updated to use UUID
   const [summary, setSummary] = useState("")
   const [status, setStatus] = useState<'planned' | 'completed' | 'cancelled'>('planned')
 
@@ -48,43 +47,23 @@ export function AddLessonModal({
   const selectedPkg = packages.find(p => p.id === selectedPackageId)
   const clientData = selectedPkg?.accounts?.clients
 
-  // Resolve current user's Instructor ID if not provided by parent
-  useEffect(() => {
-    if (isOpen && !instructorId && profile) {
-      const getMyInstructorId = async () => {
-        const { data } = await supabase
-          .from('instructors')
-          .select('id')
-          .eq('profile_id', profile.id)
-          .single()
-        if (data) setCurrentInstructorId(data.id)
-      }
-      getMyInstructorId()
-    } else {
-      setCurrentInstructorId(instructorId)
-    }
-  }, [isOpen, instructorId, profile])
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  // Fetch all active packages across the school
+  // 1. Initial Load: Locations & Instructor Data
   useEffect(() => {
     if (isOpen) {
-      const fetchPkgs = async () => {
-        const { data, error } = await supabase
+      const fetchData = async () => {
+        // Fetch Locations
+        const { data: locData } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('is_active', true)
+        if (locData) setLocations(locData)
+
+        // Fetch Packages
+        const { data: pkgData } = await supabase
           .from('course_packages')
           .select(`
             id, instructor_id, total_hours,
-            courses ( name ),
+            courses ( name, type ),
             accounts (
               clients ( id, name, last_name, phone, address, email, avatar_url, notes )
             ),
@@ -92,58 +71,73 @@ export function AddLessonModal({
           `)
           .eq('status', 'active')
         
-        if (!error && data) {
-          const processed = data.map(pkg => {
-            const used = pkg.lessons
-              ?.filter((l: any) => l.status === 'completed')
-              .reduce((acc: number, curr: any) => acc + (curr.duration || 0), 0) || 0;
-            return { ...pkg, remaining: pkg.total_hours - used };
-          });
+        if (pkgData) {
+          const processed = pkgData.map(pkg => ({
+            ...pkg,
+            remaining: pkg.total_hours - (pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((acc: number, curr: any) => acc + (curr.duration || 0), 0) || 0)
+          }))
           setPackages(processed)
         }
       }
-      fetchPkgs()
+      fetchData()
 
+      // Resolve Instructor Context
+      if (!instructorId && profile) {
+        supabase.from('instructors').select('id, default_location_id').eq('profile_id', profile.id).single()
+          .then(({ data }) => {
+            if (data) {
+              setCurrentInstructorId(data.id)
+              if (!editLesson) setLocationId(data.default_location_id || "")
+            }
+          })
+      } else {
+        setCurrentInstructorId(instructorId)
+      }
+
+      // Fill form for Edit mode
       if (editLesson) {
         const dateObj = parseISO(editLesson.session_date)
         setSelectedPackageId(editLesson.course_package_id)
         setLessonDate(format(dateObj, "yyyy-MM-dd"))
         setStartTime(format(dateObj, "HH:mm"))
         setDuration(editLesson.duration?.toString() || "2")
-        setLocation(editLesson.location || "")
+        setLocationId(editLesson.location_id || "")
         setSummary(editLesson.summary || "")
         setStatus(editLesson.status || 'planned')
-      } else {
-        setSelectedPackageId("")
-        setSearchQuery("")
-        setLessonDate(format(initialDate, "yyyy-MM-dd"))
-        setStartTime(format(initialDate, "HH:mm"))
-        setDuration("2")
-        setLocation("")
-        setSummary("")
-        setStatus('planned')
       }
     }
-  }, [isOpen, editLesson, initialDate])
+  }, [isOpen, editLesson, instructorId, profile])
+
+  // 2. Logic: Auto-fill default location when instructor changes (if not editing)
+  useEffect(() => {
+    if (isOpen && !editLesson && currentInstructorId) {
+      supabase.from('instructors').select('default_location_id').eq('id', currentInstructorId).single()
+        .then(({ data }) => {
+          if (data?.default_location_id) setLocationId(data.default_location_id)
+        })
+    }
+  }, [currentInstructorId, isOpen, editLesson])
+
+  // 3. Filter Locations by Course Type
+  const filteredLocations = useMemo(() => {
+    if (!selectedPkg) return locations
+    const courseType = selectedPkg.courses?.type // 'Moto' or 'Auto'
+    return locations.filter(loc => loc.type === courseType || loc.type === 'General')
+  }, [locations, selectedPkg])
 
   const filteredPackages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return packages
-    return packages.filter(p => {
-      const fullName = `${p.accounts?.clients?.name} ${p.accounts?.clients?.last_name}`.toLowerCase()
-      return fullName.includes(q) || p.courses?.name.toLowerCase().includes(q)
-    })
+    return packages.filter(p => `${p.accounts?.clients?.name} ${p.accounts?.clients?.last_name}`.toLowerCase().includes(q))
   }, [packages, searchQuery])
 
-  // Identify students assigned to the current user vs others
   const myStudents = filteredPackages.filter(p => p.instructor_id === currentInstructorId)
   const otherStudents = filteredPackages.filter(p => p.instructor_id !== currentInstructorId)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedPackageId) return toast.error(t("selectStudentError"))
-    if (!currentInstructorId) return toast.error("User Instructor ID not found.")
-
+    
     setLoading(true)
     const [year, month, day] = lessonDate.split('-').map(Number)
     const [h, m] = startTime.split(':').map(Number)
@@ -151,10 +145,10 @@ export function AddLessonModal({
 
     const payload = {
       course_package_id: selectedPackageId,
-      instructor_id: currentInstructorId, // This records WHO added it/taught it
+      instructor_id: currentInstructorId,
       duration: parseFloat(duration),
       session_date: finalDate.toISOString(),
-      location,
+      location_id: locationId || null,
       summary,
       status,
       created_by_profile_id: profile?.id
@@ -204,60 +198,36 @@ export function AddLessonModal({
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5 overflow-y-auto max-h-[80vh] custom-scrollbar">
           
-          {/* SEARCH & SELECT CLIENT (COMBOBOX) */}
+          {/* STUDENT SELECTION */}
           <div className="space-y-3 relative" ref={dropdownRef}>
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('selectStudent')}</label>
-            
             <div className="relative group">
-              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" />
+              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary" />
               <input 
                 type="text"
                 autoComplete="off"
                 placeholder={selectedPkg ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name}` : t('searchPlaceholder')}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white outline-none focus:border-primary transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-primary transition-all outline-none"
                 value={searchQuery}
                 onFocus={() => setIsDropdownOpen(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  setIsDropdownOpen(true)
-                }}
+                onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true); }}
               />
               <ChevronDown size={16} className={`absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
             {isDropdownOpen && (
               <div className="absolute z-50 w-full top-full mt-2 bg-[#121212] border border-white/10 rounded-2xl shadow-2xl max-h-[280px] overflow-y-auto p-2">
-                {myStudents.length > 0 && (
-                  <div className="px-3 py-2 text-[9px] font-black text-primary uppercase tracking-widest">{t('myStudents')}</div>
-                )}
-                {myStudents.map(p => (
+                {[...myStudents, ...otherStudents].map(p => (
                   <button key={p.id} type="button" className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-left"
                     onClick={() => { setSelectedPackageId(p.id); setSearchQuery(""); setIsDropdownOpen(false); }}>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">{p.accounts?.clients?.name?.[0]}</div>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black ${p.instructor_id === currentInstructorId ? 'bg-primary/10 text-primary' : 'bg-white/5 text-slate-500'}`}>{p.accounts?.clients?.name?.[0]}</div>
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</span>
                         <span className="text-[10px] text-slate-500 uppercase font-bold">{p.courses?.name}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-black text-primary italic">{p.remaining}h</span>
-                  </button>
-                ))}
-
-                {otherStudents.length > 0 && (
-                  <div className="px-3 py-2 text-[9px] font-black text-slate-500 uppercase border-t border-white/5 mt-2">{t('allOtherStudents')}</div>
-                )}
-                {otherStudents.map(p => (
-                  <button key={p.id} type="button" className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-left"
-                    onClick={() => { setSelectedPackageId(p.id); setSearchQuery(""); setIsDropdownOpen(false); }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-black text-slate-400">{p.accounts?.clients?.name?.[0]}</div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</span>
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">{p.courses?.name}</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 italic">{p.remaining}h</span>
+                    <span className={`text-[10px] font-black italic ${p.instructor_id === currentInstructorId ? 'text-primary' : 'text-slate-600'}`}>{p.remaining}h</span>
                   </button>
                 ))}
               </div>
@@ -313,7 +283,7 @@ export function AddLessonModal({
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
             <div className="grid grid-cols-3 gap-2">
-              {["1", "1.5", "2", "2.5", "3", "4"].map((val) => (
+              {["1", "1.5", "2", "3"].map((val) => (
                 <button key={val} type="button" onClick={() => setDuration(val)} className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary' : 'bg-white/5 border-white/10 text-slate-400'}`}>
                   {val}h
                 </button>
@@ -321,16 +291,30 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* NOTES & LOCATION */}
-          <div className="space-y-4">
+          {/* LOCATION DROPDOWN (NEW) */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
             <div className="relative">
-              <input type="text" placeholder={t('locationPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary" value={location} onChange={(e) => setLocation(e.target.value)} />
-              <MapPin size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500" />
+              <select 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none"
+                value={locationId}
+                onChange={(e) => setLocationId(e.target.value)}
+              >
+                <option value="" className="bg-[#0A0A0A]">{t('selectLocation')}</option>
+                {filteredLocations.map(loc => (
+                  <option key={loc.id} value={loc.id} className="bg-[#0A0A0A]">
+                    {loc.name} ({loc.type})
+                  </option>
+                ))}
+              </select>
+              <MapPin size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
             </div>
-            <div className="relative">
-              <textarea placeholder={t('notesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[100px] resize-none" value={summary} onChange={(e) => setSummary(e.target.value)} />
-              <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
-            </div>
+          </div>
+
+          {/* NOTES */}
+          <div className="relative">
+            <textarea placeholder={t('notesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[100px] resize-none" value={summary} onChange={(e) => setSummary(e.target.value)} />
+            <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
           </div>
 
           {/* FOOTER ACTIONS */}
