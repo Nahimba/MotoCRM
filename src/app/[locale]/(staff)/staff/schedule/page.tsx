@@ -10,7 +10,7 @@ import {
 import { useAuth } from "@/context/AuthContext"
 import { 
   format, addDays, subDays, startOfDay, 
-  eachHourOfInterval, setHours, startOfWeek, getDay
+  eachHourOfInterval, setHours, startOfWeek, getDay, isSameDay
 } from "date-fns"
 import { ru, enUS } from "date-fns/locale"
 import { useTranslations, useLocale } from "next-intl"
@@ -40,8 +40,6 @@ export default function SchedulePage() {
   const [lessons, setLessons] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [targetInstructorId, setTargetInstructorId] = useState<string | null>(null)
-  
-  // NEW: Toggle to see all school lessons or just personal
   const [showAllInstructors, setShowAllInstructors] = useState(false)
   
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -50,7 +48,7 @@ export default function SchedulePage() {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Handle mobile responsiveness
+  // 1. Responsive UI logic
   useEffect(() => {
     const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
     handleResize()
@@ -58,12 +56,11 @@ export default function SchedulePage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Resolve current user identity
+  // 2. Identify the logged-in instructor
   useEffect(() => {
     if (!profile) return
     const init = async () => {
       try {
-        // Query the instructor table using the user's profile ID
         const { data } = await supabase
           .from('instructors')
           .select('id')
@@ -71,16 +68,14 @@ export default function SchedulePage() {
           .maybeSingle()
         
         if (data) setTargetInstructorId(data.id)
-        
-        // Admins should see everyone by default
         if (profile.role === 'admin') setShowAllInstructors(true)
       } catch (err) { console.error("Identity Init Error:", err) }
     }
     init()
   }, [profile])
 
+  // 3. Fetch Lessons - Logic strictly limited to the performer (instructor_id)
   const fetchLessons = useCallback(async () => {
-    // We need at least an identity or to be in "Show All" mode
     if (!targetInstructorId && !showAllInstructors) return
     
     if (abortControllerRef.current) abortControllerRef.current.abort()
@@ -89,15 +84,8 @@ export default function SchedulePage() {
 
     setLoading(true)
 
-    let start, end;
-    if (viewMode === 'day') {
-      start = startOfDay(selectedDate).toISOString()
-      end = addDays(startOfDay(selectedDate), 1).toISOString()
-    } else {
-      const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
-      start = weekStart.toISOString()
-      end = addDays(weekStart, 7).toISOString()
-    }
+    const start = (viewMode === 'day' ? startOfDay(selectedDate) : startOfWeek(selectedDate, { weekStartsOn: 1 })).toISOString()
+    const end = addDays(new Date(start), viewMode === 'day' ? 1 : 7).toISOString()
 
     try {
       let query = supabase
@@ -106,14 +94,12 @@ export default function SchedulePage() {
         .gte('session_date', start)
         .lt('session_date', end)
 
-      // FILTER LOGIC:
-      // If NOT showing all, show lessons where I am either the TEACHER or the LEAD
-      if (!showAllInstructors && targetInstructorId) {
-        query = query.or(`instructor_id.eq.${targetInstructorId},lead_instructor_id.eq.${targetInstructorId}`)
+      const isGlobalView = profile?.role === 'admin' && showAllInstructors;
+      if (!isGlobalView && targetInstructorId) {
+        query = query.eq('instructor_id', targetInstructorId)
       }
 
       const { data, error } = await query.abortSignal(controller.signal)
-
       if (error) throw error
       setLessons(data || [])
     } catch (err: any) {
@@ -121,34 +107,64 @@ export default function SchedulePage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedDate, targetInstructorId, viewMode, showAllInstructors])
+  }, [selectedDate, targetInstructorId, viewMode, showAllInstructors, profile])
 
   useEffect(() => { 
     fetchLessons() 
     return () => abortControllerRef.current?.abort()
   }, [fetchLessons])
 
-  const getLessonStyles = (startTime: string, duration: number, status: string) => {
-    const date = new Date(startTime)
+  // 4. getLessonStyles - HANDLES SIDE-BY-SIDE OVERLAPS
+  const getLessonStyles = (lesson: any) => {
+    const date = new Date(lesson.session_date)
+    const duration = lesson.duration || 1
     const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight
     
+    // Check for other lessons in the same time slot on the same day
+    const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date))
+    const overlaps = dayLessons.filter(other => {
+      if (other.id === lesson.id) return false
+      const s1 = new Date(lesson.session_date).getTime()
+      const e1 = s1 + (duration * 3600000)
+      const s2 = new Date(other.session_date).getTime()
+      const e2 = s2 + ((other.duration || 1) * 3600000)
+      return (s1 < e2 && e1 > s2)
+    }).sort((a, b) => a.id - b.id) // Sort to ensure consistent "left vs right" placement
+
+    const hasOverlap = overlaps.length > 0
+    // If this lesson's ID is greater than the one it overlaps with, shift it to the right
+    const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id)
+
     const baseStyles: any = {
       position: 'absolute',
       top: `${top}px`,
       height: `${duration * hourHeight}px`,
-      zIndex: status === 'cancelled' ? 20 : 30,
+      zIndex: isShifted ? 31 : 30, // Slightly higher for shifted cards
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     }
 
     if (viewMode === 'day') {
-      return { ...baseStyles, left: '4px', right: '4px' }
+      return { 
+        ...baseStyles, 
+        width: hasOverlap ? '48%' : 'calc(100% - 8px)',
+        left: isShifted ? '50%' : '4px' 
+      }
     }
 
-    const dayIdx = (getDay(date) + 6) % 7
-    const colWidth = 100 / 7
+    // WEEK VIEW POSITIONING
+    const dayIdx = (getDay(date) + 6) % 7 // Monday = 0
+    const colWidthPct = 100 / 7
+    const columnStartBase = dayIdx * colWidthPct
+    
+    // Calculate precise width and left within the column
+    const finalWidthPct = hasOverlap ? (colWidthPct * 0.47) : (colWidthPct * 0.96)
+    const shiftOffset = isShifted ? (colWidthPct * 0.5) : 0
+    const finalLeft = `calc(${columnStartBase + shiftOffset}% + 2px)`
+
     return {
       ...baseStyles,
-      left: `calc(${dayIdx * colWidth}% + 2px)`,
-      width: `calc(${colWidth}% - 4px)`,
+      left: finalLeft,
+      width: `${finalWidthPct}%`,
     }
   }
 
@@ -164,10 +180,10 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
+      {/* HEADER SECTION */}
       <header className="px-4 py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
           
-          {/* VIEW TOGGLES */}
           <div className="flex gap-2 w-full md:w-auto">
             <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
               <button onClick={() => setViewMode('day')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${viewMode === 'day' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}>
@@ -178,17 +194,17 @@ export default function SchedulePage() {
               </button>
             </div>
 
-            {/* NEW: ALL vs MINE Toggle */}
-            <button 
-              onClick={() => setShowAllInstructors(!showAllInstructors)}
-              className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase transition-all flex items-center gap-2 ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
-            >
-              {showAllInstructors ? <Users size={14}/> : <UserIcon size={14}/>}
-              {showAllInstructors ? t('allInstructors') : t('myLessons')}
-            </button>
+            {profile?.role === 'admin' && (
+              <button 
+                onClick={() => setShowAllInstructors(!showAllInstructors)}
+                className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase transition-all flex items-center gap-2 ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
+              >
+                {showAllInstructors ? <Users size={14}/> : <UserIcon size={14}/>}
+                {showAllInstructors ? t('allInstructors') : t('myLessons')}
+              </button>
+            )}
           </div>
 
-          {/* DATE NAVIGATION */}
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('today')} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all">
               <CalendarDays size={20} />
@@ -218,7 +234,7 @@ export default function SchedulePage() {
         </div>
       </header>
 
-      {/* WEEK DAYS STICKY HEADER */}
+      {/* WEEK DAY LABELS */}
       {viewMode === 'week' && (
         <div className="flex bg-[#0A0A0A] border-b border-white/5 sticky top-0 z-[60] ml-16 overflow-hidden shrink-0">
           {weekDays.map((day, i) => (
@@ -230,16 +246,11 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* CALENDAR GRID */}
+      {/* CALENDAR BODY */}
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
-        <div 
-          className="relative" 
-          style={{ 
-            minWidth: viewMode === 'day' ? '100%' : '1200px',
-            height: `${HOURS.length * hourHeight}px` 
-          }}
-        >
-          {/* TIME COLUMN */}
+        <div className="relative" style={{ minWidth: viewMode === 'day' ? '100%' : '1200px', height: `${HOURS.length * hourHeight}px` }}>
+          
+          {/* TIME AXIS */}
           <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
             {HOURS.map(h => (
               <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
@@ -248,8 +259,8 @@ export default function SchedulePage() {
             ))}
           </div>
 
-          {/* MAIN GRID AREA */}
           <div className="absolute left-16 top-0 right-0 h-full">
+            {/* GRID LINES */}
             <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
               {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, i) => (
                 <div key={i} className="border-r border-white/5 h-full relative">
@@ -260,7 +271,7 @@ export default function SchedulePage() {
               ))}
             </div>
 
-            {/* LESSON CARDS */}
+            {/* LESSON CARDS LAYER */}
             <div className="absolute inset-0 z-30">
               {!loading && lessons.map(l => (
                 <LessonCard 
@@ -268,8 +279,7 @@ export default function SchedulePage() {
                   lesson={l} 
                   viewMode={viewMode} 
                   hourHeight={hourHeight}
-                  getStyles={getLessonStyles} 
-                  currentInstructorId={targetInstructorId}
+                  getStyles={() => getLessonStyles(l)}
                   onEdit={(lesson: any) => { setEditingLesson(lesson); setIsModalOpen(true); }} 
                 />
               ))}
@@ -278,6 +288,7 @@ export default function SchedulePage() {
         </div>
       </div>
 
+      {/* MODALS */}
       <AddLessonModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -285,16 +296,10 @@ export default function SchedulePage() {
         initialDate={selectedDate} 
         onSuccess={fetchLessons} 
         editLesson={editingLesson} 
-        existingLessons={lessons}
-        onOpenDossier={(client) => setSelectedClient(client)}
+        existingLessons={lessons} 
+        onOpenDossier={(client) => setSelectedClient(client)} 
       />
-
-      {selectedClient && (
-        <ClientProfileModal 
-          client={selectedClient} 
-          onClose={() => setSelectedClient(null)} 
-        />
-      )}
+      {selectedClient && <ClientProfileModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
     </div>
   )
 }
