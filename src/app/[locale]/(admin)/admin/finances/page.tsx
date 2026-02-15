@@ -251,7 +251,7 @@ export default function AdminFinances() {
                     <span className="text-[9px] font-mono text-zinc-600 uppercase">{t.payment_method || '—'}</span>
                   </td>
                   <td className={`px-6 py-4 text-right font-mono text-sm font-bold ${t.type === 'income' ? 'text-white' : 'text-zinc-600'}`}>
-                    {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} ₽
+                    {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} ₴
                   </td>
                   <td className="px-6 py-4 text-right">
                     {t.type === 'expense' && (
