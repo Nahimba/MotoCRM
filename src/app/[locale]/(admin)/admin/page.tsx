@@ -176,4 +176,4 @@ function NavButton({ href, icon, label, sub }: any) {
       <p className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">{sub}</p>
     </Link>
   )
-}
+} 

@@ -11,35 +11,44 @@ interface LessonCardProps {
   currentInstructorId?: string | null
 }
 
-export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, currentInstructorId }: LessonCardProps) {
+export function LessonCard({ 
+  lesson, 
+  onEdit, 
+  getStyles, 
+  viewMode, 
+  hourHeight, 
+  currentInstructorId 
+}: LessonCardProps) {
   const isWeek = viewMode === 'week'
   
-  // Space calculations for responsive text
-  const duration = lesson.duration || 1
+  // Space calculations for responsive text and UI density
+  const duration = Number(lesson.duration) || 1
   const pixelHeight = duration * hourHeight
   const hasSpace = pixelHeight > 75 
   const isVeryShort = pixelHeight < 50
 
-  // Use the new location data from the view
+  // Fallback logic for data from View
   const displayLocation = lesson.location_name || 'BASE OPS'
   const locationColor = lesson.location_color || null
-  
   const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   
-  // A substitute is when the teacher isn't the one who owns the client lead
+  // A substitute is when the teacher assigned to the lesson 
+  // isn't the one who usually manages this student's package (lead_instructor_id)
   const isSubstitute = lesson.instructor_id !== lesson.lead_instructor_id
 
   const getStatusStyles = () => {
+    // 1. Cancelled State
     if (lesson.status === 'cancelled') {
       return 'border-l-red-500 opacity-40 bg-[#1a0a0a] grayscale-[0.5]'
     }
+    // 2. Completed State
     if (lesson.status === 'completed') {
       return 'border-l-emerald-500 bg-[#0d1410]'
     }
 
-    // Color code based on Course Type (Moto vs Auto)
+    // 3. Planned State (Color code based on Course Type)
     if (isMoto) {
-      return 'border-l-fuchsia-500 bg-[#130d14] shadow-fuchsia-500/5'
+      return 'border-l-fuchsia-500 bg-[#130d14] shadow-lg shadow-fuchsia-500/5'
     }
     
     return 'border-l-primary bg-[#0d1114]'
@@ -58,7 +67,7 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, cu
         ${getStatusStyles()} 
         ${isWeek ? 'p-2' : 'p-4 md:p-5'}`}
     >
-      {/* BACKGROUND ICON DECAL */}
+      {/* BACKGROUND ICON DECAL - Purely Aesthetic */}
       <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
         {isMoto ? <Bike size={isWeek ? 40 : 80} /> : <Car size={isWeek ? 40 : 80} />}
       </div>
@@ -111,7 +120,7 @@ export function LessonCard({ lesson, onEdit, getStyles, viewMode, hourHeight, cu
           )}
           
           <div className="flex items-center gap-2">
-            {/* If location has a specific color, we apply it to the icon and text */}
+            {/* Dynamic Location Color from Database View */}
             <MapPin 
                 size={isWeek ? 10 : 13} 
                 style={{ color: locationColor || (isMoto ? '#e879f9' : '#3b82f6') }}

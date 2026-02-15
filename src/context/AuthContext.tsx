@@ -10,6 +10,7 @@ export type Profile = {
   role: 'admin' | 'instructor' | 'staff' | 'rider';
   phone?: string;
   avatar_url?: string;
+  email?: string;
 };
 
 type AuthContextType = {

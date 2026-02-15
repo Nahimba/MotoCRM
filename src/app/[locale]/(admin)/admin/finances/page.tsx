@@ -263,7 +263,7 @@ export default function AdminFinances() {
                       </button>
                     )}
                   </td>
-                </tr>
+                </tr> 
               ))}
             </tbody>
           </table>

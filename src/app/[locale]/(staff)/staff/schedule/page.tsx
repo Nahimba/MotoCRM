@@ -48,7 +48,7 @@ export default function SchedulePage() {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // 1. Responsive UI logic
+  // 1. Responsive UI logic - adjusts grid density for mobile
   useEffect(() => {
     const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
     handleResize()
@@ -56,7 +56,7 @@ export default function SchedulePage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // 2. Identify the logged-in instructor
+  // 2. Resolve Instructor Context (Who is looking at the schedule?)
   useEffect(() => {
     if (!profile) return
     const init = async () => {
@@ -68,14 +68,16 @@ export default function SchedulePage() {
           .maybeSingle()
         
         if (data) setTargetInstructorId(data.id)
+        // If admin, default to seeing everyone
         if (profile.role === 'admin') setShowAllInstructors(true)
       } catch (err) { console.error("Identity Init Error:", err) }
     }
     init()
   }, [profile])
 
-  // 3. Fetch Lessons
+  // 3. Fetch Lessons from the Database View
   const fetchLessons = useCallback(async () => {
+    // Wait until instructor context is resolved or if we are allowed to see all
     if (!targetInstructorId && !showAllInstructors) return
     
     if (abortControllerRef.current) abortControllerRef.current.abort()
@@ -84,6 +86,7 @@ export default function SchedulePage() {
 
     setLoading(true)
 
+    // Calculate time range for query
     const start = (viewMode === 'day' ? startOfDay(selectedDate) : startOfWeek(selectedDate, { weekStartsOn: 1 })).toISOString()
     const end = addDays(new Date(start), viewMode === 'day' ? 1 : 7).toISOString()
 
@@ -94,6 +97,7 @@ export default function SchedulePage() {
         .gte('session_date', start)
         .lt('session_date', end)
 
+      // Permission filter
       const isGlobalView = profile?.role === 'admin' && showAllInstructors;
       if (!isGlobalView && targetInstructorId) {
         query = query.eq('instructor_id', targetInstructorId)
@@ -114,23 +118,26 @@ export default function SchedulePage() {
     return () => abortControllerRef.current?.abort()
   }, [fetchLessons])
 
-  // 4. Layout logic for overlapping lessons
+  // 4. Layout Logic for overlapping lessons
+  // This calculates the 'top', 'height', 'width', and 'left' offset for each card
   const getLessonStyles = (lesson: any) => {
     const date = new Date(lesson.session_date)
-    const duration = lesson.duration || 1
+    const duration = Number(lesson.duration) || 1
     const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight
     
+    // Find collisions on the same day
     const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date))
     const overlaps = dayLessons.filter(other => {
       if (other.id === lesson.id) return false
       const s1 = new Date(lesson.session_date).getTime()
       const e1 = s1 + (duration * 3600000)
       const s2 = new Date(other.session_date).getTime()
-      const e2 = s2 + ((other.duration || 1) * 3600000)
+      const e2 = s2 + ((Number(other.duration) || 1) * 3600000)
       return (s1 < e2 && e1 > s2)
     }).sort((a, b) => a.id.localeCompare(b.id)) 
 
     const hasOverlap = overlaps.length > 0
+    // If overlapped, determine if this card should be shifted right
     const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id)
 
     const baseStyles: any = {
@@ -149,7 +156,8 @@ export default function SchedulePage() {
       }
     }
 
-    const dayIdx = (getDay(date) + 6) % 7 
+    // Week View Column Logic
+    const dayIdx = (getDay(date) + 6) % 7 // Align Monday as index 0
     const colWidthPct = 100 / 7
     const columnStartBase = dayIdx * colWidthPct
     const finalWidthPct = hasOverlap ? (colWidthPct * 0.47) : (colWidthPct * 0.96)
@@ -175,7 +183,7 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
-      {/* HEADER SECTION */}
+      {/* TOOLBAR */}
       <header className="px-4 py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
           
@@ -229,7 +237,7 @@ export default function SchedulePage() {
         </div>
       </header>
 
-      {/* WEEK DAY LABELS */}
+      {/* COLUMN HEADERS */}
       {viewMode === 'week' && (
         <div className="flex bg-[#0A0A0A] border-b border-white/5 sticky top-0 z-[60] ml-16 overflow-hidden shrink-0">
           {weekDays.map((day, i) => (
@@ -241,10 +249,11 @@ export default function SchedulePage() {
         </div>
       )}
 
-      {/* CALENDAR BODY */}
+      {/* SCROLLABLE GRID */}
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
         <div className="relative" style={{ minWidth: viewMode === 'day' ? '100%' : '1200px', height: `${HOURS.length * hourHeight}px` }}>
           
+          {/* TIME AXIS */}
           <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
             {HOURS.map(h => (
               <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
@@ -254,6 +263,7 @@ export default function SchedulePage() {
           </div>
 
           <div className="absolute left-16 top-0 right-0 h-full">
+            {/* GRID BACKGROUND LINES */}
             <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
               {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, i) => (
                 <div key={i} className="border-r border-white/5 h-full relative">
@@ -264,6 +274,7 @@ export default function SchedulePage() {
               ))}
             </div>
 
+            {/* LESSON CARDS LAYER */}
             <div className="absolute inset-0 z-30">
               {!loading && lessons.map(l => (
                 <LessonCard 
@@ -291,7 +302,13 @@ export default function SchedulePage() {
         existingLessons={lessons} 
         onOpenDossier={(client) => setSelectedClient(client)} 
       />
-      {selectedClient && <ClientProfileModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
+      
+      {selectedClient && (
+        <ClientProfileModal 
+          client={selectedClient} 
+          onClose={() => setSelectedClient(null)} 
+        />
+      )}
     </div>
   )
 }

@@ -39,62 +39,75 @@ export function AddLessonModal({
   const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [startTime, setStartTime] = useState("12:00")
   const [duration, setDuration] = useState("2") 
-  const [locationId, setLocationId] = useState<string>("") // Updated to use UUID
+  const [locationId, setLocationId] = useState<string>("")
   const [summary, setSummary] = useState("")
   const [status, setStatus] = useState<'planned' | 'completed' | 'cancelled'>('planned')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const selectedPkg = packages.find(p => p.id === selectedPackageId)
+  
+  // Find currently selected package and its associated client data
+  const selectedPkg = useMemo(() => 
+    packages.find(p => p.id === selectedPackageId), 
+    [packages, selectedPackageId]
+  )
   const clientData = selectedPkg?.accounts?.clients
 
   // 1. Initial Load: Locations & Instructor Data
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
-        // Fetch Locations
-        const { data: locData } = await supabase
-          .from('locations')
-          .select('*')
-          .eq('is_active', true)
-        if (locData) setLocations(locData)
+        try {
+          const { data: locData } = await supabase
+            .from('locations')
+            .select('*')
+            .eq('is_active', true)
+          if (locData) setLocations(locData)
 
-        // Fetch Packages
-        const { data: pkgData } = await supabase
-          .from('course_packages')
-          .select(`
-            id, instructor_id, total_hours,
-            courses ( name, type ),
-            accounts (
-              clients ( id, name, last_name, phone, address, email, avatar_url, notes )
-            ),
-            lessons ( duration, status )
-          `)
-          .eq('status', 'active')
-        
-        if (pkgData) {
-          const processed = pkgData.map(pkg => ({
-            ...pkg,
-            remaining: pkg.total_hours - (pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((acc: number, curr: any) => acc + (curr.duration || 0), 0) || 0)
-          }))
-          setPackages(processed)
+          const { data: pkgData, error: pkgError } = await supabase
+            .from('course_packages')
+            .select(`
+              id, 
+              instructor_id, 
+              total_hours,
+              courses:course_id ( name, type ),
+              accounts:account_id (
+                clients:client_id ( 
+                  id, 
+                  notes,
+                  profiles:profile_id ( first_name, last_name, avatar_url, email, phone )
+                )
+              ),
+              lessons ( duration, status )
+            `)
+            .eq('status', 'active')
+          
+          if (pkgError) throw pkgError
+
+          if (pkgData) {
+            const processed = pkgData.map(pkg => {
+              const clientProfile = (pkg.accounts as any)?.clients?.profiles;
+              return {
+                ...pkg,
+                accounts: {
+                  clients: {
+                    ...(pkg.accounts as any)?.clients,
+                    name: clientProfile?.first_name || 'Unknown',
+                    last_name: clientProfile?.last_name || '',
+                    avatar_url: clientProfile?.avatar_url
+                  }
+                },
+                remaining: pkg.total_hours - (pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((acc: number, curr: any) => acc + (Number(curr.duration) || 0), 0) || 0)
+              }
+            })
+            setPackages(processed)
+          }
+        } catch (err: any) {
+          console.error("Fetch Details:", err)
+          toast.error("Database error: " + (err.message || "Unknown"))
         }
       }
       fetchData()
 
-      // Resolve Instructor Context
-      if (!instructorId && profile) {
-        supabase.from('instructors').select('id, default_location_id').eq('profile_id', profile.id).single()
-          .then(({ data }) => {
-            if (data) {
-              setCurrentInstructorId(data.id)
-              if (!editLesson) setLocationId(data.default_location_id || "")
-            }
-          })
-      } else {
-        setCurrentInstructorId(instructorId)
-      }
-
-      // Fill form for Edit mode
       if (editLesson) {
         const dateObj = parseISO(editLesson.session_date)
         setSelectedPackageId(editLesson.course_package_id)
@@ -106,29 +119,33 @@ export function AddLessonModal({
         setStatus(editLesson.status || 'planned')
       }
     }
-  }, [isOpen, editLesson, instructorId, profile])
+  }, [isOpen, editLesson, profile])
 
-  // 2. Logic: Auto-fill default location when instructor changes (if not editing)
+  // Click Outside logic for dropdown
   useEffect(() => {
-    if (isOpen && !editLesson && currentInstructorId) {
-      supabase.from('instructors').select('default_location_id').eq('id', currentInstructorId).single()
-        .then(({ data }) => {
-          if (data?.default_location_id) setLocationId(data.default_location_id)
-        })
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
     }
-  }, [currentInstructorId, isOpen, editLesson])
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
-  // 3. Filter Locations by Course Type
+  // Filters
   const filteredLocations = useMemo(() => {
     if (!selectedPkg) return locations
-    const courseType = selectedPkg.courses?.type // 'Moto' or 'Auto'
+    const courseType = (selectedPkg.courses as any)?.type 
     return locations.filter(loc => loc.type === courseType || loc.type === 'General')
   }, [locations, selectedPkg])
 
   const filteredPackages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return packages
-    return packages.filter(p => `${p.accounts?.clients?.name} ${p.accounts?.clients?.last_name}`.toLowerCase().includes(q))
+    return packages.filter(p => 
+      `${p.accounts?.clients?.name} ${p.accounts?.clients?.last_name}`.toLowerCase().includes(q) ||
+      (p.courses as any)?.name.toLowerCase().includes(q)
+    )
   }, [packages, searchQuery])
 
   const myStudents = filteredPackages.filter(p => p.instructor_id === currentInstructorId)
@@ -191,7 +208,7 @@ export function AddLessonModal({
               {editLesson ? t('editLesson') : t('scheduleLesson')}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500">
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -206,7 +223,11 @@ export function AddLessonModal({
               <input 
                 type="text"
                 autoComplete="off"
-                placeholder={selectedPkg ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name}` : t('searchPlaceholder')}
+                // DISPLAY: Inline Name + Package in search bar
+                placeholder={selectedPkg 
+                  ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name} | ${(selectedPkg.courses as any)?.name}` 
+                  : t('searchPlaceholder')
+                }
                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-primary transition-all outline-none"
                 value={searchQuery}
                 onFocus={() => setIsDropdownOpen(true)}
@@ -217,19 +238,39 @@ export function AddLessonModal({
 
             {isDropdownOpen && (
               <div className="absolute z-50 w-full top-full mt-2 bg-[#121212] border border-white/10 rounded-2xl shadow-2xl max-h-[280px] overflow-y-auto p-2">
-                {[...myStudents, ...otherStudents].map(p => (
-                  <button key={p.id} type="button" className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 text-left"
-                    onClick={() => { setSelectedPackageId(p.id); setSearchQuery(""); setIsDropdownOpen(false); }}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black ${p.instructor_id === currentInstructorId ? 'bg-primary/10 text-primary' : 'bg-white/5 text-slate-500'}`}>{p.accounts?.clients?.name?.[0]}</div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</span>
-                        <span className="text-[10px] text-slate-500 uppercase font-bold">{p.courses?.name}</span>
+                {[...myStudents, ...otherStudents].map(p => {
+                  const isCurrentSelection = p.id === selectedPackageId;
+                  return (
+                    <button 
+                      key={p.id} 
+                      type="button" 
+                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left mb-1
+                        ${isCurrentSelection ? 'bg-primary/20 border border-primary/40 ring-1 ring-primary/20' : 'hover:bg-white/5 border border-transparent'}
+                      `}
+                      onClick={() => { setSelectedPackageId(p.id); setSearchQuery(""); setIsDropdownOpen(false); }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black ${isCurrentSelection ? 'bg-primary text-black' : 'bg-white/5 text-slate-500'}`}>
+                          {p.accounts?.clients?.name?.[0]}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className={`text-sm font-bold ${isCurrentSelection ? 'text-primary' : 'text-white'}`}>
+                            {p.accounts?.clients?.name} {p.accounts?.clients?.last_name}
+                          </span>
+                          <span className="text-[10px] text-slate-500 uppercase font-bold italic">
+                            {(p.courses as any)?.name}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <span className={`text-[10px] font-black italic ${p.instructor_id === currentInstructorId ? 'text-primary' : 'text-slate-600'}`}>{p.remaining}h</span>
-                  </button>
-                ))}
+                      <div className="flex flex-col items-end">
+                         <span className={`text-[10px] font-black italic ${isCurrentSelection ? 'text-primary' : 'text-slate-600'}`}>
+                            {p.remaining}h
+                         </span>
+                         {isCurrentSelection && <Check size={12} className="text-primary mt-1" />}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -244,7 +285,7 @@ export function AddLessonModal({
                   </div>
                   <div>
                     <h3 className="text-sm font-black text-white uppercase italic">{clientData.name} {clientData.last_name}</h3>
-                    <p className="text-[9px] text-primary font-bold uppercase tracking-tighter">{selectedPkg.courses?.name}</p>
+                    <p className="text-[9px] text-primary font-bold uppercase tracking-tighter">{(selectedPkg.courses as any)?.name}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -291,7 +332,7 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* LOCATION DROPDOWN (NEW) */}
+          {/* LOCATION DROPDOWN */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
             <div className="relative">
