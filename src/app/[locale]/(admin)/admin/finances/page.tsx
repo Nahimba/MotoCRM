@@ -286,7 +286,7 @@ function StatCard({ label, value, color, sub, isHighlight = false }: { label: st
       <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isHighlight ? 'text-zinc-500' : 'text-zinc-600'}`}>{label}</span>
       <div className={`text-4xl font-mono font-black tracking-tighter my-2 ${isHighlight ? 'text-black' : color}`}>
         {value.toLocaleString()}
-        <span className="text-sm ml-1 opacity-50 italic text-[10px]">RUB</span>
+        <span className="text-sm ml-1 opacity-50 italic text-[10px]">₴</span>
       </div>
       <p className={`text-[9px] font-bold uppercase tracking-widest ${isHighlight ? 'text-zinc-400' : 'text-zinc-700'}`}>{sub}</p>
     </div>

@@ -96,17 +96,17 @@ export default function UnifiedDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           label={t('stats.revenue')} 
-          value={`${stats.income.toLocaleString()} ₽`} 
+          value={`${stats.income.toLocaleString()} ₴`} 
           icon={<TrendingUp size={16} className="text-green-500" />} 
         />
         <StatCard 
           label={t('stats.burn')} 
-          value={`${stats.expenses.toLocaleString()} ₽`} 
+          value={`${stats.expenses.toLocaleString()} ₴`} 
           icon={<Wallet size={16} className="text-red-500" />} 
         />
         <StatCard 
           label={t('stats.net')} 
-          value={`${(stats.income - stats.expenses).toLocaleString()} ₽`} 
+          value={`${(stats.income - stats.expenses).toLocaleString()} ₴`} 
           icon={<ArrowUpRight size={16} className="text-primary" />} 
           highlight 
         />
