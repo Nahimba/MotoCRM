@@ -205,7 +205,7 @@ export function AddLessonModal({
               <input 
                 type="text"
                 autoComplete="off"
-                placeholder={selectedPkg ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name}` : t('searchPlaceholder')}
+                placeholder={selectedPkg ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name}` : t('searchStudent')}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-primary transition-all outline-none"
                 value={searchQuery}
                 onFocus={() => setIsDropdownOpen(true)}
@@ -248,7 +248,7 @@ export function AddLessonModal({
                   <div className="leading-tight">
                     <h3 className="text-sm font-black text-white uppercase italic">{clientData.name} {clientData.last_name}</h3>
                     <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
-                       <Clock size={10} /> {selectedPkg.remaining}h {t('left')}
+                       <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
                     </div>
                   </div>
                 </div>

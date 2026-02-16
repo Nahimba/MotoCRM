@@ -131,6 +131,7 @@
     "confirm": "Подтвердить",
     "lessonDate": "Дата урока",
     "selectStudent": "Выбрать ученика",
+    "searchStudent": "Поиск ученика",
     "hours": "{count, plural, =1 {# час} one {# час} few {# часа} many {# часов} other {# часа}}",
     "conflict": "ОШИБКА РАСПИСАНИЯ: Время уже занято.",
     "selectStudentError": "Пожалуйста, выберите ученика",
@@ -145,11 +146,14 @@
     "planned": "Ожидается",
     "completed": "Завершено",
     "cancelled": "Отменено",
-    "locationPlaceholder": "Локация",
+    "selectLocation": "Локация",
     "location": "Локация",
     "allStudents": "Ученики",
     "allLessons": "Все",
-    "myLessons": "Мои"
+    "myLessons": "Мои",
+    "date": "Дата",
+    "time": "Время",
+    "hoursLeft": "осталось"
   },
   "StaffDashboard": {
     "title": "ШТАБ ИНСТРУКТОРОВ",

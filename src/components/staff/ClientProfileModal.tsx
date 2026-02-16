@@ -108,7 +108,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
                 {loading ? (
                   <div className="h-6 w-16 bg-white/10 animate-pulse rounded" />
                 ) : (
-                  `$${details?.wallet_balance || 0}`
+                  `${details?.wallet_balance || 0} ₴`
                 )}
               </div>
               <Wallet className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 rotate-12 group-hover:text-primary/10 transition-colors" />

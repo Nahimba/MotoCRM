@@ -131,6 +131,7 @@
     "confirm": "Confirm",
     "lessonDate": "Lesson Date",
     "selectStudent": "Select Student",
+    "searchStudent": "Search Student",
     "hours": "{count, plural, =1 {# Hour} other {# Hours}}",
     "conflict": "SCHEDULE CONFLICT: Slot already taken.",
     "selectStudentError": "Please select a student",
@@ -145,11 +146,14 @@
     "planned": "Planned",
     "completed": "Completed",
     "cancelled": "Cancelled",
-    "locationPlaceholder": "Location",
+    "selectLocation": "Location",
     "location": "Location",
     "allStudents": "Students",
     "allLessons": "All",
-    "myLessons": "Mine"
+    "myLessons": "Mine",
+    "date": "Date",
+    "time": "Time",
+    "hoursLeft": "left"
     
   },
   "StaffDashboard": {
