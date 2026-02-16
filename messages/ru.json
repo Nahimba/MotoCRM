@@ -147,7 +147,9 @@
     "cancelled": "Отменено",
     "locationPlaceholder": "Локация",
     "location": "Локация",
-    "allStudents": "Ученики"
+    "allStudents": "Ученики",
+    "allLessons": "Все",
+    "myLessons": "Мои"
   },
   "StaffDashboard": {
     "title": "ШТАБ ИНСТРУКТОРОВ",

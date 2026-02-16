@@ -147,7 +147,10 @@
     "cancelled": "Cancelled",
     "locationPlaceholder": "Location",
     "location": "Location",
-    "allStudents": "Students"
+    "allStudents": "Students",
+    "allLessons": "All",
+    "myLessons": "Mine"
+    
   },
   "StaffDashboard": {
     "title": "STAFF COMMAND",

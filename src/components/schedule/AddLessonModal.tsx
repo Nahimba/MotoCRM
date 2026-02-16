@@ -155,6 +155,7 @@ export function AddLessonModal({
     e.preventDefault()
     if (!selectedPackageId) return toast.error(t("selectStudentError"))
     
+
     setLoading(true)
     const [year, month, day] = lessonDate.split('-').map(Number)
     const [h, m] = startTime.split(':').map(Number)
@@ -162,7 +163,8 @@ export function AddLessonModal({
 
     const payload = {
       course_package_id: selectedPackageId,
-      instructor_id: currentInstructorId,
+      //instructor_id: currentInstructorId,
+      instructor_id: instructorId,
       duration: parseFloat(duration),
       session_date: finalDate.toISOString(),
       location_id: locationId || null,

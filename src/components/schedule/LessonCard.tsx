@@ -17,7 +17,7 @@ export function LessonCard({
   getStyles, 
   viewMode, 
   hourHeight, 
-  currentInstructorId 
+  currentInstructorId
 }: LessonCardProps) {
   const isWeek = viewMode === 'week'
   
@@ -32,9 +32,7 @@ export function LessonCard({
   const locationColor = lesson.location_color || null
   const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   
-  // A substitute is when the teacher assigned to the lesson 
-  // isn't the one who usually manages this student's package (lead_instructor_id)
-  const isSubstitute = lesson.instructor_id !== lesson.lead_instructor_id
+  const instructorName = lesson.lesson_instructor_name || 'Unassigned';
 
   const getStatusStyles = () => {
     // 1. Cancelled State
@@ -80,9 +78,9 @@ export function LessonCard({
                <Bike size={12} className="text-fuchsia-400 shrink-0" /> : 
                <Car size={12} className="text-primary shrink-0" />
              }
-             <span className={`font-black uppercase tracking-widest ${isWeek ? 'text-[7px]' : 'text-[9px]'} ${isMoto ? 'text-fuchsia-400' : 'text-primary'}`}>
+             {/* <span className={`font-black uppercase tracking-widest ${isWeek ? 'text-[7px]' : 'text-[9px]'} ${isMoto ? 'text-fuchsia-400' : 'text-primary'}`}>
                {lesson.course_type || 'Auto'}
-             </span>
+             </span> */}
           </div>
           <h4 className={`font-black uppercase italic text-white group-hover:text-primary transition-colors truncate 
             ${isWeek ? 'text-[10px] leading-tight' : 'text-sm md:text-lg'}`}>
@@ -95,14 +93,14 @@ export function LessonCard({
         </span>
       </div>
 
-      {/* INSTRUCTOR / SUBSTITUTE BADGE */}
+      {/* SIMPLE INSTRUCTOR ROW */}
       {(hasSpace || !isWeek) && (
         <div className="flex items-center gap-1 mt-1 z-10">
-          <div className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
-            <User size={8} className={isSubstitute ? "text-amber-500" : "text-slate-400"} />
+          <div className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-white/8 border border-white/10">
+            <User size={10} className="text-slate-500" />
           </div>
-          <span className={`font-bold uppercase tracking-tighter truncate ${isWeek ? 'text-[7px]' : 'text-[9px]'} ${isSubstitute ? 'text-amber-500/80' : 'text-slate-500'}`}>
-            {isSubstitute ? `SUB: ${lesson.lesson_instructor_name}` : lesson.lesson_instructor_name}
+          <span className={`font-bold uppercase tracking-tighter truncate ${isWeek ? 'text-[8px]' : 'text-[10px]'} text-slate-500`}>
+            {instructorName}
           </span>
         </div>
       )}
@@ -137,7 +135,7 @@ export function LessonCard({
           {lesson.summary && (
             <div className="flex items-start gap-2 text-slate-500 border-t border-white/5 pt-2 mt-auto">
               <FileText size={isWeek ? 10 : 13} className="shrink-0 mt-0.5 opacity-50" />
-              <p className={`italic leading-tight line-clamp-2 ${isWeek ? 'text-[8px]' : 'text-xs md:text-sm'}`}>
+              <p className={`italic leading-tight line-clamp-2 ${isWeek ? 'text-[10px]' : 'text-xs md:text-sm'}`}>
                 {lesson.summary}
               </p>
             </div>

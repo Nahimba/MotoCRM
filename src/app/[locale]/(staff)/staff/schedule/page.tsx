@@ -184,66 +184,90 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
       {/* TOOLBAR */}
-      <header className="px-4 py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full">
+      <header className="px-2 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
+        <div className="flex items-center w-full relative">
           
-          <div className="flex gap-2 w-full md:w-auto">
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-              <button onClick={() => setViewMode('day')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${viewMode === 'day' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}>
-                <Maximize2 size={14}/> {t('day')}
+          {/* 1. LEFT: TOGGLE GROUP (Pushed to the left) */}
+          <div className="flex items-center gap-1 z-10">
+            <div className="flex bg-white/5 p-0.5 rounded-xl border border-white/10">
+              <button 
+                onClick={() => setViewMode('day')} 
+                className={`p-2 md:px-4 md:py-2 rounded-lg transition-all flex items-center justify-center ${viewMode === 'day' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
+              >
+                <Maximize2 size={16}/>
+                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('day')}</span>
               </button>
-              <button onClick={() => setViewMode('week')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${viewMode === 'week' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}>
-                <LayoutGrid size={14}/> {t('week')}
+              <button 
+                onClick={() => setViewMode('week')} 
+                className={`p-2 md:px-4 md:py-2 rounded-lg transition-all flex items-center justify-center ${viewMode === 'week' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
+              >
+                <LayoutGrid size={16}/>
+                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('week')}</span>
               </button>
             </div>
 
             {profile?.role === 'admin' && (
               <button 
                 onClick={() => setShowAllInstructors(!showAllInstructors)}
-                className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase transition-all flex items-center gap-2 ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
+                className={`p-2 md:px-4 md:py-2 rounded-xl border transition-all flex items-center justify-center ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
               >
-                {showAllInstructors ? <Users size={14}/> : <UserIcon size={14}/>}
-                {showAllInstructors ? t('allInstructors') : t('myLessons')}
+                {showAllInstructors ? <Users size={16}/> : <UserIcon size={16}/>}
+                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">
+                  {showAllInstructors ? t('allLessons') : t('myLessons')}
+                </span>
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('today')} className="p-3 bg-white/5 border border-white/10 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all">
-              <CalendarDays size={20} />
+          {/* 2. CENTER: DATE NAVIGATION (Absolutely centered) */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
+            <button onClick={() => navigate('prev')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
+              <ChevronLeft size={18} strokeWidth={3} />
             </button>
-            <div className="flex bg-white/5 rounded-2xl p-1.5 items-center border border-white/10">
-              <button onClick={() => navigate('prev')} className="p-2 hover:text-primary transition-colors"><ChevronLeft size={22} strokeWidth={3} /></button>
-              <div className="px-4 flex flex-col items-center min-w-[160px]">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                  {viewMode === 'day' ? format(selectedDate, 'EEEE, dd MMMM', { locale: dateLocale }) : t('weekView')}
+            
+            <div className="flex flex-col items-center px-2 min-w-[65px] md:min-w-[120px]">
+              <span className="text-[12px] md:text-[14px] font-black uppercase text-white whitespace-nowrap">
+                {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
+              </span>
+              {viewMode === 'week' && (
+                <span className="text-[12px] md:text-[14px] font-black text-primary uppercase italic leading-none whitespace-nowrap">
+                  {format(weekDays[0], 'dd/MM')}—{format(weekDays[6], 'dd/MM')}
                 </span>
-                {viewMode !== 'day' && (
-                  <span className="text-[9px] font-black text-primary uppercase italic">
-                    {format(weekDays[0], 'dd MMM')} — {format(weekDays[6], 'dd MMM')}
-                  </span>
-                )}
-              </div>
-              <button onClick={() => navigate('next')} className="p-2 hover:text-primary transition-colors"><ChevronRight size={22} strokeWidth={3} /></button>
+              )}
             </div>
+
+            <button onClick={() => navigate('next')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
+              <ChevronRight size={18} strokeWidth={3} />
+            </button>
           </div>
 
-          <button 
-            onClick={() => { setEditingLesson(null); setIsModalOpen(true); }} 
-            className="w-full md:w-auto bg-primary text-black px-8 py-3.5 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-3 shadow-xl shadow-primary/10 hover:bg-white transition-all"
-          >
-            <Plus size={20} strokeWidth={4} /> {t('addLesson')}
-          </button>
+          {/* 3. RIGHT: ACTION BUTTON (Pushed to the right) */}
+          <div className="ml-auto z-10">
+            <button 
+              onClick={() => { setEditingLesson(null); setIsModalOpen(true); }} 
+              className="bg-primary text-black h-9 w-9 md:h-11 md:w-auto md:px-6 rounded-xl font-black flex items-center justify-center shadow-lg shadow-primary/10 hover:bg-white transition-all"
+            >
+              <Plus size={20} strokeWidth={4} />
+              <span className="hidden md:inline ml-2 text-xs uppercase">{t('addLesson')}</span>
+            </button>
+          </div>
+
         </div>
       </header>
 
-      {/* COLUMN HEADERS */}
+      {/* COLUMN HEADERS - Only show if week view */}
       {viewMode === 'week' && (
         <div className="flex bg-[#0A0A0A] border-b border-white/5 sticky top-0 z-[60] ml-16 overflow-hidden shrink-0">
           {weekDays.map((day, i) => (
-            <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'bg-primary/5' : ''}`}>
-              <p className="text-[9px] font-black uppercase text-slate-500">{format(day, 'EEEE', { locale: dateLocale })}</p>
-              <p className={`text-sm font-black italic ${format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? 'text-primary' : 'text-white'}`}>{format(day, 'dd.MM')}</p>
+            <div key={i} className={`flex-1 py-2 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
+              {/* Short names for mobile (Пн), Full for desktop (Понедельник) */}
+              <p className="text-[8px] md:text-[9px] font-black uppercase text-slate-500">
+                <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
+                <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
+              </p>
+              <p className={`text-xs md:text-sm font-black italic ${isSameDay(day, new Date()) ? 'text-primary' : 'text-white'}`}>
+                {format(day, 'dd.MM')}
+              </p>
             </div>
           ))}
         </div>
@@ -279,7 +303,7 @@ export default function SchedulePage() {
               {!loading && lessons.map(l => (
                 <LessonCard 
                   key={l.id} 
-                  lesson={l} 
+                  lesson={l}
                   viewMode={viewMode} 
                   hourHeight={hourHeight}
                   getStyles={() => getLessonStyles(l)}
