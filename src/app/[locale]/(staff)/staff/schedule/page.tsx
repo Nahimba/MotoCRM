@@ -120,56 +120,114 @@ export default function SchedulePage() {
 
   // 4. Layout Logic for overlapping lessons
   // This calculates the 'top', 'height', 'width', and 'left' offset for each card
-  const getLessonStyles = (lesson: any) => {
-    const date = new Date(lesson.session_date)
-    const duration = Number(lesson.duration) || 1
-    const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight
+  // const getLessonStyles = (lesson: any) => {
+  //   const date = new Date(lesson.session_date)
+  //   const duration = Number(lesson.duration) || 1
+  //   const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight
     
-    // Find collisions on the same day
-    const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date))
+  //   // Find collisions on the same day
+  //   const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date))
+  //   const overlaps = dayLessons.filter(other => {
+  //     if (other.id === lesson.id) return false
+  //     const s1 = new Date(lesson.session_date).getTime()
+  //     const e1 = s1 + (duration * 3600000)
+  //     const s2 = new Date(other.session_date).getTime()
+  //     const e2 = s2 + ((Number(other.duration) || 1) * 3600000)
+  //     return (s1 < e2 && e1 > s2)
+  //   }).sort((a, b) => a.id.localeCompare(b.id)) 
+
+  //   const hasOverlap = overlaps.length > 0
+  //   // If overlapped, determine if this card should be shifted right
+  //   const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id)
+
+  //   const baseStyles: any = {
+  //     position: 'absolute',
+  //     top: `${top}px`,
+  //     height: `${duration * hourHeight}px`,
+  //     zIndex: isShifted ? 31 : 30,
+  //     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  //   }
+
+  //   if (viewMode === 'day') {
+  //     return { 
+  //       ...baseStyles, 
+  //       width: hasOverlap ? '48%' : 'calc(100% - 8px)',
+  //       left: isShifted ? '50%' : '4px' 
+  //     }
+  //   }
+
+  //   // Week View Column Logic
+  //   const dayIdx = (getDay(date) + 6) % 7 // Align Monday as index 0
+  //   const colWidthPct = 100 / 7
+  //   const columnStartBase = dayIdx * colWidthPct
+  //   const finalWidthPct = hasOverlap ? (colWidthPct * 0.47) : (colWidthPct * 0.96)
+  //   const shiftOffset = isShifted ? (colWidthPct * 0.5) : 0
+  //   const finalLeft = `calc(${columnStartBase + shiftOffset}% + 2px)`
+
+  //   return {
+  //     ...baseStyles,
+  //     left: finalLeft,
+  //     width: `${finalWidthPct}%`,
+  //   }
+  // }
+  const getLessonStyles = (lesson: any) => {
+    const date = new Date(lesson.session_date);
+    const duration = Number(lesson.duration) || 1;
+    const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight;
+    
+    const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date));
+    
+    // Find collisions
     const overlaps = dayLessons.filter(other => {
-      if (other.id === lesson.id) return false
-      const s1 = new Date(lesson.session_date).getTime()
-      const e1 = s1 + (duration * 3600000)
-      const s2 = new Date(other.session_date).getTime()
-      const e2 = s2 + ((Number(other.duration) || 1) * 3600000)
-      return (s1 < e2 && e1 > s2)
-    }).sort((a, b) => a.id.localeCompare(b.id)) 
-
-    const hasOverlap = overlaps.length > 0
-    // If overlapped, determine if this card should be shifted right
-    const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id)
-
+      if (other.id === lesson.id) return false;
+      const s1 = new Date(lesson.session_date).getTime();
+      const e1 = s1 + (duration * 3600000);
+      const s2 = new Date(other.session_date).getTime();
+      const e2 = s2 + ((Number(other.duration) || 1) * 3600000);
+      return (s1 < e2 && e1 > s2);
+    }).sort((a, b) => a.id.localeCompare(b.id));
+  
+    const hasOverlap = overlaps.length > 0;
+    const isShifted = hasOverlap && overlaps.some(o => o.id < lesson.id);
+  
     const baseStyles: any = {
       position: 'absolute',
       top: `${top}px`,
-      height: `${duration * hourHeight}px`,
+      height: `${duration * hourHeight - 2}px`, // -2px for a small gap between vertical lessons
       zIndex: isShifted ? 31 : 30,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    }
-
+      transition: 'all 0.2s ease-in-out',
+    };
+  
     if (viewMode === 'day') {
       return { 
         ...baseStyles, 
-        width: hasOverlap ? '48%' : 'calc(100% - 8px)',
-        left: isShifted ? '50%' : '4px' 
-      }
+        width: hasOverlap ? '60%' : 'calc(100% - 8px)', // Wider overlap in day view
+        left: isShifted ? '35%' : '4px', // Slight overlap in the middle
+        boxShadow: hasOverlap ? '0 10px 15px -3px rgba(0, 0, 0, 0.4)' : 'none'
+      };
     }
-
-    // Week View Column Logic
-    const dayIdx = (getDay(date) + 6) % 7 // Align Monday as index 0
-    const colWidthPct = 100 / 7
-    const columnStartBase = dayIdx * colWidthPct
-    const finalWidthPct = hasOverlap ? (colWidthPct * 0.47) : (colWidthPct * 0.96)
-    const shiftOffset = isShifted ? (colWidthPct * 0.5) : 0
-    const finalLeft = `calc(${columnStartBase + shiftOffset}% + 2px)`
-
+  
+    // Week View: The "Smart Squeeze"
+    const dayIdx = (getDay(date) + 6) % 7;
+    const colWidthPct = 100 / 7;
+    const columnStartBase = dayIdx * colWidthPct;
+  
+    // Instead of 47% width, we use 65% width for overlapped cards. 
+    // This makes them "overlap" each other visually but remain much more readable.
+    const finalWidthPct = hasOverlap ? (colWidthPct * 0.65) : (colWidthPct * 0.95);
+    const shiftOffset = isShifted ? (colWidthPct * 0.3) : 0; // Shift only by 30% instead of 50%
+    
+    const finalLeft = `calc(${columnStartBase + shiftOffset}% + 2px)`;
+  
     return {
       ...baseStyles,
       left: finalLeft,
       width: `${finalWidthPct}%`,
-    }
-  }
+      // Add a border to distinct overlapped cards
+      borderLeft: hasOverlap ? '2px solid rgba(0,0,0,0.3)' : 'none',
+    };
+  };
+
 
   const navigate = (direction: 'prev' | 'next' | 'today') => {
     if (direction === 'today') return setSelectedDate(new Date())
@@ -180,6 +238,7 @@ export default function SchedulePage() {
   const weekDays = Array.from({ length: 7 }).map((_, i) => 
     addDays(startOfWeek(selectedDate, { weekStartsOn: 1 }), i)
   )
+
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
@@ -219,6 +278,21 @@ export default function SchedulePage() {
             )}
           </div>
 
+          
+          {/* ZOOM SLIDER - Desktop Only for clean UI, or small icons for mobile */}
+          {/* <div className="hidden md:flex items-center gap-2 px-3 border-l border-white/10 ml-2">
+            <span className="text-[10px] font-black text-slate-500 uppercase">Zoom</span>
+            <input 
+              type="range" 
+              min="40" 
+              max="160" 
+              value={hourHeight} 
+              onChange={(e) => setHourHeight(parseInt(e.target.value))}
+              className="w-20 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+          </div> */}
+
+
           {/* 2. CENTER: DATE NAVIGATION (Absolutely centered) */}
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
             <button onClick={() => navigate('prev')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
@@ -241,6 +315,7 @@ export default function SchedulePage() {
             </button>
           </div>
 
+
           {/* 3. RIGHT: ACTION BUTTON (Pushed to the right) */}
           <div className="ml-auto z-10">
             <button 
@@ -255,67 +330,66 @@ export default function SchedulePage() {
         </div>
       </header>
 
-      {/* COLUMN HEADERS - Only show if week view */}
-      {viewMode === 'week' && (
-        <div className="flex bg-[#0A0A0A] border-b border-white/5 sticky top-0 z-[60] ml-16 overflow-hidden shrink-0">
-          {weekDays.map((day, i) => (
-            <div key={i} className={`flex-1 py-2 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
-              {/* Short names for mobile (Пн), Full for desktop (Понедельник) */}
-              <p className="text-[8px] md:text-[9px] font-black uppercase text-slate-500">
-                <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
-                <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
-              </p>
-              <p className={`text-xs md:text-sm font-black italic ${isSameDay(day, new Date()) ? 'text-primary' : 'text-white'}`}>
-                {format(day, 'dd.MM')}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
 
-      {/* SCROLLABLE GRID */}
+      {/* 2. SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
-        <div className="relative" style={{ minWidth: viewMode === 'day' ? '100%' : '1200px', height: `${HOURS.length * hourHeight}px` }}>
+        <div className="relative" style={{ minWidth: viewMode === 'day' ? '100%' : '1200px' }}>
           
-          {/* TIME AXIS */}
-          <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
-            {HOURS.map(h => (
-              <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
-                {format(h, 'HH:mm')}
-              </div>
-            ))}
-          </div>
+          {/* COLUMN HEADERS (Now scrolls horizontally with the grid) */}
+          {viewMode === 'week' && (
+            <div className="flex ml-16 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[60]">
+              {weekDays.map((day, i) => (
+                <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
+                  <p className="text-[9px] font-black uppercase text-slate-500">
+                    <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
+                    <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
+                  </p>
+                  <p className={`text-sm font-black italic ${isSameDay(day, new Date()) ? 'text-primary' : 'text-white'}`}>
+                    {format(day, 'dd.MM')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
-          <div className="absolute left-16 top-0 right-0 h-full">
-            {/* GRID BACKGROUND LINES */}
-            <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
-              {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, i) => (
-                <div key={i} className="border-r border-white/5 h-full relative">
-                   {HOURS.map(h => (
-                    <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="border-b border-white/[0.03]" />
-                  ))}
+          {/* GRID CONTENT */}
+          <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
+            <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
+              {HOURS.map(h => (
+                <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
+                  {format(h, 'HH:mm')}
                 </div>
               ))}
             </div>
 
-            {/* LESSON CARDS LAYER */}
-            <div className="absolute inset-0 z-30">
-              {!loading && lessons.map(l => (
-                <LessonCard 
-                  key={l.id} 
-                  lesson={l}
-                  viewMode={viewMode} 
-                  hourHeight={hourHeight}
-                  getStyles={() => getLessonStyles(l)}
-                  onEdit={(lesson: any) => { setEditingLesson(lesson); setIsModalOpen(true); }} 
-                />
-              ))}
+            <div className="absolute left-16 top-0 right-0 h-full">
+              <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
+                {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, i) => (
+                  <div key={i} className="border-r border-white/5 h-full relative">
+                     {HOURS.map(h => (
+                      <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="border-b border-white/[0.03]" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div className="absolute inset-0 z-30">
+                {!loading && lessons.map(l => (
+                  <LessonCard 
+                    key={l.id} 
+                    lesson={l}
+                    viewMode={viewMode} 
+                    hourHeight={hourHeight}
+                    getStyles={() => getLessonStyles(l)}
+                    onEdit={(lesson: any) => { setEditingLesson(lesson); setIsModalOpen(true); }} 
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MODALS */}
       <AddLessonModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
