@@ -6,16 +6,16 @@
   "Sidebar": {
     "director": "Директор",
     "staffHome": "Инструктор",
-    "packages": "Пакеты",
+    "packages": "Курсы",
     "payments": "Платежи",
     "clientHome": "Центр учеников",
     "overview": "Обзор",
     "finances": "Финансы",
-    "courses": "Курсы",
+    "courses": "Цены на Курсы",
     "staff": "Персонал",
     "lessons": "Занятия",
     "schedule": "Расписание",
-    "roster": "Списки",
+    "roster": "Ученики",
     "dashboard": "Курсы",
     "trainingLog": "Журнал тренировок",
     "settings": "Настройки",
@@ -27,8 +27,8 @@
   },
   "admin": {
     "dashboard": {
-      "title": "Командный центр",
-      "subtitle": "Панель административного управления",
+      "title": "Админ центр",
+      "subtitle": "Панель администратора",
       "export_btn": "Выгрузка Blackbox",
       "export_loading": "Компиляция...",
       "stats": {
@@ -37,26 +37,63 @@
         "net": "Чистая прибыль"
       },
       "nav": {
-        "riders": "Райдеры",
+        "riders": "Ученики",
         "riders_sub": "Активно: {count}",
-        "recruit": "Рекрутинг",
+        "recruit": "Добавить Ученика",
         "recruit_sub": "Новая регистрация",
         "schedule": "Расписание",
-        "schedule_sub": "Полетная палуба",
+        "schedule_sub": "График Занятий",
         "finances": "Финансы",
-        "finances_sub": "P&L Ledger",
+        "finances_sub": "Доходы / Расходы",
         "courses": "Курсы",
         "courses_sub": "Настройка программ",
-        "instructors": "Инструкторы",
-        "instructors_sub": "Штат флота"
+        "instructors": "Персонал",
+        "instructors_sub": "Инструктора"
       },
       "toasts": {
-        "sync_error": "Телеметрия оффлайн: ошибка синхронизации",
+        "sync_error": "Оффлайн: ошибка синхронизации",
         "export_success": "Резервная копия Blackbox экспортирована",
         "export_error": "Экспорт прерван"
       }
     },
-"finances": {
+    "staff": {
+      "title": "Персонал",
+      "subtitle": "Системные администраторы и персонал",
+      "recruit_button": "Добавить сотрудника",
+      "roster_active": "Активный состав",
+      "roster_archived": "Архив состава",
+      "loading": "Синхронизация данных...",
+      "no_staff": "Персонал в данном секторе не найден.",
+      "actions": {
+        "edit": "Изменить права",
+        "archive": "Отозвать доступ",
+        "restore": "Восстановить доступ",
+        "confirm_deployment": "Подтвердить назначение",
+        "abort": "Отмена операции"
+      },
+      "form": {
+        "title_new": "Набор персонала",
+        "title_edit": "Изменение данных сотрудника",
+        "first_name": "Имя",
+        "last_name": "Фамилия",
+        "email": "Рабочая почта",
+        "phone": "Телефон",
+        "role_label": "Уровень доступа",
+        "roles": {
+          "admin": "Администратор",
+          "staff": "Инструктор"
+        }
+      },
+      "notifications": {
+        "create_success": "Новый сотрудник зачислен в штат",
+        "update_success": "Права доступа обновлены",
+        "archive_confirm": "Вы уверены, что хотите отозвать доступ у этого сотрудника?",
+        "archive_success": "Доступ отозван",
+        "restore_success": "Доступ восстановлен",
+        "error_duplicate": "Этот email уже зарегистрирован в системе."
+      }
+    },
+    "finances": {
       "title": "Финансы",
       "system_label": "Financial System",
       "add_expense": "Добавить расход",
@@ -92,7 +129,7 @@
         "edit_title": "Редактировать расход",
         "new_title": "Новый расход",
         "subtitle": "Система финансового учета",
-        "amount": "Сумма (RUB)",
+        "amount": "Сумма UAH",
         "date": "Дата",
         "method": "Метод оплаты",
         "biz_type": "Тип бизнеса",
@@ -272,7 +309,7 @@
     "client": "Ученик",
     "course": "Тип курса",
     "hours": "Часы",
-    "price": "Цена (UAH)",
+    "price": "Цена UAH",
     "totalValue": "Общая стоимость контракта",
     "paymentToday": "Оплачено сегодня",
     "activate": "Активировать контракт",

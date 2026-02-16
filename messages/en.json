@@ -56,7 +56,44 @@
         "export_error": "Export Interrupted"
       }
     },
-"finances": {
+    "staff": {
+      "title": "Headquarters",
+      "subtitle": "System Administrators & Staff",
+      "recruit_button": "Add Staff Member",
+      "roster_active": "Active Personnel",
+      "roster_archived": "Archived Personnel",
+      "loading": "Syncing HQ Data...",
+      "no_staff": "No personnel found in this sector.",
+      "actions": {
+        "edit": "Edit Permissions",
+        "archive": "Revoke Access",
+        "restore": "Restore Access",
+        "confirm_deployment": "Deploy Staff",
+        "abort": "Abort Operation"
+      },
+      "form": {
+        "title_new": "Recruit HQ Staff",
+        "title_edit": "Modify Staff Intel",
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "email": "Official Email",
+        "phone": "Comms (Phone)",
+        "role_label": "Security Clearance",
+        "roles": {
+          "admin": "System Administrator",
+          "staff": "Operations Staff"
+        }
+      },
+      "notifications": {
+        "create_success": "New staff member deployed to HQ",
+        "update_success": "Staff permissions updated",
+        "archive_confirm": "Are you sure you want to revoke access for this member?",
+        "archive_success": "Access revoked",
+        "restore_success": "Access restored",
+        "error_duplicate": "This email is already registered in the system."
+      }
+    },
+    "finances": {
       "title": "Finances",
       "system_label": "Financial System",
       "add_expense": "Add Expense",

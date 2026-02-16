@@ -71,8 +71,8 @@ export default function Sidebar() {
               </div>
               <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label={t('overview')} active={pathname === '/admin'} />
               <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/admin/finances')} />
-              <SidebarLink href="/admin/courses" icon={<Bike size={16}/>} label={t('courses')} active={pathname.startsWith('/admin/courses')} />
-              <SidebarLink href="/admin/instructors" icon={<GraduationCap size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
+              <SidebarLink href="/admin/courses" icon={<Package size={16}/>} label={t('courses')} active={pathname.startsWith('/admin/courses')} />
+              <SidebarLink href="/admin/instructors" icon={<Users size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
             </>
           )}
 
@@ -84,8 +84,8 @@ export default function Sidebar() {
               </div>
               <SidebarLink href="/staff" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff'} />
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
-              <SidebarLink href="/staff/clients" icon={<Users size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
-              <SidebarLink href="/staff/packages" icon={<Package size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
+              <SidebarLink href="/staff/clients" icon={<GraduationCap size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
+              <SidebarLink href="/staff/packages" icon={<Bike size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
               <SidebarLink href="/staff/payments" icon={<Banknote size={16}/>} label={t('payments') || 'Payments'} active={pathname.startsWith('/staff/payments')} />
             </>
           )}

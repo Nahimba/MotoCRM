@@ -6,7 +6,8 @@ import { toCsvRows, downloadFile } from "@/lib/csv"
 import { 
   FileDown, TrendingUp, Wallet, Users, 
   PlusCircle, Calendar, ArrowUpRight, 
-  BarChart3, ShieldCheck, Bike, Loader2
+  BarChart3, ShieldCheck, GraduationCap, Loader2,
+  Package
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -116,7 +117,7 @@ export default function UnifiedDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <NavButton 
           href="/staff/clients" 
-          icon={<Users size={20}/>} 
+          icon={<GraduationCap size={20}/>} 
           label={t('nav.riders')} 
           sub={t('nav.riders_sub', { count: activeRidersCount })} 
         />
@@ -140,7 +141,7 @@ export default function UnifiedDashboard() {
         />
         <NavButton 
           href="/admin/courses" 
-          icon={<Bike size={20}/>} 
+          icon={<Package size={20}/>} 
           label={t('nav.courses')} 
           sub={t('nav.courses_sub')} 
         />
