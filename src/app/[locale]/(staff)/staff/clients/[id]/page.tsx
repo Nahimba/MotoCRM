@@ -25,6 +25,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         .from('clients')
         .select(`
           *,
+          profiles:profile_id (
+            first_name,
+            last_name,
+            phone,
+            email,
+            address
+          ),
           accounts (
             id,
             course_packages (*),
@@ -35,6 +42,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         .single()
 
       if (error) {
+        console.error("Fetch error:", error)
         router.push('/staff/clients')
       } else {
         setClient(data)
@@ -53,6 +61,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
   if (!client) return <div className="h-screen flex items-center justify-center text-white font-black uppercase">{t("lost_signal")}</div>
 
+  // Data mapping for readability
+  const profile = client.profiles
   const account = client.accounts?.[0]
   const activePackage = account?.course_packages?.find((p: any) => p.status === 'active')
   
@@ -71,7 +81,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </Link>
           <div>
             <h1 className="text-6xl font-black italic uppercase text-white tracking-tighter leading-[0.8]">
-              {client.name} <span className="text-primary">{client.last_name}</span>
+              {profile?.first_name} <span className="text-primary">{profile?.last_name}</span>
             </h1>
             <div className="flex items-center gap-3 mt-4">
                <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">
@@ -102,12 +112,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             
             <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
             <div className="space-y-6 relative z-10">
-              <InfoRow icon={<Phone size={14}/>} label={t("comms")} value={client.phone} fallback={t("unspecified")} />
-              <InfoRow icon={<Mail size={14}/>} label={t("network")} value={client.email} fallback={t("unspecified")} />
-              <InfoRow icon={<MapPin size={14}/>} label={t("sector")} value={client.address} fallback={t("unspecified")} />
+              <InfoRow icon={<Phone size={14}/>} label={t("comms")} value={profile?.phone} fallback={t("unspecified")} />
+              <InfoRow icon={<Mail size={14}/>} label={t("network")} value={profile?.email} fallback={t("unspecified")} />
+              <InfoRow icon={<MapPin size={14}/>} label={t("sector")} value={profile?.address} fallback={t("unspecified")} />
             </div>
             
-            <div className="pt-4">
+            <div className="pt-4 border-t border-white/5">
               <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
               <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${client.gear_type === 'Auto' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
                 {client.gear_type || 'Manual'}
@@ -152,7 +162,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                      </div>
                      <div className="text-right">
                         <p className="text-5xl font-black text-white italic leading-none">
-                           {Math.round(((activePackage.total_hours - activePackage.remaining_hours) / activePackage.total_hours) * 100)}%
+                            {Math.round(((activePackage.total_hours - activePackage.remaining_hours) / activePackage.total_hours) * 100)}%
                         </p>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{t("completion")}</p>
                      </div>

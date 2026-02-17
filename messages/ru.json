@@ -350,7 +350,7 @@
       "id_label": "ID"
     },
     "form": {
-      "abort": "Отменить операцию",
+      "abort": "Отменить",
       "modify_title": "Изменить досье",
       "recruit_title": "Нанять ученика",
       "first_name": "Имя",
@@ -388,6 +388,26 @@
       "no_deployment": "Нет активных развертываний",
       "unspecified": "НЕ УКАЗАНО",
       "active_status": "Активный состав"
+    }
+  },
+  "Tags": {
+    "theory": "Учит теорию",
+    "practice": "Практика",
+    "graduated": "Выпустился",
+    "deferred": "Отложил обучение",
+    "reminder": "Напомнить",
+    "manager_title": "Управление тегами",
+    "add_tag": "Добавить тег"
+  },
+  "Docs": {
+    "pack_label": "Пакет документов",
+    "empty_pack": "Файлы не загружены",
+    "add_to_pack": "Добавить в пакет",
+    "status": {
+      "not_needed": "Не требуются",
+      "pending": "В ожидании",
+      "collected": "Собраны",
+      "submitted": "Поданы в ГАИ"
     }
   }
 }

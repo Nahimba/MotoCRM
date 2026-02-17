@@ -390,5 +390,25 @@
       "unspecified": "UNSPECIFIED",
       "active_status": "Active Personnel"
     }
+  },
+  "Tags": {
+    "theory": "Studying Theory",
+    "practice": "Practice",
+    "graduated": "Graduated",
+    "deferred": "Deferred Study",
+    "reminder": "Remind Me",
+    "manager_title": "Tag Management",
+    "add_tag": "Add New Tag"
+  },
+  "Docs": {
+    "pack_label": "Document Pack",
+    "empty_pack": "No files uploaded",
+    "add_to_pack": "Add to pack",
+    "status": {
+      "not_needed": "Not Required",
+      "pending": "Pending",
+      "collected": "Collected",
+      "submitted": "Submitted to Gov"
+    }
   }
 }
