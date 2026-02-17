@@ -57,7 +57,7 @@ export default function ClientLandingPage() {
             {packages[0]?.name || "Rider"} <span className="text-primary">.</span>
           </h1>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
-            Личный кабинет студента
+            Личный кабинет
           </p>
         </div>
         <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-inner">
