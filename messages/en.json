@@ -29,8 +29,8 @@
     "dashboard": {
       "title": "Command Center",
       "subtitle": "Admin Intelligence Suite",
-      "export_btn": "Export Blackbox",
-      "export_loading": "Compiling...",
+      "export_btn": "Export DB to Excel",
+      "export_loading": "Generating Excel...",
       "stats": {
         "revenue": "Gross Revenue",
         "burn": "Business Burn",

@@ -2,23 +2,29 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { toCsvRows, downloadFile } from "@/lib/csv"
 import { 
   FileDown, TrendingUp, Wallet, Users, 
   PlusCircle, Calendar, ArrowUpRight, 
   BarChart3, ShieldCheck, GraduationCap, Loader2,
-  Package
+  Package, Database
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useTranslations } from 'next-intl'
 
+import { exportFullDatabase } from '@/components/export/export-utils-db-to-xlsx'; // Move the logic to a separate file
+import { exportDataBackup, exportSchemaBackup } from '@/components/export/backup-utils-db-to-sql';
+
 export default function UnifiedDashboard() {
   const t = useTranslations('admin.dashboard')
   const [stats, setStats] = useState({ income: 0, expenses: 0 })
   const [activeRidersCount, setActiveRidersCount] = useState(0)
-  const [exporting, setExporting] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Export States
+  const [exporting, setExporting] = useState(false)
+  const [backingUp, setBackingUp] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   async function fetchData() {
     setLoading(true)
@@ -43,27 +49,24 @@ export default function UnifiedDashboard() {
 
   useEffect(() => { fetchData() }, [])
 
-  async function handleExportCsv() {
-    setExporting(true)
-    try {
-      const [clients, expenses, payments] = await Promise.all([
-        supabase.from("clients").select("*"),
-        supabase.from("business_expenses").select("*"),
-        supabase.from("payments").select("*"),
-      ])
-      const combined = [
-        "CLIENTS", toCsvRows(clients.data || []),
-        "BUSINESS_EXPENSES", toCsvRows(expenses.data || []),
-        "PAYMENTS", toCsvRows(payments.data || []),
-      ].join("\r\n")
-      downloadFile(combined, `motocrm-blackbox-${Date.now()}.csv`)
-      toast.success(t('toasts.export_success'))
-    } catch (e) {
-      toast.error(t('toasts.export_error'))
-    } finally {
-      setExporting(false)
-    }
-  }
+
+  // 1. XLSX (Business)
+  const handleExport = async () => {
+    await exportFullDatabase(setExporting);
+  };
+
+  // 2. SQL Data (Records)
+  const handleDataBackup = async () => {
+    setShowExportMenu(false);
+    await exportDataBackup(setBackingUp);
+  };
+
+  // 3. SQL Schema (Views/Funcs)
+  const handleSchemaBackup = async () => {
+    setShowExportMenu(false);
+    await exportSchemaBackup(setBackingUp);
+  };
+
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-black">
@@ -74,7 +77,7 @@ export default function UnifiedDashboard() {
   return (
     <div className="space-y-10 pb-20 px-4 pt-6 max-w-7xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
         <div>
           <h1 className="text-4xl font-black italic uppercase text-white tracking-tighter">
             {t('title')}
@@ -83,14 +86,60 @@ export default function UnifiedDashboard() {
             <ShieldCheck size={12} className="text-primary"/> {t('subtitle')}
           </p>
         </div>
-        <button 
-          onClick={handleExportCsv} 
-          disabled={exporting} 
-          className="bg-white/5 border border-white/10 p-3 px-6 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/10 transition-all active:scale-95"
-        >
-          <FileDown size={16} className="text-primary" /> 
-          {exporting ? t('export_loading') : t('export_btn')}
-        </button>
+
+        <div className="flex items-center gap-3">
+          {/* XLSX Report */}
+          <button 
+            onClick={handleExport} 
+            disabled={exporting || backingUp} 
+            className="bg-white/5 border border-white/10 h-12 px-6 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 disabled:opacity-50"
+          >
+            <FileDown size={16} className={exporting ? "animate-bounce text-primary" : "text-primary"} /> 
+            {exporting ? t('export_loading') : t('export_btn')}
+          </button>
+
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="bg-primary/10 border border-primary/20 h-12 px-6 rounded-2xl text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-primary/20 transition-all active:scale-95"
+            >
+              <Database size={16} className={backingUp ? "animate-spin" : ""} />
+              <div className="text-left leading-tight">
+                <p>System Backup</p>
+                <p className="text-[7px] opacity-60 font-bold italic lowercase">Choose type</p>
+              </div>
+              <Database size={14} className={`transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 mt-3 w-72 bg-[#0a0a0a] border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100] p-2 backdrop-blur-2xl">
+                {/* OPTION 1: DATA */}
+                <button 
+                  onClick={handleDataBackup}
+                  className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-2xl transition-all text-left group"
+                >
+                  <div className="p-2 bg-green-500/10 rounded-lg group-hover:bg-green-500/20"><Database size={16} className="text-green-500" /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-white uppercase italic">Full Data Dump</p>
+                    <p className="text-[8px] text-slate-500 uppercase font-bold">Raw rows & records (.sql)</p>
+                  </div>
+                </button>
+
+                {/* OPTION 2: METADATA */}
+                <button 
+                  onClick={handleSchemaBackup}
+                  className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-2xl transition-all text-left group"
+                >
+                  <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20"><ShieldCheck size={16} className="text-blue-500" /></div>
+                  <div>
+                    <p className="text-[10px] font-black text-white uppercase italic">Schema Definitions</p>
+                    <p className="text-[8px] text-slate-500 uppercase font-bold">Views, Funcs & Metadata (.sql)</p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* FINANCIAL STATS */}

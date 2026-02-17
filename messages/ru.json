@@ -29,8 +29,8 @@
     "dashboard": {
       "title": "Админ центр",
       "subtitle": "Панель администратора",
-      "export_btn": "Выгрузка Blackbox",
-      "export_loading": "Компиляция...",
+      "export_btn": "Скачать БД (Excel)",
+      "export_loading": "Экспорт...",
       "stats": {
         "revenue": "Общая выручка",
         "burn": "Операционные расходы",
