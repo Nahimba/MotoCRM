@@ -15,23 +15,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const { id } = use(params)
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     async function loadClientData() {
       if (!id) return
-      
       const { data, error } = await supabase
         .from('clients')
         .select(`
           *,
-          profiles:profile_id (
-            first_name,
-            last_name,
-            phone,
-            email,
-            address
-          ),
+          profiles:profile_id (*),
           accounts (
             id,
             course_packages (*),
@@ -46,6 +40,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         router.push('/staff/clients')
       } else {
         setClient(data)
+        
+        // --- AVATAR URL RESOLUTION ---
+        const rawAvatar = data.profiles?.avatar_url
+        if (rawAvatar) {
+          if (rawAvatar.startsWith('http')) {
+            // Legacy support for full URLs
+            setAvatarPreview(rawAvatar)
+          } else {
+            // New logic: generate public URL from filename
+            const { data: urlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(`avatars/${rawAvatar}`)
+            setAvatarPreview(urlData.publicUrl)
+          }
+        }
       }
       setLoading(false)
     }
@@ -59,70 +68,116 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     </div>
   )
   
-  if (!client) return <div className="h-screen flex items-center justify-center text-white font-black uppercase">{t("lost_signal")}</div>
-
-  // Data mapping for readability
-  const profile = client.profiles
-  const account = client.accounts?.[0]
+  const profile = client?.profiles
+  const account = client?.accounts?.[0]
   const activePackage = account?.course_packages?.find((p: any) => p.status === 'active')
-  
-  const totalPaid = account?.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
-  const contractPrice = activePackage?.contract_price || 0;
-  const debt = contractPrice - totalPaid;
+  const totalPaid = account?.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
+  const contractPrice = activePackage?.contract_price || 0
+  const debt = contractPrice - totalPaid
+  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 px-4">
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 pt-6">
-        <div className="space-y-4">
-          <Link href="/staff/clients" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors group">
-            <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-            <span className="text-[10px] font-black uppercase tracking-widest">{t("return")}</span>
-          </Link>
-          <div>
-            <h1 className="text-6xl font-black italic uppercase text-white tracking-tighter leading-[0.8]">
-              {profile?.first_name} <span className="text-primary">{profile?.last_name}</span>
-            </h1>
-            <div className="flex items-center gap-3 mt-4">
-               <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                 UID: {id.slice(0, 8)}
-               </span>
-               <span className="flex items-center gap-1.5 text-[10px] font-black text-green-500 uppercase tracking-widest">
-                 <ShieldCheck size={14} /> {t("active_status")}
-               </span>
+    <div className="max-w-7xl mx-auto space-y-8 pb-24 px-4 pt-6">
+      
+      {/* --- BREADCRUMB --- */}
+      <Link href="/staff/clients" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors group w-fit">
+        <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+        <span className="text-[10px] font-black uppercase tracking-widest">{t("return")}</span>
+      </Link>
+
+      {/* --- TACTICAL HEADER BLOCK --- */}
+      <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-hidden shadow-2xl">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+          
+          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+            {/* AVATAR BOX */}
+            <div className="relative shrink-0">
+              <div className="w-36 h-36 md:w-48 md:h-48 bg-gradient-to-br from-zinc-800 to-black rounded-[2rem] md:rounded-[3rem] border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl">
+                {avatarPreview ? (
+                  <img src={avatarPreview} className="w-full h-full object-cover" alt="Pilot" />
+                ) : (
+                  <span className="text-4xl md:text-5xl font-black italic text-zinc-700 tracking-tighter">{initials}</span>
+                )}
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-green-500 p-2 rounded-xl border-4 border-[#0a0a0a]">
+                <ShieldCheck size={18} className="text-black" />
+              </div>
+            </div>
+
+            {/* IDENTITY TEXT */}
+            <div className="text-center md:text-left">
+              <p className="text-[10px] md:text-xs font-black text-primary uppercase tracking-[0.4em] mb-2 md:mb-4 opacity-80">
+                Flight Pilot Identification
+              </p>
+              <div className="space-y-0 md:-space-y-4">
+                <h1 className="text-5xl md:text-8xl font-black italic uppercase text-white tracking-tighter leading-none">
+                  {profile?.first_name}
+                </h1>
+                <h1 className="text-5xl md:text-8xl font-black italic uppercase text-primary tracking-tighter leading-none">
+                  {profile?.last_name}
+                </h1>
+              </div>
+              <div className="flex items-center justify-center md:justify-start gap-3 mt-4 md:mt-6">
+                <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">
+                  UID: {id.slice(0, 8)}
+                </span>
+                <span className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  {t("active_status")}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <Link 
-          href={`/staff/clients/${id}/edit`}
-          className="bg-white text-black p-4 px-8 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-        >
-          <Edit3 size={18} /> {t("modify")}
-        </Link>
+          {/* EDIT BUTTON */}
+          <div className="lg:w-fit">
+            <Link 
+              href={`/staff/clients/${id}/edit`}
+              className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-3 shadow-white/5 shadow-xl group"
+            >
+              <Edit3 size={16} className="group-hover:rotate-12 transition-transform" /> 
+              {t("modify")}
+            </Link>
+          </div>
+        </div>
       </div>
 
+      {/* --- CONTENT GRID --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT COLUMN: CORE INTEL */}
-        <div className="space-y-6">
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 space-y-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Bike size={120} />
+
+        {/* LEFT: CORE INTEL */}
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 space-y-8 relative overflow-hidden">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-4">
+            {t("core_intel")}
+          </h2>
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between group/row">
+              <InfoRow 
+                icon={<Phone size={14}/>} 
+                label={t("comms")} 
+                value={profile?.phone} 
+                fallback="N/A" 
+              />
+              {profile?.phone && (
+                <a 
+                  href={`tel:${profile.phone}`}
+                  className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all active:scale-95 shadow-xl group"
+                >
+                  <Phone size={16} className="animate-pulse group-hover:animate-none" />
+                </a>
+              )}
             </div>
-            
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
-            <div className="space-y-6 relative z-10">
-              <InfoRow icon={<Phone size={14}/>} label={t("comms")} value={profile?.phone} fallback={t("unspecified")} />
-              <InfoRow icon={<Mail size={14}/>} label={t("network")} value={profile?.email} fallback={t("unspecified")} />
-              <InfoRow icon={<MapPin size={14}/>} label={t("sector")} value={profile?.address} fallback={t("unspecified")} />
-            </div>
-            
-            <div className="pt-4 border-t border-white/5">
-              <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
-              <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${client.gear_type === 'Auto' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
-                {client.gear_type || 'Manual'}
-              </span>
-            </div>
+
+            <InfoRow icon={<Mail size={14}/>} label={t("network")} value={profile?.email} fallback="N/A" />
+            <InfoRow icon={<MapPin size={14}/>} label={t("sector")} value={profile?.address} fallback="N/A" />
+          </div>
+
+          <div className="pt-4 border-t border-white/5">
+            <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
+            <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${client?.gear_type === 'Auto' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
+              {client?.gear_type || 'Manual'}
+            </span>
           </div>
         </div>
 
@@ -155,25 +210,25 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               
               {activePackage ? (
                 <div className="space-y-8">
-                   <div className="flex justify-between items-end">
-                     <div>
+                    <div className="flex justify-between items-end">
+                      <div>
                         <p className="text-4xl font-black text-white italic uppercase tracking-tighter">{activePackage.package_name || 'Standard Package'}</p>
                         <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2">{t("valuation")}: {activePackage.contract_price} ₴</p>
-                     </div>
-                     <div className="text-right">
+                      </div>
+                      <div className="text-right">
                         <p className="text-5xl font-black text-white italic leading-none">
                             {Math.round(((activePackage.total_hours - activePackage.remaining_hours) / activePackage.total_hours) * 100)}%
                         </p>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">{t("completion")}</p>
-                     </div>
-                   </div>
+                      </div>
+                    </div>
 
-                   <div className="h-6 bg-white/5 rounded-2xl overflow-hidden border border-white/5 p-1">
-                      <div 
+                    <div className="h-6 bg-white/5 rounded-2xl overflow-hidden border border-white/5 p-1">
+                       <div 
                         className="h-full bg-primary rounded-xl transition-all duration-1000 shadow-[0_0_20px_rgba(255,165,0,0.4)]" 
                         style={{ width: `${((activePackage.total_hours - activePackage.remaining_hours) / activePackage.total_hours) * 100}%` }}
                       />
-                   </div>
+                    </div>
                 </div>
               ) : (
                 <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
@@ -190,10 +245,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 function InfoRow({ icon, label, value, fallback }: any) {
   return (
     <div className="flex items-center gap-5 group">
-      <div className="p-4 bg-white/5 rounded-[1.25rem] text-slate-500 group-hover:text-primary transition-all border border-white/5 group-hover:border-primary/20">{icon}</div>
+      <div className="p-4 bg-white/5 rounded-2xl text-slate-500 group-hover:text-primary transition-all border border-white/5 group-hover:border-primary/20">{icon}</div>
       <div>
         <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">{label}</p>
-        <p className="text-sm font-black text-white uppercase tracking-tight">{value || fallback}</p>
+        <p className="text-sm font-bold text-white uppercase tracking-tight">{value || fallback}</p>
       </div>
     </div>
   )
@@ -201,13 +256,13 @@ function InfoRow({ icon, label, value, fallback }: any) {
 
 function StatCard({ label, value, icon, sub }: any) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 flex items-center justify-between group hover:border-primary/20 transition-all">
+    <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-8 flex items-center justify-between group hover:border-primary/10 transition-all">
       <div>
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">{label}</p>
-        <h4 className="text-5xl font-black text-white italic tracking-tighter">{value}</h4>
+        <h4 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter">{value}</h4>
         <p className="text-[9px] font-black text-slate-600 uppercase mt-3 tracking-widest">{sub}</p>
       </div>
-      <div className="p-6 bg-white/5 rounded-[2.5rem] border border-white/5 group-hover:bg-primary/5 group-hover:scale-105 transition-all">
+      <div className="p-5 bg-white/5 rounded-3xl border border-white/5 group-hover:bg-primary/5 transition-all">
         {icon}
       </div>
     </div>

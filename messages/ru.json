@@ -143,6 +143,51 @@
         "delete_confirm": "Вы уверены, что хотите удалить этот расход?",
         "error_save": "Ошибка при сохранении данных"
       }
+    },
+    "courses": {
+      "title": "Учебный план",
+      "tabs": {
+        "active": "Активные курсы",
+        "archived": "Архив"
+      },
+      "actions": {
+        "add": "Добавить курс",
+        "edit": "Правка",
+        "archive": "В архив",
+        "restore": "Восстановить",
+        "submit": "Подтвердить",
+        "processing": "Обработка..."
+      },
+      "table": {
+        "name": "Название курса",
+        "type": "Тип",
+        "duration": "Длительность",
+        "basePrice": "Базовая цена",
+        "promo": "Акция",
+        "empty": "Курсы в категории «{view}» не найдены",
+        "noDiscount": "Без скидки",
+        "actions": "Действия"
+        
+      },
+      "modal": {
+        "create": "Создать курс",
+        "edit": "Редактировать курс",
+        "fields": {
+          "name": "Название курса",
+          "category": "Категория",
+          "hours": "Всего часов",
+          "price": "Базовая цена (грн)",
+          "promoPrice": "Акционная цена (грн)",
+          "optional": "Опционально"
+        }
+      },
+      "notifications": {
+        "added": "Новый курс добавлен в план",
+        "updated": "Курс обновлен",
+        "archived": "Курс архивирован",
+        "restored": "Курс восстановлен",
+        "confirm": "Вы уверены, что хотите {action} этот курс?"
+      }
     }
   },
   "Schedule": {
@@ -324,20 +369,42 @@
   },
   "Clients": {
     "list": {
-      "title": "Список",
-      "subtitle": "Учеников",
-      "active_count": "{count} Активных Досье",
-      "search_placeholder": "ПОИСК ПО ИМЕНИ ИЛИ ТЕЛЕФОНУ...",
-      "recruit_btn": "Нанять",
-      "sync_data": "Синхронизация флота...",
+      "title": "Клиенты",
+      "subtitle": "База клиентов",
+      "active_count": "{count} активных клиентов",
+      "search_placeholder": "Поиск по имени или телефону...",
+      "recruit_btn": "Добавить клиента",
+      "sync_data": "Синхронизация данных...",
       "no_contact": "НЕТ СВЯЗИ",
-      "dossier": "Досье",
-      "hours_left": "Остаток",
-      "hours": "{count} ЧАСОВ",
-      "standard_unit": "Обычный Юнит",
-      "cleared": "ОПЛАЧЕНО",
-      "no_pilots": "Пилоты не обнаружены",
-      "missing_data": "Данные отсутствуют в текущем активном ростере"
+      "dossier": "Профиль",
+      "hours_left": "Осталось",
+      "hours": "{count} ч.",
+      "standard_unit": "Стандартный юнит",
+      "cleared": "ЗАВЕРШЕНО",
+      "no_pilots": "Клиенты не найдены",
+      "missing_data": "Информация отсутствует"
+    },
+    "form": {
+      "abort": "Отмена",
+      "modify_title": "Редактирование данных клиента",
+      "recruit_title": "Регистрация нового клиента",
+      "first_name": "Имя",
+      "last_name": "Фамилия",
+      "phone": "Номер телефона",
+      "email": "Электронная почта",
+      "address": "Адрес",
+      "notes": "Внутренние заметки",
+      "notes_placeholder": "Добавьте специфические детали здесь...",
+      "transmission": "Тип КПП",
+      "lead_source": "Источник обращения",
+      "select_source": "Выберите источник...",
+      "tags": "Теги / Метки",
+      "tags_placeholder": "VIP, Корпоратив, Выходные...",
+      "graduation_status": "Статус: Выпускник",
+      "update_btn": "Сохранить изменения",
+      "recruit_btn": "Создать клиента",
+      "success_update": "Данные клиента успешно обновлены",
+      "success_create": "Новый клиент успешно зарегистрирован"
     },
     "edit": {
       "loading_auth": "Проверка Доступа",
@@ -348,23 +415,6 @@
       "modify_intel": "Изменение данных",
       "pilot_label": "Ученик",
       "id_label": "ID"
-    },
-    "form": {
-      "abort": "Отменить",
-      "modify_title": "Изменить досье",
-      "recruit_title": "Нанять ученика",
-      "first_name": "Имя",
-      "last_name": "Фамилия",
-      "phone": "Телефон",
-      "email": "Email",
-      "address": "Адрес",
-      "notes": "Тактические заметки",
-      "notes_placeholder": "ЛЮБЫЕ ЗАМЕТКИ...",
-      "transmission": "Трансмиссия",
-      "update_btn": "Обновить досье",
-      "recruit_btn": "Зачислить в штат",
-      "success_update": "Досье успешно обновлено",
-      "success_create": "Новый ученик зачислен в ростер"
     },
     "details": {
       "loading": "Доступ к досье...",
@@ -408,6 +458,15 @@
       "pending": "В ожидании",
       "collected": "Собраны",
       "submitted": "Поданы в ГАИ"
+    }
+  },
+  "Constants": {
+    "lead_sources": {
+      "instagram": "Инстаграм",
+      "website": "Сайт",
+      "word_of_mouth": "Сарафан",
+      "google": "Гугл",
+      "other": "Другое"
     }
   }
 }

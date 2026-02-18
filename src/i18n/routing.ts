@@ -4,10 +4,10 @@ import { createNavigation } from 'next-intl/navigation';
 
 export const routing = defineRouting({
   // A list of all locales that are supported
-  locales: ['en', 'ru'],
+  locales: ['en', 'ru', 'ua'],
   
   // Used when no locale matches
-  defaultLocale: 'ru',
+  defaultLocale: 'ua',
   
   // Prefix URLs with the locale (e.g. /en/admin)
   localePrefix: 'always'

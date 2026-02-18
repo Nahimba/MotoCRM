@@ -143,6 +143,50 @@
         "delete_confirm": "Are you sure you want to delete this record?",
         "error_save": "Error saving data"
       }
+    },
+    "courses": {
+      "title": "The Syllabus",
+      "tabs": {
+        "active": "Active Courses",
+        "archived": "Archived"
+      },
+      "actions": {
+        "add": "Add Course",
+        "edit": "Edit",
+        "archive": "Archive",
+        "restore": "Restore",
+        "submit": "Deploy to Syllabus",
+        "processing": "Processing..."
+      },
+      "table": {
+        "name": "Course Name",
+        "type": "Type",
+        "duration": "Duration",
+        "basePrice": "Base Price",
+        "promo": "Promo",
+        "empty": "No {view} courses found",
+        "noDiscount": "No Discount",
+        "actions": "Actions"
+      },
+      "modal": {
+        "create": "Create Course",
+        "edit": "Edit Course",
+        "fields": {
+          "name": "Course Name",
+          "category": "Category",
+          "hours": "Total Hours",
+          "price": "Base Price (UAH)",
+          "promoPrice": "Promo Price (UAH)",
+          "optional": "Optional"
+        }
+      },
+      "notifications": {
+        "added": "New course added to syllabus",
+        "updated": "Course updated",
+        "archived": "Course archived",
+        "restored": "Course restored",
+        "confirm": "Are you sure you want to {action} this course?"
+      }
     }
   },
   "Schedule": {
@@ -326,19 +370,41 @@
   "Clients": {
     "list": {
       "title": "Clients",
-      "subtitle": "Roster",
-      "active_count": "{count} Active Dossiers",
-      "search_placeholder": "SEARCH BY NAME OR PHONE...",
-      "recruit_btn": "Recruit",
-      "sync_data": "Synchronizing Fleet Data...",
+      "subtitle": "Customer Base",
+      "active_count": "{count} Active Clients",
+      "search_placeholder": "Search by name or phone...",
+      "recruit_btn": "Add Client",
+      "sync_data": "Syncing data...",
       "no_contact": "NO CONTACT",
-      "dossier": "Dossier",
+      "dossier": "Profile",
       "hours_left": "Left",
-      "hours": "{count} HOURS",
+      "hours": "{count} hours",
       "standard_unit": "Standard Unit",
-      "cleared": "CLEARED",
-      "no_pilots": "No Pilots Detected",
-      "missing_data": "Target data is missing from current active roster"
+      "cleared": "COMPLETED",
+      "no_pilots": "No clients found",
+      "missing_data": "Information is missing"
+    },
+    "form": {
+      "abort": "Cancel",
+      "modify_title": "Edit Client Information",
+      "recruit_title": "Register New Client",
+      "first_name": "First Name",
+      "last_name": "Last Name",
+      "phone": "Phone Number",
+      "email": "Email Address",
+      "address": "Address",
+      "notes": "Internal Notes",
+      "notes_placeholder": "Add any specific details here...",
+      "transmission": "Transmission Type",
+      "lead_source": "Lead Source",
+      "select_source": "Select where the client came from...",
+      "tags": "Tags / Labels",
+      "tags_placeholder": "VIP, Corporate, Weekend...",
+      "graduation_status": "Graduated / Completed",
+      "update_btn": "Save Changes",
+      "recruit_btn": "Create Client",
+      "success_update": "Client information updated successfully",
+      "success_create": "New client registered successfully"
     },
     "edit": {
       "loading_auth": "Authenticating Access",
@@ -349,23 +415,6 @@
       "modify_intel": "Modify Intel",
       "pilot_label": "Pilot",
       "id_label": "ID"
-    },
-    "form": {
-      "abort": "Abort Mission",
-      "modify_title": "Modify Dossier",
-      "recruit_title": "Recruit Client",
-      "first_name": "First Name",
-      "last_name": "Last Name",
-      "phone": "Phone",
-      "email": "Email",
-      "address": "Address",
-      "notes": "Tactical Notes",
-      "notes_placeholder": "ANY SPECIFIC NOTES...",
-      "transmission": "Transmission",
-      "update_btn": "Update Dossier",
-      "recruit_btn": "Recruit Client",
-      "success_update": "Dossier updated successfully",
-      "success_create": "New pilot recruited to the roster"
     },
     "details": {
       "loading": "Accessing Dossier...",
@@ -409,6 +458,15 @@
       "pending": "Pending",
       "collected": "Collected",
       "submitted": "Submitted to Gov"
+    }
+  },
+  "Constants": {
+    "lead_sources": {
+      "instagram": "Instagram",
+      "website": "Website",
+      "word_of_mouth": "Word of Mouth",
+      "google": "Google",
+      "other": "Other"
     }
   }
 }

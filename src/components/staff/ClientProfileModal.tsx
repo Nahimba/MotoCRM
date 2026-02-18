@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { X, Phone, ChevronRight, User, FileText, Mail, Wallet, Clock, Loader2 } from "lucide-react"
+import { X, Phone, User, FileText, Mail, Wallet, Clock, Loader2 } from "lucide-react"
 
 interface ClientProfileModalProps {
   client: any
@@ -11,13 +11,15 @@ interface ClientProfileModalProps {
 
 export function ClientProfileModal({ client, onClose }: ClientProfileModalProps) {
   const [details, setDetails] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
-  // Resolve the client ID regardless of how it's passed from the parent
+  // Resolve the client ID (the primary key for the clients table)
   const targetClientId = client.client_id || client.id
 
   useEffect(() => {
-    async function fetchDetails() {
+    async function fetchFullDossier() {
       if (!targetClientId) {
         setLoading(false)
         return
@@ -25,23 +27,76 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
 
       setLoading(true)
       try {
-        const { data, error } = await supabase
+        // 1. Fetch direct data from clients table joining the profiles table
+        // This ensures phone and email are retrieved directly from the source
+        const { data: clientData, error: clientError } = await supabase
+          .from('clients')
+          .select(`
+            notes,
+            profiles:profile_id (
+              first_name,
+              last_name,
+              phone,
+              email,
+              avatar_url
+            )
+          `)
+          .eq('id', targetClientId)
+          .single()
+
+        if (clientError) throw clientError
+        
+        // Supabase returns joined data as an object or array depending on schema
+        // We cast/access the first element if it's an array to fix your TS error
+        const rawProfile = Array.isArray(clientData?.profiles) 
+          ? clientData?.profiles[0] 
+          : clientData?.profiles
+
+        // 2. Fetch financial and timing stats from the tactical dossier view
+        const { data: dossierData } = await supabase
           .from('client_profile_dossier')
           .select('*')
           .eq('client_id', targetClientId)
           .maybeSingle()
 
-        if (error) throw error
-        setDetails(data)
+          setProfile(rawProfile)
+          setDetails({
+            ...dossierData,
+            notes: clientData?.notes || dossierData?.client_notes 
+          })
+
+        setProfile(clientData?.profiles)
+        setDetails({
+          ...dossierData,
+          // Fallback to client table notes if the dossier view hasn't updated
+          notes: clientData?.notes || dossierData?.client_notes 
+        })
+
+        // 3. Handle Avatar URL Resolution (Filename vs Public URL)
+        const rawAvatar = rawProfile?.avatar_url
+        if (rawAvatar) {
+          if (rawAvatar.startsWith('http')) {
+            setAvatarPreview(rawAvatar)
+          } else {
+            const { data: urlData } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(`avatars/${rawAvatar}`)
+            setAvatarPreview(urlData.publicUrl)
+          }
+        }
       } catch (err) {
-        console.error("Dossier Fetch Error:", err)
+        console.error("Tactical Dossier Fetch Error:", err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchDetails()
+    fetchFullDossier()
   }, [targetClientId])
+
+  // Resolve identity display logic
+  const firstName = profile?.first_name || client.client_name || client.name
+  const lastName = profile?.last_name || client.client_last_name || client.last_name
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
@@ -62,11 +117,11 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
         <div className="px-6 md:px-10 pb-10 -mt-10 relative">
           {/* Avatar Section */}
           <div className="flex justify-between items-end mb-6">
-            <div className="h-20 w-20 md:h-24 md:w-24 rounded-3xl bg-[#151515] border-[4px] border-[#0D0D0D] overflow-hidden shadow-2xl relative group">
-              {client.client_avatar_url || client.avatar_url ? (
+            <div className="h-40 w-40 md:h-48 md:w-48 rounded-3xl bg-[#151515] border-[4px] border-[#0D0D0D] overflow-hidden shadow-2xl relative group">
+              {avatarPreview ? (
                 <img 
-                  src={client.client_avatar_url || client.avatar_url} 
-                  alt="Client Avatar" 
+                  src={avatarPreview} 
+                  alt="Avatar" 
                   className="w-full h-full object-cover" 
                 />
               ) : (
@@ -78,15 +133,15 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             
             {/* Status Badge */}
             <div className="mb-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-tighter">
-              Active Candidate
+              {details?.is_graduated ? "Graduate" : "Active Candidate"}
             </div>
           </div>
 
           {/* Identity */}
           <div className="space-y-1">
             <h3 className="text-2xl md:text-3xl font-black uppercase italic text-white tracking-tighter leading-none">
-              {client.client_name || client.name}{" "}
-              <span className="text-primary">{client.client_last_name || client.last_name}</span>
+              {firstName}{" "}
+              <span className="text-primary">{lastName}</span>
             </h3>
             <div className="flex items-center gap-2">
                <div className="h-px w-8 bg-primary/50" />
@@ -105,11 +160,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
                 <span className="text-[9px] font-black uppercase tracking-tight">Wallet Balance</span>
               </div>
               <div className="text-xl font-black tabular-nums text-white relative z-10">
-                {loading ? (
-                  <div className="h-6 w-16 bg-white/10 animate-pulse rounded" />
-                ) : (
-                  `${details?.wallet_balance || 0} ₴`
-                )}
+                {loading ? <div className="h-6 w-16 bg-white/10 animate-pulse rounded" /> : `${details?.wallet_balance || 0} ₴`}
               </div>
               <Wallet className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 rotate-12 group-hover:text-primary/10 transition-colors" />
             </div>
@@ -121,33 +172,29 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
                 <span className="text-[9px] font-black uppercase tracking-tight">Remaining Time</span>
               </div>
               <div className="text-xl font-black tabular-nums text-white relative z-10">
-                {loading ? (
-                  <div className="h-6 w-12 bg-white/10 animate-pulse rounded" />
-                ) : (
-                  `${details?.remaining_hours || 0}H`
-                )}
+                {loading ? <div className="h-6 w-12 bg-white/10 animate-pulse rounded" /> : `${details?.remaining_hours || 0}H`}
               </div>
               <Clock className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 -rotate-12 group-hover:text-primary/10 transition-colors" />
             </div>
           </div>
 
-          {/* Contact Info (Stacked on small mobile, grid on md) */}
+          {/* Contact Info (Fetched from profiles table) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <a 
-              href={`tel:${client.client_phone || client.phone}`} 
-              className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-primary hover:text-black transition-all group flex flex-col"
+              href={profile?.phone ? `tel:${profile.phone}` : "#"} 
+              className={`p-4 bg-white/5 rounded-2xl border border-white/5 transition-all group flex flex-col ${profile?.phone ? 'hover:bg-primary hover:text-black cursor-pointer' : 'opacity-50 pointer-events-none'}`}
             >
               <Phone size={14} className="text-primary mb-2 group-hover:text-black transition-colors" />
               <p className="text-[8px] font-black uppercase opacity-60">Comm-Link</p>
               <p className="text-xs font-bold tabular-nums truncate">
-                {client.client_phone || client.phone || 'NO DATA'}
+                {loading ? "..." : (profile?.phone || 'NO DATA')}
               </p>
             </a>
             <div className="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col">
               <Mail size={14} className="text-primary mb-2" />
               <p className="text-[8px] font-black uppercase opacity-60">Registry Email</p>
               <p className="text-xs font-bold truncate text-white">
-                {client.client_email || client.email || 'NO DATA'}
+                {loading ? "..." : (profile?.email || 'NO DATA')}
               </p>
             </div>
           </div>
@@ -162,15 +209,9 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
               Instructor Intel
             </div>
             <p className="text-[11px] md:text-xs text-slate-400 italic leading-relaxed relative z-10">
-              {client.client_notes || client.notes || "No specific tactical notes recorded for this candidate."}
+              {loading ? "Decrypting dossiers..." : (details?.notes || "No specific tactical notes recorded for this candidate.")}
             </p>
           </div>
-
-          {/* Action Button */}
-          {/* <button className="w-full mt-8 py-5 bg-white text-black rounded-2xl font-black uppercase italic text-xs hover:bg-primary transition-all flex items-center justify-center gap-2 group shadow-[0_0_30px_rgba(255,255,255,0.05)] active:scale-[0.98]">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : "Deploy Training History"}
-            <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-          </button> */}
         </div>
         
         {/* Close Button */}

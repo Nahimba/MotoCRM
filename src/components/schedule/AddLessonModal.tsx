@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react"
 import { format, parseISO } from "date-fns"
 import { 
   X, Check, Trash2, Calendar as CalendarIcon, Search,
-  MapPin, FileText, Loader2, Contact2, ChevronDown, Clock
+  MapPin, FileText, Loader2, Contact2, ChevronDown, Clock, User
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -26,7 +26,7 @@ export function AddLessonModal({
   isOpen, onClose, instructorId, initialDate, onSuccess, onOpenDossier, editLesson 
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
-  const { profile } = useAuth()
+  const { profile: authProfile } = useAuth()
   
   const [loading, setLoading] = useState(false)
   const [packages, setPackages] = useState<any[]>([])
@@ -35,7 +35,6 @@ export function AddLessonModal({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
-  // Date and Time State (Splitting time for strict 24h control)
   const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [selectedHour, setSelectedHour] = useState("12")
   const [selectedMinute, setSelectedMinute] = useState("00")
@@ -46,14 +45,15 @@ export function AddLessonModal({
   const [status, setStatus] = useState<'planned' | 'completed' | 'cancelled'>('planned')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
-  
+
+  // Resolve selected package and client data
   const selectedPkg = useMemo(() => 
     packages.find(p => p.id === selectedPackageId), 
     [packages, selectedPackageId]
   )
+  
   const clientData = selectedPkg?.accounts?.clients
 
-  // Syncing logic for fetching data and editing
   useEffect(() => {
     if (isOpen) {
       const fetchData = async () => {
@@ -80,15 +80,20 @@ export function AddLessonModal({
 
           if (pkgData) {
             const processed = pkgData.map(pkg => {
-              const clientProfile = (pkg.accounts as any)?.clients?.profiles;
+              const rawClient = (pkg.accounts as any)?.clients;
+              // Handle potential array response from Supabase join
+              const profileData = Array.isArray(rawClient?.profiles) ? rawClient.profiles[0] : rawClient?.profiles;
+              
               return {
                 ...pkg,
                 accounts: {
                   clients: {
-                    ...(pkg.accounts as any)?.clients,
-                    name: clientProfile?.first_name || 'Unknown',
-                    last_name: clientProfile?.last_name || '',
-                    avatar_url: clientProfile?.avatar_url
+                    ...rawClient,
+                    name: profileData?.first_name || 'Unknown',
+                    last_name: profileData?.last_name || '',
+                    avatar_url: profileData?.avatar_url,
+                    email: profileData?.email,
+                    phone: profileData?.phone
                   }
                 },
                 remaining: pkg.total_hours - (pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((acc: number, curr: any) => acc + (Number(curr.duration) || 0), 0) || 0)
@@ -116,7 +121,6 @@ export function AddLessonModal({
     }
   }, [isOpen, editLesson])
 
-  // Helpers for filtering
   const filteredPackages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
     if (!q) return packages
@@ -147,7 +151,7 @@ export function AddLessonModal({
       location_id: locationId || null,
       summary,
       status,
-      created_by_profile_id: profile?.id
+      created_by_profile_id: authProfile?.id
     }
 
     const { error } = editLesson 
@@ -177,7 +181,6 @@ export function AddLessonModal({
     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4">
       <div className="bg-[#0A0A0A] border-t md:border border-white/10 w-full max-w-lg rounded-t-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh] animate-in slide-in-from-bottom md:zoom-in-95 duration-300">
         
-        {/* MOBILE DRAG HANDLE */}
         <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden" />
 
         {/* HEADER */}
@@ -237,13 +240,23 @@ export function AddLessonModal({
             )}
           </div>
 
-          {/* QUICK INFO PANEL */}
+          {/* QUICK INFO PANEL (Synced with Dossier Modal) */}
           {clientData && (
             <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden bg-black shrink-0">
-                    {clientData.avatar_url ? <img src={clientData.avatar_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-primary font-black uppercase">{clientData.name?.[0]}</div>}
+                  <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
+                    {clientData.avatar_url ? (
+                      <img 
+                        src={clientData.avatar_url.startsWith('http') 
+                          ? clientData.avatar_url 
+                          : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${clientData.avatar_url}`} 
+                        className="w-full h-full object-cover" 
+                        alt=""
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-primary/40"><User size={20} /></div>
+                    )}
                   </div>
                   <div className="leading-tight">
                     <h3 className="text-sm font-black text-white uppercase italic">{clientData.name} {clientData.last_name}</h3>
@@ -252,7 +265,11 @@ export function AddLessonModal({
                     </div>
                   </div>
                 </div>
-                <button type="button" onClick={() => onOpenDossier(clientData)} className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg">
+                <button 
+                  type="button" 
+                  onClick={() => onOpenDossier(clientData)} 
+                  className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
+                >
                   <Contact2 size={18} />
                 </button>
               </div>
@@ -262,18 +279,18 @@ export function AddLessonModal({
           {/* STATUS SELECTOR */}
           <div className="grid grid-cols-3 gap-2">
             {(['planned', 'completed', 'cancelled'] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setStatus(s)} className={`py-3 rounded-xl font-black text-[10px] uppercase border transition-all ${status === s ? 'bg-white text-black border-white' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+              <button key={s} type="button" onClick={() => setStatus(s)} className={`py-3 rounded-xl font-black text-[10px] uppercase border transition-all ${status === s ? 'bg-white text-black border-white shadow-xl' : 'bg-white/5 border-white/10 text-slate-500'}`}>
                 {t(s)}
               </button>
             ))}
           </div>
 
-          {/* DATE & TIME (FORCED 24H) */}
+          {/* DATE & TIME */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('date')}</label>
               <div className="relative">
-                <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary [color-scheme:dark] appearance-none" value={lessonDate} onChange={e => setLessonDate(e.target.value)} />
+                <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary [color-scheme:dark]" value={lessonDate} onChange={e => setLessonDate(e.target.value)} />
                 <CalendarIcon size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               </div>
             </div>
@@ -281,23 +298,13 @@ export function AddLessonModal({
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('time')} (24H)</label>
               <div className="flex gap-2">
-                <select 
-                  value={selectedHour} 
-                  onChange={(e) => setSelectedHour(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none text-center font-black"
-                >
+                <select value={selectedHour} onChange={(e) => setSelectedHour(e.target.value)} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none text-center font-black">
                   {Array.from({ length: 24 }).map((_, i) => (
-                    <option key={i} value={i.toString().padStart(2, '0')} className="bg-black">
-                      {i.toString().padStart(2, '0')}
-                    </option>
+                    <option key={i} value={i.toString().padStart(2, '0')} className="bg-black">{i.toString().padStart(2, '0')}</option>
                   ))}
                 </select>
                 <div className="flex items-center text-primary font-black">:</div>
-                <select 
-                  value={selectedMinute} 
-                  onChange={(e) => setSelectedMinute(e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none text-center font-black"
-                >
+                <select value={selectedMinute} onChange={(e) => setSelectedMinute(e.target.value)} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none text-center font-black">
                   {["00", "15", "30", "45"].map((m) => (
                     <option key={m} value={m} className="bg-black">{m}</option>
                   ))}
@@ -306,17 +313,12 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* DURATION PRESETS (0.5h to 4h) */}
+          {/* DURATION PRESETS */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
             <div className="grid grid-cols-4 gap-2">
               {["0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4"].map((val) => (
-                <button 
-                  key={val} 
-                  type="button" 
-                  onClick={() => setDuration(val)} 
-                  className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary shadow-lg shadow-primary/20 scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400'}`}
-                >
+                <button key={val} type="button" onClick={() => setDuration(val)} className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary shadow-lg scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400'}`}>
                   {val}h
                 </button>
               ))}
