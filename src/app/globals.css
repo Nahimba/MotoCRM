@@ -45,7 +45,7 @@
 
 
 
-/* Fix for the mobile scroll 'jump' START */
+/* Fix for the mobile scroll 'jump' START*/
 html, body {
   height: -webkit-fill-available;
   /* Prevents the 'bounce' effect at the edges */

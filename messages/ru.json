@@ -25,6 +25,15 @@
     "log": "Лог",
     "money": "Деньги"
   },
+  "Landing": {
+    "init_protocol": "Инициализация протокола...",
+    "precision_mgmt": "Точное управление",
+    "email_placeholder": "Email",
+    "password_placeholder": "Ключ безопасности",
+    "init_session": "Начать сессию",
+    "auth_success": "Личность подтверждена",
+    "auth_error": "Ошибка подключения к системе"
+  },
   "admin": {
     "dashboard": {
       "title": "Админ центр",
@@ -468,5 +477,31 @@
       "google": "Гугл",
       "other": "Другое"
     }
+  },
+  "Profile": {
+    "sync_success": "Профиль синхронизирован",
+    "avatar_success": "Аватар обновлен",
+    "avatar_removed": "Аватар удален",
+    "delete_confirm": "Удалить фото профиля?",
+    "loading": "Загрузка...",
+    "account_type": "{role} аккаунт",
+    "basic_identity": "Основные данные",
+    "first_name": "Имя",
+    "last_name": "Фамилия",
+    "email_label": "Email аккаунта (подтвержден)",
+    "no_email": "Email не указан",
+    "phone_label": "Номер телефона",
+    "role_specs": "Спецификации роли",
+    "default_gear": "Тип КПП по умолчанию",
+    "manual": "Механика",
+    "auto": "Автомат",
+    "social_link": "Соц. сети",
+    "address": "Текущий адрес",
+    "specialization": "Специализация",
+    "specialization_placeholder": "Город / Мотокросс / Безопасность",
+    "primary_location": "Основная локация обучения",
+    "unassigned": "Не назначено",
+    "update_button": "Обновить системные записи",
+    "updating": "Обновление..."
   }
 }

@@ -74,24 +74,20 @@ export default function ProfilePage() {
 
     setUploadingAvatar(true)
     try {
-      // Create unique path
       const fileExt = file.name.split('.').pop()
       const fileName = `${profile.id}-${Math.random()}.${fileExt}`
       const filePath = `avatars/${fileName}`
 
-      // A. Delete old avatar from storage if it's a filename (not a URL)
       if (profile.avatar_url && !profile.avatar_url.startsWith('http')) {
         await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
       }
 
-      // B. Upload new file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
-      // C. Update profiles table with the NEW filename
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: fileName })
@@ -99,8 +95,7 @@ export default function ProfilePage() {
 
       if (updateError) throw updateError
 
-      toast.success("Avatar updated")
-      // Short delay for storage propagation
+      toast.success(t("avatar_success"))
       setTimeout(() => window.location.reload(), 500)
     } catch (error: any) {
       toast.error(error.message)
@@ -110,7 +105,8 @@ export default function ProfilePage() {
   }
 
   async function deleteAvatar() {
-    if (!profile?.avatar_url || !confirm("Delete profile picture?")) return
+    // Fixed confirm button text using translation
+    if (!profile?.avatar_url || !confirm(t("delete_confirm"))) return
     
     setUploadingAvatar(true)
     try {
@@ -120,7 +116,7 @@ export default function ProfilePage() {
 
       await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
       
-      toast.success("Avatar removed")
+      toast.success(t("avatar_removed"))
       setTimeout(() => window.location.reload(), 500)
     } catch (error: any) {
       toast.error(error.message)
@@ -205,7 +201,7 @@ export default function ProfilePage() {
         if (iErr) throw iErr
       }
 
-      toast.success("Profile synchronized")
+      toast.success(t("sync_success"))
       setTimeout(() => window.location.reload(), 600)
     } catch (error: any) {
       toast.error(error.message)
@@ -227,7 +223,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8 pb-32">
       
-      {/* --- HEADER WITH AVATAR UPLOAD --- */}
+      {/* --- HEADER --- */}
       <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden shadow-2xl">
         <div className="relative group shrink-0">
           <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
@@ -237,7 +233,6 @@ export default function ProfilePage() {
               <span className="text-4xl font-black text-primary">{formData.full_name?.charAt(0)}</span>
             )}
 
-            {/* Overlay Loader */}
             {uploadingAvatar && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
                 <Loader2 className="animate-spin text-primary" />
@@ -245,7 +240,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="absolute -bottom-2 -right-2 flex gap-1">
             <button 
               onClick={() => fileInputRef.current?.click()}
@@ -271,7 +265,7 @@ export default function ProfilePage() {
           </h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3">
              <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
-               {profile.role} account
+               {t("account_type", { role: profile.role })}
              </span>
              <span className="px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
                ID: {profile.id.slice(0, 8)}
@@ -284,13 +278,13 @@ export default function ProfilePage() {
         {/* --- COLUMN 1: PERSONAL --- */}
         <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-8 space-y-8">
           <h3 className="text-xs font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3">
-            <UserIcon size={16} /> Basic Identity
+            <UserIcon size={16} /> {t("basic_identity")}
           </h3>
 
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-500 ml-3">First Name</label>
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("first_name")}</label>
                 <input 
                   value={formData.full_name || ""}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
@@ -298,7 +292,7 @@ export default function ProfilePage() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Last Name</label>
+                <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("last_name")}</label>
                 <input 
                   value={formData.last_name || ""}
                   onChange={e => setFormData({...formData, last_name: e.target.value})}
@@ -308,15 +302,15 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Account Email (Verified)</label>
+              <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("email_label")}</label>
               <div className="w-full bg-white/[0.01] border border-white/5 rounded-2xl px-5 py-4 text-slate-500 flex items-center gap-3 cursor-not-allowed">
                 <Mail size={16} /> 
-                {(profile as any).email || user?.email || "No email available"} 
+                {(profile as any).email || user?.email || t("no_email")} 
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Phone Number</label>
+              <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("phone_label")}</label>
               <div className="relative">
                 <Phone size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input 
@@ -332,25 +326,25 @@ export default function ProfilePage() {
         {/* --- COLUMN 2: ROLE DATA --- */}
         <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-8 space-y-8">
           <h3 className="text-xs font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3">
-            <Shield size={16} /> Role Specifications
+            <Shield size={16} /> {t("role_specs")}
           </h3>
 
           <div className="space-y-6">
             {profile.role === 'rider' ? (
               <>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Default Gear</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("default_gear")}</label>
                   <select 
                     value={formData.gear_type || "Manual"}
                     onChange={e => setFormData({...formData, gear_type: e.target.value})}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-primary outline-none appearance-none cursor-pointer"
                   >
-                    <option value="Manual" className="bg-black">Manual Gearbox</option>
-                    <option value="Auto" className="bg-black">Automatic Gearbox</option>
+                    <option value="Manual" className="bg-black">{t("manual")}</option>
+                    <option value="Auto" className="bg-black">{t("auto")}</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Social Link</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("social_link")}</label>
                   <div className="relative">
                     <Globe size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input 
@@ -362,7 +356,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Current Address</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("address")}</label>
                   <textarea 
                     value={formData.address || ""}
                     onChange={e => setFormData({...formData, address: e.target.value})}
@@ -373,16 +367,16 @@ export default function ProfilePage() {
             ) : (
               <>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Specialization</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("specialization")}</label>
                   <input 
                     value={formData.specialization || ""}
                     onChange={e => setFormData({...formData, specialization: e.target.value})}
-                    placeholder="Urban / Motocross / Safety"
+                    placeholder={t("specialization_placeholder")}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-primary outline-none font-bold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">Primary Training Location</label>
+                  <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("primary_location")}</label>
                   <div className="relative">
                     <MapPin size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 z-10" />
                     <select 
@@ -390,7 +384,7 @@ export default function ProfilePage() {
                       onChange={e => setFormData({...formData, default_location_id: e.target.value})}
                       className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-white focus:border-primary outline-none appearance-none cursor-pointer"
                     >
-                      <option value="" className="bg-black">Unassigned</option>
+                      <option value="" className="bg-black">{t("unassigned")}</option>
                       {locations.map(loc => (
                         <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
                       ))}
@@ -411,7 +405,7 @@ export default function ProfilePage() {
           className="w-full md:w-auto min-w-[260px] bg-primary text-black font-black uppercase py-5 px-10 rounded-2xl flex items-center justify-center gap-3 hover:bg-white transition-all shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
         >
           {updating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-          Update System Records
+          {updating ? t("updating") : t("update_button")}
         </button>
       </div>
     </div>

@@ -25,6 +25,15 @@
     "log": "Лог",
     "money": "Гроші"
   },
+  "Landing": {
+    "init_protocol": "Ініціалізація протоколу...",
+    "precision_mgmt": "Точне управління",
+    "email_placeholder": "Email",
+    "password_placeholder": "Ключ безпеки",
+    "init_session": "Розпочати сесію",
+    "auth_success": "Особу підтверджено",
+    "auth_error": "Помилка підключення до системи"
+  },
   "admin": {
     "dashboard": {
       "title": "Адмін центр",
@@ -465,5 +474,31 @@
       "google": "Гугл",
       "other": "Інше"
     }
+  },
+  "Profile": {
+    "sync_success": "Профіль синхронізовано",
+    "avatar_success": "Аватар оновлено",
+    "avatar_removed": "Аватар видалено",
+    "delete_confirm": "Видалити фото профілю?",
+    "loading": "Завантаження...",
+    "account_type": "{role} акаунт",
+    "basic_identity": "Основні дані",
+    "first_name": "Ім'я",
+    "last_name": "Прізвище",
+    "email_label": "Email акаунта (підтверджено)",
+    "no_email": "Email не вказано",
+    "phone_label": "Номер телефону",
+    "role_specs": "Специфікації ролі",
+    "default_gear": "Тип КПП за замовчуванням",
+    "manual": "Механіка",
+    "auto": "Автомат",
+    "social_link": "Соц. мережі",
+    "address": "Поточна адреса",
+    "specialization": "Спеціалізація",
+    "specialization_placeholder": "Місто / Мотокрос / Безпека",
+    "primary_location": "Основна локація навчання",
+    "unassigned": "Не призначено",
+    "update_button": "Оновити системні записи",
+    "updating": "Оновлення..."
   }
 }

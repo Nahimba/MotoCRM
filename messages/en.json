@@ -25,6 +25,15 @@
     "log": "Log",
     "money": "Money"
   },
+  "Landing": {
+    "init_protocol": "Initializing Protocol...",
+    "precision_mgmt": "Precision Management",
+    "email_placeholder": "Email",
+    "password_placeholder": "Security Key",
+    "init_session": "Initialize Session",
+    "auth_success": "Identity Verified",
+    "auth_error": "System Connection Error"
+  },
   "admin": {
     "dashboard": {
       "title": "Command Center",
@@ -468,5 +477,31 @@
       "google": "Google",
       "other": "Other"
     }
+  },
+  "Profile": {
+    "sync_success": "Profile synchronized",
+    "avatar_success": "Avatar updated",
+    "avatar_removed": "Avatar removed",
+    "delete_confirm": "Delete profile picture?",
+    "loading": "Loading...",
+    "account_type": "{role} account",
+    "basic_identity": "Basic Identity",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "email_label": "Account Email (Verified)",
+    "no_email": "No email available",
+    "phone_label": "Phone Number",
+    "role_specs": "Role Specifications",
+    "default_gear": "Default Gear",
+    "manual": "Manual Gearbox",
+    "auto": "Automatic Gearbox",
+    "social_link": "Social Link",
+    "address": "Current Address",
+    "specialization": "Specialization",
+    "specialization_placeholder": "Urban / Motocross / Safety",
+    "primary_location": "Primary Training Location",
+    "unassigned": "Unassigned",
+    "update_button": "Update System Records",
+    "updating": "Updating..."
   }
 }
