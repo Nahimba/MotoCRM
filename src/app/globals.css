@@ -43,6 +43,22 @@
 }
 
 
+
+
+/* Fix for the mobile scroll 'jump' START */
+html, body {
+  height: -webkit-fill-available;
+  /* Prevents the 'bounce' effect at the edges */
+  overscroll-behavior-y: none; 
+  background-color: black;
+}
+/* Ensure the root container handles the dynamic height correctly */
+#__next, main {
+  min-height: 100dvh;
+}
+/* Fix for the mobile scroll 'jump' END */
+
+
 /* @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
