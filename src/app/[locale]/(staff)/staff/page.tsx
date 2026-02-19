@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase"
-import { Phone, MapPin, Contact2, Clock } from "lucide-react"
+import { Phone, MapPin, Contact2, Clock, User } from "lucide-react"
 import { format, startOfDay, endOfDay, eachHourOfInterval, setHours } from "date-fns"
 import { useAuth } from "@/context/AuthContext"
 import { ClientProfileModal } from "@/components/staff/ClientProfileModal"
@@ -13,6 +13,33 @@ const HOURS = eachHourOfInterval({
   start: setHours(startOfDay(new Date()), 7),
   end: setHours(startOfDay(new Date()), 22)
 })
+
+// Helper component for avatar resolution within the list
+const ClientAvatar = ({ url, name }: { url?: string, name: string }) => {
+  const [src, setSrc] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!url) return
+    if (url.startsWith('http')) {
+      setSrc(url)
+    } else {
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`avatars/${url}`)
+      setSrc(data.publicUrl)
+    }
+  }, [url])
+
+  return (
+    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 shrink-0 flex items-center justify-center">
+      {src ? (
+        <img src={src} className="w-full h-full object-cover" alt={name} />
+      ) : (
+        <User size={16} className="text-slate-600" />
+      )}
+    </div>
+  )
+}
 
 export default function StaffLandingPage() {
   const t = useTranslations("StaffDashboard")
@@ -50,7 +77,7 @@ export default function StaffLandingPage() {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('staff_dashboard_lessons') // Uses your updated View
+        .from('staff_dashboard_lessons')
         .select('*')
         .eq('instructor_id', id)
         .gte('session_date', startOfDay(new Date()).toISOString())
@@ -71,13 +98,11 @@ export default function StaffLandingPage() {
   const getLessonStyles = (startTime: string, status: string) => {
     const date = new Date(startTime)
     const top = (date.getHours() - 7) * HOUR_HEIGHT + (date.getMinutes() / 60) * HOUR_HEIGHT
-    
-    // Border colors based on the SQL status check
     const statusColor = status === 'completed' ? '#10b981' : status === 'planned' ? '#3b82f6' : '#ef4444'
 
     return { 
       top: `${top}px`, 
-      minHeight: '170px',
+      minHeight: '180px', // Slightly increased to fit avatar layout
       left: '12px', 
       right: '12px',
       position: 'absolute' as const,
@@ -104,7 +129,7 @@ export default function StaffLandingPage() {
           {/* Time Gutter */}
           <div className="absolute left-0 w-16 h-full border-r border-white/5 z-20 bg-black/60 backdrop-blur-md">
             {HOURS.map(h => (
-              <div key={h.toString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
+              <div key={h.toISOString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                 {format(h, 'HH:mm')}
               </div>
             ))}
@@ -116,21 +141,32 @@ export default function StaffLandingPage() {
               <div key={l.lesson_id} style={getLessonStyles(l.session_date, l.lesson_status)}
                 className="group bg-[#111] border border-white/10 rounded-2xl p-4 flex flex-col shadow-2xl active:border-primary/40 transition-all"
               >
-                <div className="flex justify-between items-start mb-2 shrink-0">
-                  <div className="min-w-0">
-                    <h4 className="text-lg font-black uppercase italic tracking-tighter leading-tight truncate">
-                      {l.client_name} <span className="text-primary">{l.client_last_name}</span>
-                    </h4>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                       <span className="tabular-nums text-primary/80">{format(new Date(l.session_date), 'HH:mm')}</span>
-                       <span className="opacity-30">•</span>
-                       <span className="flex items-center gap-1">
-                         <MapPin size={10} /> {l.location || t('baseOps')}
-                       </span>
+                <div className="flex justify-between items-start mb-3 shrink-0">
+                  <div className="flex gap-3 min-w-0">
+                    {/* AVATAR LOGIC INTEGRATED HERE */}
+                    {/* <ClientAvatar url={l.client_avatar_url} name={l.client_name} /> */}
+                    
+                    <div className="min-w-0">
+                      <h4 className="text-lg font-black uppercase italic tracking-tighter leading-tight truncate">
+                        {l.client_name} <span className="text-primary">{l.client_last_name}</span>
+                      </h4>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                         <span className="tabular-nums text-primary/80">{format(new Date(l.session_date), 'HH:mm')}</span>
+                         <span className="opacity-30">•</span>
+                         <span className="flex items-center gap-1">
+                           <MapPin size={10} /> {l.location || t('baseOps')}
+                         </span>
+                      </div>
                     </div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-[9px] font-black border ${l.lesson_status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-white/5 text-slate-400 border-white/5'}`}>
-                    {l.hours_spent}H
+                  <div className={`px-2 py-1 rounded text-[9px] font-black border flex items-center gap-1 ${
+                    l.lesson_status === 'completed' 
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                      : 'bg-primary/10 text-primary border-primary/20'
+                  }`}>
+                    <Clock size={10} />
+                    {/* Use l.duration if available, otherwise fallback to a default or calculated value */}
+                    {l.duration || l.hours_spent || '1'}H 
                   </div>
                 </div>
 

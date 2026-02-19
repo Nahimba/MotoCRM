@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
+import { supabase } from "@/lib/supabase" // Ensure this is imported
 
 export default function Sidebar() {
   const t = useTranslations('Sidebar');
@@ -21,9 +22,36 @@ export default function Sidebar() {
   
   const [showSettings, setShowSettings] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   
   const settingsRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
+
+  // --- Avatar Resolution Logic ---
+  useEffect(() => {
+    async function resolveAvatar() {
+      const rawAvatar = profile?.avatar_url
+      if (!rawAvatar) {
+        setAvatarPreview(null)
+        return
+      }
+
+      if (rawAvatar.startsWith('http')) {
+        setAvatarPreview(rawAvatar)
+      } else {
+        // MATCHING THE MODAL LOGIC:
+        // Bucket: 'avatars'
+        // Path: 'avatars/filename'
+        const { data } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`avatars/${rawAvatar}`) // Added the avatars/ prefix here
+        
+        setAvatarPreview(data.publicUrl)
+      }
+    }
+
+    resolveAvatar()
+  }, [profile?.avatar_url])
 
   const toggleLanguage = () => {
     const newLocale = locale === 'en' ? 'ru' : 'en';
@@ -63,7 +91,6 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-2">
-          {/* DIRECTOR SECTION */}
           {role === 'admin' && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">
@@ -76,7 +103,6 @@ export default function Sidebar() {
             </>
           )}
 
-          {/* OPERATIONS SECTION */}
           {(role === 'admin' || role === 'instructor') && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
@@ -90,7 +116,6 @@ export default function Sidebar() {
             </>
           )}
 
-          {/* RIDER SECTION */}
           {(role === 'rider') && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
@@ -102,7 +127,6 @@ export default function Sidebar() {
           )}
         </nav>
 
-        {/* PC SETTINGS POPUP AREA */}
         <div className="pt-6 border-t border-white/5 mt-auto relative" ref={settingsRef}>
           {showSettings && (
             <div className="absolute bottom-full left-0 w-full mb-2 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2">
@@ -150,8 +174,6 @@ export default function Sidebar() {
               style={{ animation: 'mobilePopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
             >
               <div className="grid grid-cols-3 gap-2">
-                
-                {/* ADMIN EXTRAS */}
                 {role === 'admin' && (
                   <>
                     <MobileExtraLink href="/admin" icon={<ShieldCheck size={18}/>} label={t('overview')} />
@@ -160,7 +182,6 @@ export default function Sidebar() {
                   </>
                 )}
 
-                {/* STAFF EXTRAS (Included Payments here) */}
                 {(role === 'admin' || role === 'instructor') && (
                   <>
                     <MobileExtraLink href="/staff" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} />
@@ -169,7 +190,6 @@ export default function Sidebar() {
                   </>
                 )}
 
-                {/* RIDER EXTRAS */}
                 {role === 'rider' && (
                   <>
                     <MobileExtraLink href="/account" icon={<LayoutDashboard size={18}/>} label={t('dashboard') || 'Home'} />
@@ -177,10 +197,8 @@ export default function Sidebar() {
                   </>
                 )}
 
-                {/* SHARED */}
                 <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
 
-                {/* LANGUAGE */}
                 <button 
                   onClick={toggleLanguage}
                   className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all border border-white/5"
@@ -191,7 +209,6 @@ export default function Sidebar() {
                   </span>
                 </button>
 
-                {/* EXIT */}
                 <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all border border-red-500/10">
                   <LogOut size={18} />
                   <span className="text-[9px] font-black uppercase tracking-tight">{t('exit')}</span>
@@ -200,8 +217,7 @@ export default function Sidebar() {
             </div>
           )}
 
-          {/* --- Main Dock Bar --- */}
-          <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl">
+          <div className="w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.8rem] p-2 flex items-center justify-between shadow-2xl mb-[env(safe-area-inset-bottom)]">
             <MobileTab 
               href={
                 role === 'admin' ? '/admin' : 
@@ -239,8 +255,9 @@ export default function Sidebar() {
             
             <Link href="/profile" className="flex-1 flex items-center justify-center">
               <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Profile" />
+                {/* --- Updated Avatar Rendering --- */}
+                {avatarPreview ? (
+                  <img src={avatarPreview} className="w-full h-full object-cover" alt="Profile" />
                 ) : (
                   <div className="w-full h-full bg-primary/20 flex items-center justify-center">
                     <User size={18} className="text-primary" />
@@ -264,7 +281,6 @@ export default function Sidebar() {
     </>
   );
 }
-
 
 
 function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {

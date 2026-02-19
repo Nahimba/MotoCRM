@@ -4,23 +4,24 @@ import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 
-export default function StaffLayout({ children }: { children: ReactNode }) {
+export default function ProfileLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
-      {/* Universal Sidebar (Desktop Left / Mobile Bottom) */}
+      {/* Universal Sidebar: Desktop Left / Mobile Bottom Dock */}
       <Sidebar />
 
+      {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+        {/* Header displays the current section title */}
         <Header />
 
-        {/* STRATEGY: 
-            1. We keep pb-32 as the baseline (8rem).
-            2. We add env(safe-area-inset-bottom) to handle the gesture bar on modern phones.
-            3. Removed overflow-y-auto to prevent "double scrollbars" and allow 
-               the mobile browser to hide its own UI bars naturally.
+        {/* MAIN CONTAINER:
+            1. lg:ml-64 matches the desktop sidebar width.
+            2. pb-[calc(8rem+env(safe-area-inset-bottom))] ensures 
+               bottom buttons are visible above the mobile dock.
         */}
         <main className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
-          <div className="max-w-7xl mx-auto h-full">
+          <div className="max-w-4xl mx-auto h-full">
             {children}
           </div>
         </main>

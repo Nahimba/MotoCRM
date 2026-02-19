@@ -72,39 +72,3 @@ export default async function RootLayout({
     </html>
   )
 }
-
-
-// // src/app/[locale]/layout.tsx
-// import "@/app/globals.css"
-// import { AuthProvider } from '@/context/AuthContext'
-// import { Toaster } from "sonner"
-// import { ThemeScript } from "@/components/theme-script"
-// import { NextIntlClientProvider } from 'next-intl'
-// import { getMessages } from 'next-intl/server'
-
-// export default async function RootLayout({ 
-//   children,
-//   params 
-// }: { 
-//   children: React.ReactNode,
-//   params: Promise<{ locale: string }> // Next.js 15 async params
-// }) {
-//   const { locale } = await params;
-//   const messages = await getMessages();
-
-//   return (
-//     <html lang={locale} className="dark" suppressHydrationWarning>
-//       <head>
-//         <ThemeScript />
-//       </head>
-//       <body className="bg-black text-white font-sans antialiased">
-//         <NextIntlClientProvider messages={messages} locale={locale}>
-//           <Toaster position="top-center" theme="dark" />
-//           <AuthProvider>
-//             {children}
-//           </AuthProvider>
-//         </NextIntlClientProvider>
-//       </body>
-//     </html>
-//   )
-// }

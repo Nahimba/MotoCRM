@@ -1,26 +1,26 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/context/AuthContext"
 import { 
   User as UserIcon, Mail, Phone, Shield, Save, Loader2, 
-  Globe, Info, MapPin
+  Globe, Info, MapPin, Camera, Trash2
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 export default function ProfilePage() {
   const t = useTranslations("Profile")
-  
-  // 1. Get auth state - extracting user for the email fallback
   const { profile, user, loading: authLoading } = useAuth()
   
   const [updating, setUpdating] = useState(false)
   const [fetchingExtended, setFetchingExtended] = useState(true)
   const [locations, setLocations] = useState<any[]>([])
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // 2. Controlled state - initialized with empty strings to prevent 'null' prop errors
   const [formData, setFormData] = useState({
     full_name: "",
     last_name: "",
@@ -31,6 +31,27 @@ export default function ProfilePage() {
     specialization: "",
     default_location_id: ""
   })
+
+  // --- 1. Avatar Resolution Logic ---
+  useEffect(() => {
+    async function resolveAvatar() {
+      const rawAvatar = profile?.avatar_url
+      if (!rawAvatar) {
+        setAvatarPreview(null)
+        return
+      }
+
+      if (rawAvatar.startsWith('http')) {
+        setAvatarPreview(rawAvatar)
+      } else {
+        const { data } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`avatars/${rawAvatar}`)
+        setAvatarPreview(data.publicUrl)
+      }
+    }
+    resolveAvatar()
+  }, [profile?.avatar_url])
 
   useEffect(() => {
     if (!authLoading && profile) {
@@ -46,12 +67,72 @@ export default function ProfilePage() {
     if (data) setLocations(data)
   }
 
+  // --- 2. Avatar Upload & Delete Logic ---
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    setUploadingAvatar(true)
+    try {
+      // Create unique path
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${profile.id}-${Math.random()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      // A. Delete old avatar from storage if it's a filename (not a URL)
+      if (profile.avatar_url && !profile.avatar_url.startsWith('http')) {
+        await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
+      }
+
+      // B. Upload new file
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // C. Update profiles table with the NEW filename
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: fileName })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      toast.success("Avatar updated")
+      // Short delay for storage propagation
+      setTimeout(() => window.location.reload(), 500)
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  async function deleteAvatar() {
+    if (!profile?.avatar_url || !confirm("Delete profile picture?")) return
+    
+    setUploadingAvatar(true)
+    try {
+      if (!profile.avatar_url.startsWith('http')) {
+        await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
+      }
+
+      await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
+      
+      toast.success("Avatar removed")
+      setTimeout(() => window.location.reload(), 500)
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   async function loadExtendedProfileData() {
     if (!profile) return
     setFetchingExtended(true)
-    
     try {
-      // Default baseline from the profiles table
       let initialData = {
         full_name: profile.full_name || "",
         phone: profile.phone || "",
@@ -63,7 +144,6 @@ export default function ProfilePage() {
         default_location_id: ""
       }
 
-      // Fetch role-specific details and sanitize all NULL values to ""
       if (profile.role === 'rider') {
         const { data } = await supabase.from('clients').select('*').eq('profile_id', profile.id).maybeSingle()
         if (data) {
@@ -89,7 +169,6 @@ export default function ProfilePage() {
           }
         }
       }
-
       setFormData(initialData)
     } finally {
       setFetchingExtended(false)
@@ -99,20 +178,13 @@ export default function ProfilePage() {
   async function handleUpdate() {
     if (!profile) return
     setUpdating(true)
-    
     try {
-      // Update primary profile
       const { error: pErr } = await supabase
         .from('profiles')
-        .update({ 
-          full_name: formData.full_name, 
-          phone: formData.phone 
-        })
+        .update({ full_name: formData.full_name, phone: formData.phone })
         .eq('id', profile.id)
-
       if (pErr) throw pErr
 
-      // Update role-specific table
       if (profile.role === 'rider') {
         const { error: cErr } = await supabase.from('clients').update({
           name: formData.full_name,
@@ -155,15 +227,47 @@ export default function ProfilePage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8 pb-32">
       
-      {/* --- HEADER --- */}
+      {/* --- HEADER WITH AVATAR UPLOAD --- */}
       <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden shadow-2xl">
-        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-blue-700 flex items-center justify-center text-black text-5xl font-black shrink-0">
-          {formData.full_name?.charAt(0) || "U"}
+        <div className="relative group shrink-0">
+          <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-4xl font-black text-primary">{formData.full_name?.charAt(0)}</span>
+            )}
+
+            {/* Overlay Loader */}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                <Loader2 className="animate-spin text-primary" />
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="absolute -bottom-2 -right-2 flex gap-1">
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="p-3 bg-primary text-black rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all"
+            >
+              <Camera size={18} />
+            </button>
+            {avatarPreview && (
+              <button 
+                onClick={deleteAvatar}
+                className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
+          </div>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
         </div>
         
         <div className="text-center md:text-left space-y-3 z-10">
           <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white">
-            {formData.full_name} {formData.last_name}
+            {formData.full_name} <span className="text-primary">{formData.last_name}</span>
           </h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3">
              <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -177,7 +281,6 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
         {/* --- COLUMN 1: PERSONAL --- */}
         <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-8 space-y-8">
           <h3 className="text-xs font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3">
@@ -294,12 +397,6 @@ export default function ProfilePage() {
                     </select>
                   </div>
                 </div>
-                <div className="p-6 bg-primary/5 border border-primary/20 rounded-[1.5rem] mt-6 flex gap-4">
-                  <Info size={20} className="text-primary shrink-0" />
-                  <p className="text-[10px] text-slate-400 font-bold uppercase leading-relaxed tracking-wider">
-                    Staff and management use these details to assign you to the most relevant training sessions.
-                  </p>
-                </div>
               </>
             )}
           </div>
@@ -317,7 +414,6 @@ export default function ProfilePage() {
           Update System Records
         </button>
       </div>
-
     </div>
   )
 }

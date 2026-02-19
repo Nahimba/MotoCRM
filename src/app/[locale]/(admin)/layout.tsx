@@ -5,27 +5,27 @@ import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  // We remove the isMobileMenuOpen state entirely because the 
-  // Sidebar component now handles its own mobile view at the bottom.
-
   return (
-    <div className="flex min-h-screen bg-black text-white">
-      {/* SIDEBAR: 
-         - On Desktop: Stays on the left (lg:ml-64 handles the main content gap)
-         - On Mobile: Becomes the Bottom Dock automatically
+    <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
+      {/* SIDEBAR: Handles its own fixed positioning.
+          - Desktop: w-64 fixed left
+          - Mobile: bottom-dock fixed bottom
       */}
       <Sidebar />
 
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        {/* The Header (displays "Mode: Admin") */}
+        {/* Header stays at the top */}
         <Header />
 
         {/* MAIN:
-           - Added pb-32 so the content doesn't get hidden behind the Bottom Dock on mobile.
+            1. We use flex-1 to grow.
+            2. pb-32 (128px) on mobile creates a "dead zone" at the bottom 
+               of the scroll so the last form elements can be seen ABOVE the dock.
+            3. Added [env(safe-area-inset-bottom)] for notched iPhones.
         */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-32 lg:pb-8">
-          <div className="max-w-7xl mx-auto h-full">
+        <main className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+          <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
