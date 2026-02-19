@@ -29,8 +29,8 @@
     "init_protocol": "Ініціалізація протоколу...",
     "precision_mgmt": "Точне управління",
     "email_placeholder": "Email",
-    "password_placeholder": "Ключ безпеки",
-    "init_session": "Розпочати сесію",
+    "password_placeholder": "Пароль",
+    "init_session": "Увійти",
     "auth_success": "Особу підтверджено",
     "auth_error": "Помилка підключення до системи"
   },
