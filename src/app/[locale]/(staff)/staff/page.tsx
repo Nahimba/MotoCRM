@@ -1,45 +1,14 @@
 "use client"
-
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
-import { Phone, MapPin, Contact2, Clock, User } from "lucide-react"
-import { format, startOfDay, endOfDay, eachHourOfInterval, setHours } from "date-fns"
+import { Phone, MapPin, Contact2, Clock, Calendar } from "lucide-react"
+import { format, startOfDay, endOfDay, eachHourOfInterval, setHours, getHours } from "date-fns"
 import { useAuth } from "@/context/AuthContext"
 import { ClientProfileModal } from "@/components/staff/ClientProfileModal"
 import { useTranslations } from "next-intl"
+import Link from "next/link"
 
 const HOUR_HEIGHT = 100 
-const HOURS = eachHourOfInterval({
-  start: setHours(startOfDay(new Date()), 7),
-  end: setHours(startOfDay(new Date()), 22)
-})
-
-// Helper component for avatar resolution within the list
-const ClientAvatar = ({ url, name }: { url?: string, name: string }) => {
-  const [src, setSrc] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!url) return
-    if (url.startsWith('http')) {
-      setSrc(url)
-    } else {
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(`avatars/${url}`)
-      setSrc(data.publicUrl)
-    }
-  }, [url])
-
-  return (
-    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 shrink-0 flex items-center justify-center">
-      {src ? (
-        <img src={src} className="w-full h-full object-cover" alt={name} />
-      ) : (
-        <User size={16} className="text-slate-600" />
-      )}
-    </div>
-  )
-}
 
 export default function StaffLandingPage() {
   const t = useTranslations("StaffDashboard")
@@ -49,6 +18,28 @@ export default function StaffLandingPage() {
   const [loading, setLoading] = useState(true)
   const [selectedClient, setSelectedClient] = useState<any | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // 1. Calculate Dynamic Hours (Crop Timeline)
+  const HOURS = useMemo(() => {
+    if (lessons.length === 0) {
+      // Default view if no lessons
+      return eachHourOfInterval({
+        start: setHours(startOfDay(new Date()), 8),
+        end: setHours(startOfDay(new Date()), 18)
+      })
+    }
+
+    const startHours = lessons.map(l => getHours(new Date(l.session_date)))
+    const minHour = Math.max(0, Math.min(...startHours) - 1)
+    const maxHour = Math.min(23, Math.max(...startHours) + 3) // +3 to ensure the last lesson card fits
+
+    return eachHourOfInterval({
+      start: setHours(startOfDay(new Date()), minHour),
+      end: setHours(startOfDay(new Date()), maxHour)
+    })
+  }, [lessons])
+
+  const startHourOffset = HOURS.length > 0 ? getHours(HOURS[0]) : 7
 
   useEffect(() => {
     let isMounted = true
@@ -97,12 +88,13 @@ export default function StaffLandingPage() {
 
   const getLessonStyles = (startTime: string, status: string) => {
     const date = new Date(startTime)
-    const top = (date.getHours() - 7) * HOUR_HEIGHT + (date.getMinutes() / 60) * HOUR_HEIGHT
+    // Adjust top position based on the dynamic startHourOffset
+    const top = (getHours(date) - startHourOffset) * HOUR_HEIGHT + (date.getMinutes() / 60) * HOUR_HEIGHT
     const statusColor = status === 'completed' ? '#10b981' : status === 'planned' ? '#3b82f6' : '#ef4444'
 
     return { 
       top: `${top}px`, 
-      minHeight: '180px', // Slightly increased to fit avatar layout
+      minHeight: '180px', 
       left: '12px', 
       right: '12px',
       position: 'absolute' as const,
@@ -125,76 +117,90 @@ export default function StaffLandingPage() {
       </div>
 
       <div className="relative overflow-y-auto bg-[#080808] rounded-[2rem] border border-white/5 h-[750px] shadow-2xl custom-scrollbar">
-        <div className="relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-          {/* Time Gutter */}
-          <div className="absolute left-0 w-16 h-full border-r border-white/5 z-20 bg-black/60 backdrop-blur-md">
-            {HOURS.map(h => (
-              <div key={h.toISOString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
-                {format(h, 'HH:mm')}
-              </div>
-            ))}
+        {/* Empty State Check */}
+        {!loading && lessons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center p-6">
+            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
+              <Calendar className="text-slate-500" size={24} />
+            </div>
+            <h3 className="text-xl font-bold italic uppercase tracking-tight mb-2">{t('noLessonsToday')}</h3>
+            <p className="text-slate-500 text-sm mb-6 max-w-[200px]"></p>
+            {/* <p className="text-slate-500 text-sm mb-6 max-w-[200px]">{t('noLessonsDesc')}</p> */}
+            <Link 
+              href="/en/staff/schedule"
+              className="bg-primary text-black px-8 py-3 rounded-xl font-black uppercase italic text-sm transition-transform active:scale-95"
+            >
+              {t('gotoSchedule')}
+            </Link>
           </div>
+        ) : (
+          <div className="relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+            {/* Time Gutter */}
+            <div className="absolute left-0 w-16 h-full border-r border-white/5 z-20 bg-black/60 backdrop-blur-md">
+              {HOURS.map(h => (
+                <div key={h.toISOString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
+                  {format(h, 'HH:mm')}
+                </div>
+              ))}
+            </div>
 
-          {/* Lessons Grid */}
-          <div className="absolute left-16 right-0 h-full z-30">
-            {!loading && lessons.map((l) => (
-              <div key={l.lesson_id} style={getLessonStyles(l.session_date, l.lesson_status)}
-                className="group bg-[#111] border border-white/10 rounded-2xl p-4 flex flex-col shadow-2xl active:border-primary/40 transition-all"
-              >
-                <div className="flex justify-between items-start mb-3 shrink-0">
-                  <div className="flex gap-3 min-w-0">
-                    {/* AVATAR LOGIC INTEGRATED HERE */}
-                    {/* <ClientAvatar url={l.client_avatar_url} name={l.client_name} /> */}
-                    
-                    <div className="min-w-0">
-                      <h4 className="text-lg font-black uppercase italic tracking-tighter leading-tight truncate">
-                        {l.client_name} <span className="text-primary">{l.client_last_name}</span>
-                      </h4>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
-                         <span className="tabular-nums text-primary/80">{format(new Date(l.session_date), 'HH:mm')}</span>
-                         <span className="opacity-30">•</span>
-                         <span className="flex items-center gap-1">
-                           <MapPin size={10} /> {l.location || t('baseOps')}
-                         </span>
+            {/* Lessons Grid */}
+            <div className="absolute left-16 right-0 h-full z-30">
+              {!loading && lessons.map((l) => (
+                <div key={l.lesson_id} style={getLessonStyles(l.session_date, l.lesson_status)}
+                  className="group bg-[#111] border border-white/10 rounded-2xl p-4 flex flex-col shadow-2xl active:border-primary/40 transition-all"
+                >
+                  <div className="flex justify-between items-start mb-3 shrink-0">
+                    <div className="flex gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <h4 className="text-lg font-black uppercase italic tracking-tighter leading-tight truncate">
+                          {l.client_name} <span className="text-primary">{l.client_last_name}</span>
+                        </h4>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                           <span className="tabular-nums text-primary/80">{format(new Date(l.session_date), 'HH:mm')}</span>
+                           <span className="opacity-30">•</span>
+                           <span className="flex items-center gap-1">
+                             <MapPin size={10} /> {l.location || t('baseOps')}
+                           </span>
+                        </div>
                       </div>
                     </div>
+                    <div className={`px-2 py-1 rounded text-[9px] font-black border flex items-center gap-1 ${
+                      l.lesson_status === 'completed' 
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                        : 'bg-primary/10 text-primary border-primary/20'
+                    }`}>
+                      <Clock size={10} />
+                      {l.duration || l.hours_spent || '1'}H 
+                    </div>
                   </div>
-                  <div className={`px-2 py-1 rounded text-[9px] font-black border flex items-center gap-1 ${
-                    l.lesson_status === 'completed' 
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
-                      : 'bg-primary/10 text-primary border-primary/20'
-                  }`}>
-                    <Clock size={10} />
-                    {/* Use l.duration if available, otherwise fallback to a default or calculated value */}
-                    {l.duration || l.hours_spent || '1'}H 
+
+                  <div className="flex-1 mb-3">
+                    <p className="text-[13px] text-slate-200 font-medium leading-snug italic line-clamp-3">
+                      {l.summary || t('noMissionNotes')}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 h-10 shrink-0 mt-auto">
+                    <a href={l.client_phone ? `tel:${l.client_phone}` : '#'} 
+                       className={`rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 text-black ${l.client_phone ? 'bg-primary' : 'bg-white/5 text-slate-700 cursor-not-allowed pointer-events-none'}`}
+                    >
+                      <Phone size={14} fill={l.client_phone ? "black" : "none"} />
+                      <span className="text-[10px] font-black uppercase tracking-tight">{t('call')}</span>
+                    </a>
+                    <button 
+                      onClick={() => setSelectedClient(l)}
+                      className="bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-white/5"
+                    >
+                      <Contact2 size={14} />
+                      <span className="text-[10px] font-black uppercase tracking-tight">{t('dossier')}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex-1 mb-3">
-                  <p className="text-[13px] text-slate-200 font-medium leading-snug italic line-clamp-3">
-                    {l.summary || t('noMissionNotes')}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 h-10 shrink-0 mt-auto">
-                  <a href={l.client_phone ? `tel:${l.client_phone}` : '#'} 
-                     className={`rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 text-black ${l.client_phone ? 'bg-primary' : 'bg-white/5 text-slate-700 cursor-not-allowed pointer-events-none'}`}
-                  >
-                    <Phone size={14} fill={l.client_phone ? "black" : "none"} />
-                    <span className="text-[10px] font-black uppercase tracking-tight">{t('call')}</span>
-                  </a>
-                  <button 
-                    onClick={() => setSelectedClient(l)}
-                    className="bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 border border-white/5"
-                  >
-                    <Contact2 size={14} />
-                    <span className="text-[10px] font-black uppercase tracking-tight">{t('dossier')}</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {selectedClient && <ClientProfileModal client={selectedClient} onClose={() => setSelectedClient(null)} />}

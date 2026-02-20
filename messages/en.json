@@ -258,7 +258,9 @@
     "activeRoster": "Active Roster",
     "rosterDesc": "Access historical intelligence notes.",
     "accessIntel": "Access Intel",
-    "noMissionNotes": "No mission notes provided..."
+    "noMissionNotes": "No mission notes provided...",
+    "noLessonsToday": "No Lessons Today",
+    "gotoSchedule": "Go To Schedule"
   },
   "Staff": {
     "command": "COMMAND",

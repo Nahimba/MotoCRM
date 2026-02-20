@@ -252,12 +252,14 @@
     "baseOps": "БАЗА",
     "awaitingBriefing": "Очікування брифінгу...",
     "call": "Зателефонувати",
-    "dossier": "Досьє",
+    "dossier": "Про Учня",
     "newEvaluation": "Нова Оцінка",
     "activeRoster": "Активний Список",
-    "rosterDesc": "Доступ до історичних нотаток.",
-    "accessIntel": "Дані Інтел",
-    "noMissionNotes": "Примітки до місії відсутні..."
+    "rosterDesc": "Доступ до нотаток.",
+    "accessIntel": "Дані",
+    "noMissionNotes": "Примітки відсутні...",
+    "noLessonsToday": "Сьогодні заняття відсутні",
+    "gotoSchedule": "Перейти до Розкладу"
   },
   "Staff": {
     "command": "УПРАВЛІННЯ",
