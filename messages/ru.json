@@ -391,9 +391,12 @@
       "hours_left": "Осталось",
       "hours": "{count} ч.",
       "standard_unit": "Стандартный юнит",
-      "cleared": "ЗАВЕРШЕНО",
+      "cleared": "Оплачено",
       "no_pilots": "Клиенты не найдены",
-      "missing_data": "Информация отсутствует"
+      "missing_data": "Информация отсутствует",
+      "client": "Клиент",
+      "payment": "Оплата",
+      "action": "Действия"
     },
     "form": {
       "abort": "Отмена",

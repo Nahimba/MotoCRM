@@ -54,13 +54,13 @@ export default function ClientsPage() {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 py-10">
         <div>
-          <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter leading-none">
-            {showOnlyActive ? t("title") : "Archive"} 
+          <h1 className="text-2xl font-black italic uppercase text-white tracking-tighter leading-none">
+            {showOnlyActive ? t("title") : t("archive")} 
           </h1>
           <div className="flex items-center gap-4 mt-3">
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${showOnlyActive ? 'bg-primary animate-pulse' : 'bg-red-500'}`} />
-              {showOnlyActive ? "Active Pilots" : "Inactive Records"}: {filteredClients.length}
+              {showOnlyActive ? t("active_clients") : t("inactive_clients")}: {filteredClients.length}
             </p>
             <button onClick={loadClients} className="text-slate-600 hover:text-primary transition-colors">
               <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
@@ -80,8 +80,14 @@ export default function ClientsPage() {
             }`}
           >
             <Filter size={14} />
-            {showOnlyActive ? "Switch to Inactive" : "Switch to Active"}
+            {showOnlyActive ? t("switch_active") : t("switch_inactive")}
           </button>
+
+          <Link href="/staff/clients/new">
+            <button className="bg-primary text-black h-full px-6 py-3 rounded-xl font-black uppercase text-[11px] tracking-widest flex items-center gap-2 hover:bg-white transition-all active:scale-95">
+              <UserPlus size={18} strokeWidth={3} /> {t("recruit_btn")}
+            </button>
+          </Link>
 
           <div className="relative flex-1 md:w-72">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
@@ -94,11 +100,6 @@ export default function ClientsPage() {
             />
           </div>
           
-          <Link href="/staff/clients/new">
-            <button className="bg-primary text-black h-full px-6 py-3 rounded-xl font-black uppercase text-[11px] tracking-widest flex items-center gap-2 hover:bg-white transition-all active:scale-95">
-              <UserPlus size={18} strokeWidth={3} /> {t("recruit_btn")}
-            </button>
-          </Link>
         </div>
       </div>
 
@@ -107,10 +108,10 @@ export default function ClientsPage() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-white/5 bg-white/[0.02]">
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Pilot</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">Remaining</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">Balance</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-right">Actions</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t("client")}</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">{t("hours_left")}</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">{t("payment")}</th>
+              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-right">{t("action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -137,7 +138,7 @@ export default function ClientsPage() {
                 <tr key={client.id} className="group hover:bg-white/[0.01] transition-colors">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="relative">
+                      {/* <div className="relative">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-[10px] border ${
                           showOnlyActive 
                             ? 'bg-gradient-to-br from-white/10 to-transparent text-primary border-white/5' 
@@ -150,7 +151,7 @@ export default function ClientsPage() {
                             <CheckCircle size={10} strokeWidth={4} />
                           </div>
                         )}
-                      </div>
+                      </div> */}
                       <div>
                         <Link href={`/staff/clients/${client.id}`} className="block font-black uppercase text-sm italic hover:text-primary transition-colors text-white">
                           {client.name} {client.last_name}
@@ -176,7 +177,7 @@ export default function ClientsPage() {
                     }`}>
                       <Wallet size={12} />
                       <span className="text-[11px] font-black uppercase italic">
-                        {debt > 0 ? `${Math.round(debt)} ₴` : "CLEARED"}
+                        {debt > 0 ? `${Math.round(debt)} ₴` : t("cleared")}
                       </span>
                     </div>
                   </td>

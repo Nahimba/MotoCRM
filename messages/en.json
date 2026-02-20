@@ -393,7 +393,15 @@
       "standard_unit": "Standard Unit",
       "cleared": "COMPLETED",
       "no_pilots": "No clients found",
-      "missing_data": "Information is missing"
+      "missing_data": "Information is missing",
+      "client": "client",
+      "payment": "payment",
+      "action": "action",
+      "archive": "archive",
+      "active_clients": "active",
+      "inactive_clients": "inactive",
+      "switch_active": "switch to inactive",
+      "switch_inactive": "switch to active"
     },
     "form": {
       "abort": "Cancel",
