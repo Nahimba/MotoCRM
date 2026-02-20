@@ -187,6 +187,7 @@ export default function Sidebar() {
                     <MobileExtraLink href="/staff" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} />
                     <MobileExtraLink href="/staff/payments" icon={<Banknote size={18}/>} label={t('payments') || 'Payments'} />
                     <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
+                    <MobileExtraLink href="/staff/packages" icon={<Bike size={18}/>} label={t('packages')} />
                   </>
                 )}
 
