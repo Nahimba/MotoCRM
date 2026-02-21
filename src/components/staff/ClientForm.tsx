@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -21,7 +20,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Track the current filename and a flag to see if it was saved to DB
   const [isSaved, setIsSaved] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
   
@@ -31,7 +29,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     phone: initialData?.profiles?.phone || "",
     email: initialData?.profiles?.email || "",
     address: initialData?.profiles?.address || "",
-    avatar_url: initialData?.profiles?.avatar_url || "", // This will be the filename only
+    avatar_url: initialData?.profiles?.avatar_url || "", 
     social_link: initialData?.profiles?.social_link || "",
     gear_type: initialData?.gear_type || "Manual",
     lead_source: (
@@ -45,10 +43,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     tags: initialData?.tags?.join(", ") || "",
   })
 
-  // Convert stored filename to viewable URL
   useEffect(() => {
     if (formData.avatar_url) {
-      // Check if it's already a full URL (legacy data) or just a filename
       if (formData.avatar_url.startsWith('http')) {
         setPreviewUrl(formData.avatar_url)
       } else {
@@ -62,8 +58,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     }
   }, [formData.avatar_url])
 
-  // --- CLEANUP ZOMBIES ---
-  // If the user navigates away without submitting, delete the orphan file
   const cleanupOrphanImage = async (filename: string) => {
     if (isSaved || !filename || filename === initialData?.profiles?.avatar_url) return
     await supabase.storage.from('avatars').remove([`avatars/${filename}`])
@@ -76,15 +70,12 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     router.back()
   }
 
-  // --- UPLOAD HANDLER ---
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
     try {
       setUploading(true)
-      
-      // If there was a previous unsaved upload, delete it first
       if (formData.avatar_url && formData.avatar_url !== initialData?.profiles?.avatar_url) {
         await cleanupOrphanImage(formData.avatar_url)
       }
@@ -98,7 +89,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
-
       setFormData(prev => ({ ...prev, avatar_url: fileName }))
       toast.success("Identity image captured")
     } catch (error: any) {
@@ -108,32 +98,17 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     }
   }
 
-  // --- DELETE HANDLER ---
   const handleDeleteAvatar = async () => {
     if (!window.confirm("Are you sure you want to delete this Visual ID?")) return
-
     try {
       setUploading(true)
       const fileName = formData.avatar_url
-      
       if (fileName) {
-        // Correct path format for remove: 'avatars/filename.jpg'
-        const { error: storageError } = await supabase.storage
-          .from('avatars')
-          .remove([`avatars/${fileName}`])
-          
-        if (storageError) throw storageError
+        await supabase.storage.from('avatars').remove([`avatars/${fileName}`])
       }
-
-      // If we are editing, clear it in DB immediately
       if (id) {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ avatar_url: null })
-          .eq('id', initialData.profile_id)
-        if (error) throw error
+        await supabase.from('profiles').update({ avatar_url: null }).eq('id', initialData.profile_id)
       }
-
       setFormData(prev => ({ ...prev, avatar_url: "" }))
       toast.success("Visual ID wiped")
     } catch (error: any) {
@@ -142,8 +117,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       setUploading(false)
     }
   }
-
-  const inputClass = "w-full bg-black border border-zinc-700 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors placeholder:text-zinc-600 text-sm font-medium"
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -155,41 +128,63 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       : []
 
     try {
+      // 1. Get current user for audit trail
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Unauthorized")
+
+      const profilePayload = {
+        first_name: formData.first_name, 
+        last_name: formData.last_name,
+        phone: formData.phone, 
+        email: formData.email, 
+        address: formData.address,
+        avatar_url: formData.avatar_url, 
+        social_link: formData.social_link,
+      }
+
+      const clientPayload = {
+        gear_type: formData.gear_type, 
+        lead_source: formData.lead_source || null, 
+        notes: formData.notes, 
+        is_graduated: formData.is_graduated,
+        is_active: formData.is_active, 
+        tags: tagsArray,
+      }
+
       if (id) {
-        const { error: pError } = await supabase.from('profiles').update({
-          first_name: formData.first_name, 
-          last_name: formData.last_name,
-          phone: formData.phone, 
-          email: formData.email, 
-          address: formData.address,
-          avatar_url: formData.avatar_url, 
-          social_link: formData.social_link,
-        }).eq('id', initialData.profile_id)
-        
+        // UPDATE
+        const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
         if (pError) throw pError
 
-        const { error: cError } = await supabase.from('clients').update({
-          gear_type: formData.gear_type, 
-          lead_source: formData.lead_source, 
-          notes: formData.notes, 
-          is_graduated: formData.is_graduated,
-          is_active: formData.is_active, 
-          tags: tagsArray,
-        }).eq('id', id)
-        
+        const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
         if (cError) throw cError
       } else {
+        // CREATE CHAIN
         const newProfileId = crypto.randomUUID()
-        const { error: pError } = await supabase.from('profiles').insert([{
-          id: newProfileId, 
-          ...formData,
-          avatar_url: formData.avatar_url,
-          role: 'rider',
-          tags: undefined // Clean up object
-        }])
         
+        // A. Insert Profile
+        const { error: pError } = await supabase.from('profiles').insert([{
+            id: newProfileId, 
+            ...profilePayload,
+            role: 'rider'
+        }])
         if (pError) throw pError
-        // ... (remaining client/account inserts)
+
+        // B. Insert Client
+        const { data: clientData, error: cError } = await supabase.from('clients').insert([{
+            profile_id: newProfileId,
+            created_by_profile_id: user.id, // Audit trail
+            ...clientPayload
+        }]).select().single()
+        if (cError) throw cError
+
+        // C. Insert Account
+        const { error: aError } = await supabase.from('accounts').insert([{
+            client_id: clientData.id,
+            created_by_profile_id: user.id, // Audit trail
+            account_status: 'active'
+        }])
+        if (aError) throw aError
       }
       
       setIsSaved(true)
@@ -202,6 +197,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       setLoading(false)
     }
   }
+
+  const inputClass = "w-full bg-black border border-zinc-700 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors placeholder:text-zinc-600 text-sm font-medium"
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
