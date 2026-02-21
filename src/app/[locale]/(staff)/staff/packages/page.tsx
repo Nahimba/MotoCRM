@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
   Plus, Search, ArrowRight, Loader2, 
-  Clock, Banknote, User, Target, Archive, ShieldCheck, Briefcase 
+  Clock, Banknote, Target, Archive, ShieldCheck, Briefcase 
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useTranslations } from "next-intl"
@@ -19,7 +19,7 @@ interface TrainingPackage {
   contract_price: number
   status: string
   account_label: string
-  package_name?: string // Added package name field
+  course_name?: string // Changed from package_name to match DB view logic
   instructor_profile_id: string
   instructor_name: string
   created_at: string
@@ -45,19 +45,25 @@ export default function PackagesPage() {
   async function fetchPackages() {
     if (!user?.id) return
     setLoading(true)
+    
+    // Убедитесь, что в представлении staff_packages_view есть колонка course_name
     const { data, error } = await supabase
       .from("staff_packages_view")
       .select("*")
       .order("created_at", { ascending: false })
 
-    if (!error && data) setPackages(data as TrainingPackage[])
+    if (!error && data) {
+      setPackages(data as TrainingPackage[])
+    }
     setLoading(false)
   }
 
-  useEffect(() => { fetchPackages() }, [user])
+  useEffect(() => { 
+    fetchPackages() 
+  }, [user])
 
   const filtered = packages.filter(p => {
-    const searchStr = `${p.account_label} ${p.package_name || ''}`.toLowerCase()
+    const searchStr = `${p.account_label} ${p.course_name || ''} ${p.instructor_name || ''}`.toLowerCase()
     const matchesSearch = searchStr.includes(search.toLowerCase())
     const matchesInstructor = filterType === "all" || p.instructor_profile_id === user?.id
     const matchesStatus = statusFilter === "active" ? p.status === "active" : p.status !== "active"
@@ -110,20 +116,20 @@ export default function PackagesPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* Instructor Filter */}
-          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
-            {['mine', 'all'].map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type as any)}
-                className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
-              >
-                {t(`filters.${type}`)}
-              </button>
-            ))}
-          </div>
+          {profile?.role === 'admin' && (
+            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+              {(['mine', 'all'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
+                >
+                  {t(`filters.${type}`)}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* Status Filter */}
           <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
             <button 
               onClick={() => setStatusFilter("active")} 
@@ -167,28 +173,31 @@ export default function PackagesPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-[8px] font-black uppercase text-slate-600 bg-white/5 px-2 py-0.5 rounded">ID: {pkg.id.split('-')[0]}</span>
                       {isFullyPaid && <ShieldCheck size={12} className="text-emerald-500" />}
+                      {!isFullyPaid && <span className="text-[8px] font-bold text-orange-500/80 uppercase">Payment Pending</span>}
                     </div>
                     
                     <div>
                       <h3 className="text-xl md:text-2xl font-black uppercase italic tracking-tighter truncate group-hover:text-primary transition-colors leading-none">
                         {pkg.account_label}
                       </h3>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1.5 mt-2">
                         <Briefcase size={10} className="text-primary/60" />
-                        <p className="text-[9px] md:text-[11px] font-black uppercase text-slate-400 tracking-wider truncate">
-                          {pkg.package_name || "Standard Training"}
+                        <p className="text-[10px] md:text-[12px] font-black uppercase text-slate-300 tracking-wider truncate">
+                          {pkg.course_name || "Custom Training Package"}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-500">
                       <Target size={12} />
-                      <span className="text-[9px] font-bold uppercase tracking-widest truncate">{pkg.instructor_name || 'Unassigned'}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest truncate">
+                        {pkg.instructor_name || 'Unassigned Instructor'}
+                      </span>
                     </div>
                   </div>
 
                   {/* Stats Group */}
-                  <div className="flex items-center justify-between md:justify-end gap-8 md:gap-16 border-t lg:border-0 border-white/5 pt-4 lg:pt-0">
+                  <div className="grid grid-cols-2 md:flex items-center gap-8 md:gap-16 border-t lg:border-0 border-white/5 pt-4 lg:pt-0">
                     
                     {/* Usage */}
                     <div className="space-y-1">
@@ -201,11 +210,11 @@ export default function PackagesPage() {
                     </div>
 
                     {/* Payment */}
-                    <div className="space-y-1 text-right">
-                      <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-end gap-1">
+                    <div className="space-y-1 text-right lg:text-left">
+                      <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-end lg:justify-start gap-1">
                         <Banknote size={10} /> Payment
                       </p>
-                      <div className="flex flex-col items-end">
+                      <div className="flex flex-col items-end lg:items-start">
                         <p className={`text-xl font-black tabular-nums ${isFullyPaid ? 'text-emerald-500' : 'text-white'}`}>
                           {pkg.total_paid?.toLocaleString()}
                         </p>

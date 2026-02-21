@@ -14,11 +14,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { Clock, Wallet, ShieldCheck, Loader2, X } from "lucide-react"
+import { Clock, ShieldCheck, Loader2, Tag } from "lucide-react"
 
 const formSchema = z.object({
   account_id: z.string().min(1, "Required"),
@@ -26,9 +27,18 @@ const formSchema = z.object({
   total_hours: z.coerce.number().min(1),
   contract_price: z.coerce.number().min(0),
   amount_paid_today: z.coerce.number().min(0),
+  use_discount: z.boolean().default(false),
 })
 
 type FormValues = z.infer<typeof formSchema>
+
+interface Course {
+  id: string
+  name: string
+  base_price: number
+  discounted_price: number | null
+  total_hours: number
+}
 
 interface Props {
   isOpen: boolean
@@ -44,7 +54,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
   const [fetching, setFetching] = useState(false)
   
   const [accounts, setAccounts] = useState<{ id: string; account_label: string }[]>([])
-  const [courses, setCourses] = useState<{ id: string; name: string; base_price: number; total_hours: number }[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
   const [instructorId, setInstructorId] = useState<string | null>(null)
 
   const form = useForm<FormValues>({
@@ -55,28 +65,47 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
       total_hours: 10,
       contract_price: 0,
       amount_paid_today: 0,
+      use_discount: false,
     },
   })
 
   const control = form.control as unknown as Control<FormValues>
 
+  // Синхронизация цены при переключении чекбокса
+  const updatePrice = (courseId: string, useDiscount: boolean) => {
+    const selected = courses.find(c => c.id === courseId)
+    if (selected) {
+      const price = (useDiscount && selected.discounted_price) 
+        ? selected.discounted_price 
+        : selected.base_price
+      form.setValue("contract_price", price)
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
+      if (!user?.id || !isOpen) return
+      
       try {
-        const { data: instData } = await supabase
+        setFetching(true)
+
+        // 1. Get current instructor ID
+        const { data: instData, error: instErr } = await supabase
           .from("instructors")
           .select("id")
-          .eq("profile_id", user?.id)
+          .eq("profile_id", user.id)
           .maybeSingle()
 
+        if (instErr) throw instErr
         setInstructorId(instData?.id || null)
 
+        // 2. Fetch Accounts
         const { data: accData, error: accErr } = await supabase
           .from("accounts")
           .select(`
             id,
-            clients (
-              profiles (
+            clients!inner (
+              profiles!clients_profile_id_fkey (
                 first_name,
                 last_name
               )
@@ -96,42 +125,53 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
           setAccounts(formatted.sort((a, b) => a.account_label.localeCompare(b.account_label)))
         }
 
-        const { data: courData } = await supabase
+        // 3. Fetch Courses (including discounted_price)
+        const { data: courData, error: courErr } = await supabase
           .from("courses")
-          .select("id, name, base_price, total_hours")
+          .select("id, name, base_price, discounted_price, total_hours")
           .eq("is_active", true)
         
-        if (courData) setCourses(courData)
+        if (courErr) throw courErr
+        if (courData) setCourses(courData as Course[])
 
-      } catch (err) {
-        console.error("Error loading modal data:", err)
-        toast.error("Failed to load data")
+      } catch (err: any) {
+        console.error("CRITICAL: Modal Data Fetch Error:", err)
+        toast.error(err.message || "Failed to load clients or courses")
+      } finally {
+        setFetching(false)
       }
     }
 
-    if (user?.id && isOpen) fetchData()
-  }, [user, isOpen])
+    fetchData()
+  }, [user?.id, isOpen])
 
   useEffect(() => {
     async function loadExistingPackage() {
       if (!packageId || !isOpen) return
       setFetching(true)
-      const { data, error } = await supabase
-        .from("course_packages")
-        .select("*")
-        .eq("id", packageId)
-        .single()
+      try {
+        const { data, error } = await supabase
+          .from("course_packages")
+          .select("*")
+          .eq("id", packageId)
+          .single()
 
-      if (data && !error) {
-        form.reset({
-          account_id: data.account_id,
-          course_id: data.course_id,
-          total_hours: data.total_hours,
-          contract_price: data.contract_price,
-          amount_paid_today: 0,
-        })
+        if (error) throw error
+        if (data) {
+          form.reset({
+            account_id: data.account_id,
+            course_id: data.course_id,
+            total_hours: data.total_hours,
+            contract_price: data.contract_price,
+            amount_paid_today: 0,
+            use_discount: false,
+          })
+        }
+      } catch (err: any) {
+        toast.error("Error loading package: " + err.message)
+      } finally {
+        setFetching(false)
       }
-      setFetching(false)
     }
     loadExistingPackage()
   }, [packageId, isOpen, form])
@@ -141,6 +181,8 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
     const selected = courses.find(c => c.id === courseId)
     if (selected) {
       form.setValue("total_hours", selected.total_hours)
+      // Сбрасываем чекбокс при смене курса и ставим базовую цену
+      form.setValue("use_discount", false)
       form.setValue("contract_price", selected.base_price)
     }
   }
@@ -150,6 +192,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
     try {
       let currentPkgId = packageId
 
+      // 1. Upsert Package
       if (packageId) {
         const { error } = await supabase
           .from("course_packages")
@@ -177,6 +220,29 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         currentPkgId = data.id
       }
 
+      // 2. Handle Payment
+      if (values.amount_paid_today > 0 && currentPkgId) {
+        const { data: payData, error: payErr } = await supabase
+          .from("payments")
+          .insert({
+            account_id: values.account_id,
+            amount: values.amount_paid_today,
+            status: "completed",
+            notes: packageId ? `Top-up for package ${packageId}` : `Initial payment`,
+            created_by_profile_id: profile?.id
+          })
+          .select().single()
+
+        if (payErr) throw payErr
+
+        const { error: allocErr } = await supabase.from("course_payment_allocations").insert({
+          payment_id: payData.id,
+          course_package_id: currentPkgId,
+          amount_allocated: values.amount_paid_today
+        })
+        if (allocErr) throw allocErr
+      }
+
       toast.success(packageId ? "Package updated" : t("success"))
       form.reset()
       onSuccess()
@@ -190,23 +256,14 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-[#0A0A0A] border-white/10 text-white max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[2.5rem] p-0 overflow-hidden shadow-2xl flex flex-col">
-        
-        {/* Mobile-Friendly Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute right-6 top-6 z-50 p-2 bg-white/5 rounded-full sm:hidden"
-        >
-          <X size={20} />
-        </button>
-
-        <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32">
-          <DialogHeader className="mb-8 text-left">
-            <DialogTitle className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none">
+      <DialogContent className="bg-[#0A0A0A] border-white/10 text-white max-w-2xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
+        <div className="p-8 md:p-12 overflow-y-auto max-h-[90vh]">
+          <DialogHeader className="mb-10 text-left">
+            <DialogTitle className="text-4xl font-black italic tracking-tighter uppercase leading-none">
               {packageId ? "Edit" : t("title")} <span className="text-primary">{packageId ? "Package" : t("subtitle")}</span>
             </DialogTitle>
             <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-2">
-              {packageId ? "Modify existing contract" : t("description")}
+              {packageId ? "Modify existing contract details" : t("description")}
             </p>
           </DialogHeader>
 
@@ -214,18 +271,18 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
             <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
           ) : (
             <Form {...(form as any)}>
-              <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6 md:space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={control}
                     name="account_id"
                     render={({ field }) => (
-                      <FormItem className="space-y-2">
+                      <FormItem className="space-y-3">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("client")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value} disabled={!!packageId}>
                           <FormControl>
-                            <SelectTrigger className="bg-black border-white/5 h-14 md:h-16 text-white rounded-xl focus:ring-primary">
-                              <SelectValue placeholder={accounts.length === 0 ? "Loading..." : t("selectClient")} />
+                            <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
+                              <SelectValue placeholder={accounts.length === 0 ? "Loading clients..." : t("selectClient")} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="bg-[#0F0F0F] border-white/10 text-white max-h-60">
@@ -245,11 +302,11 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                     control={control}
                     name="course_id"
                     render={({ field }) => (
-                      <FormItem className="space-y-2">
+                      <FormItem className="space-y-3">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("course")}</FormLabel>
                         <Select onValueChange={(v) => { field.onChange(v); onCourseChange(v); }} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="bg-black border-white/5 h-14 md:h-16 text-white rounded-xl focus:ring-primary">
+                            <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
                               <SelectValue placeholder={t("selectCourse")} />
                             </SelectTrigger>
                           </FormControl>
@@ -267,17 +324,51 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                {/* DISCOUNT TOGGLE */}
+                <FormField
+                  control={control}
+                  name="use_discount"
+                  render={({ field }) => {
+                    const selectedCourse = courses.find(c => c.id === form.watch("course_id"));
+                    const hasDiscount = !!selectedCourse?.discounted_price;
+
+                    return (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-2xl border border-white/5 p-4 bg-white/5">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            disabled={!hasDiscount || !!packageId}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              updatePrice(form.getValues("course_id"), !!checked);
+                            }}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className={`text-[10px] font-black uppercase flex items-center gap-2 ${hasDiscount ? "text-white" : "text-slate-600"}`}>
+                            <Tag size={12} className={hasDiscount ? "text-primary" : ""} />
+                            Apply promotional price
+                          </FormLabel>
+                          {!hasDiscount && form.watch("course_id") && (
+                            <p className="text-[8px] text-slate-500 uppercase tracking-tighter">No discount available for this course</p>
+                          )}
+                        </div>
+                      </FormItem>
+                    );
+                  }}
+                />
+
+                <div className="grid grid-cols-2 gap-6">
                   <FormField
                     control={control}
                     name="total_hours"
                     render={({ field }) => (
-                      <FormItem className="space-y-2">
+                      <FormItem className="space-y-3">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
                           <Clock size={12}/> {t("hours")}
                         </FormLabel>
                         <FormControl>
-                          <Input type="number" inputMode="decimal" {...field} className="bg-black border-white/5 h-14 md:h-16 text-white font-black text-lg rounded-xl" />
+                          <Input type="number" {...field} className="bg-black border-white/5 h-16 text-white font-black text-lg rounded-xl" />
                         </FormControl>
                       </FormItem>
                     )}
@@ -286,47 +377,61 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                     control={control}
                     name="contract_price"
                     render={({ field }) => (
-                      <FormItem className="space-y-2">
+                      <FormItem className="space-y-3">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500">{t("price")}</FormLabel>
                         <FormControl>
-                          <Input type="number" inputMode="decimal" {...field} className="bg-black border-white/5 h-14 md:h-16 text-white font-black text-lg rounded-xl" />
+                          <Input type="number" {...field} className="bg-black border-white/5 h-16 text-white font-black text-lg rounded-xl" />
                         </FormControl>
                       </FormItem>
                     )}
                   />
                 </div>
 
-                <div className="p-6 md:p-8 bg-primary/5 rounded-[1.5rem] md:rounded-[2rem] border border-primary/10 flex justify-between items-center relative overflow-hidden">
+                <div className="p-8 bg-primary/5 rounded-[2rem] border border-primary/10 flex justify-between items-center relative overflow-hidden">
                    <div className="relative z-10">
-                      <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-1 md:mb-2">{t("totalValue")}</p>
-                      <div className="text-3xl md:text-4xl font-black italic text-primary uppercase tracking-tighter">
-                         {Number(form.watch("contract_price") || 0).toLocaleString()} <span className="text-[10px] not-italic text-primary/40 ml-1">UAH</span>
+                      <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-2">{t("totalValue")}</p>
+                      <div className="text-4xl font-black italic text-primary uppercase tracking-tighter">
+                         {Number(form.watch("contract_price") || 0).toLocaleString()} <span className="text-xs not-italic text-primary/40 ml-2">UAH</span>
                       </div>
                    </div>
-                   <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={100} />
+                   <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={120} />
                 </div>
+
+
+                {/* <FormField
+                  control={control}
+                  name="amount_paid_today"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]">
+                        <Wallet size={12}/> {packageId ? "Add Payment" : t("paymentToday")}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field} 
+                          className="bg-black border-primary/30 h-20 text-2xl font-black italic text-primary rounded-2xl" 
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                /> */}
+
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white transition-all text-sm tracking-[0.3em]"
+                >
+                  {loading ? <Loader2 className="animate-spin" /> : `${packageId ? 'Update' : t("activate")} 🏁`}
+                </Button>
               </form>
             </Form>
           )}
-        </div>
-
-        {/* Sticky Mobile Footer for Action Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent sm:relative sm:bg-none sm:p-12 sm:pt-0">
-          <Button 
-            onClick={form.handleSubmit(onSubmit as any)}
-            disabled={loading}
-            className="w-full bg-primary text-black font-black uppercase py-8 md:py-10 rounded-2xl hover:bg-white transition-all text-sm tracking-[0.3em] shadow-xl shadow-primary/10"
-          >
-            {loading ? <Loader2 className="animate-spin" /> : `${packageId ? 'Update' : t("activate")} 🏁`}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
-
-
-
 
 
                 {/* <FormField
