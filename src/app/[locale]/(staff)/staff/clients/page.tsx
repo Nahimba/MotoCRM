@@ -60,13 +60,13 @@ export default function ClientsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6 py-10">
+      <div className="flex flex-col justify-between items-end gap-6 py-2">
         <div>
           <h1 className="text-2xl font-black italic uppercase text-white tracking-tighter leading-none">
             {showOnlyActive ? t("title") : t("archive")} 
           </h1>
-          <div className="flex items-center gap-4 mt-3">
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em] flex items-center gap-2">
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${showOnlyActive ? 'bg-primary animate-pulse' : 'bg-red-500'}`} />
               {showOnlyActive ? t("active_clients") : t("inactive_clients")}: {filteredClients.length}
             </p>
@@ -132,7 +132,7 @@ export default function ClientsPage() {
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t("client")}</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">{t("hours_left")}</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-center">{t("payment")}</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-right">{t("action")}</th>
+              {/* <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-right">{t("action")}</th> */}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -159,7 +159,7 @@ export default function ClientsPage() {
                 <tr key={client.id} className="group hover:bg-white/[0.01] transition-colors">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="relative">
+                      {/* <div className="relative">
                         {client.is_graduated && (
                           <div className="absolute -top-1 -right-1 bg-green-500 text-black rounded-full p-0.5 border-2 border-[#070707] z-10">
                             <CheckCircle size={10} strokeWidth={4} />
@@ -168,14 +168,14 @@ export default function ClientsPage() {
                         <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-black text-[10px] text-slate-400 group-hover:border-primary/50 transition-colors">
                           {client.name?.[0]}{client.last_name?.[0]}
                         </div>
-                      </div>
+                      </div> */}
                       <div>
                         <Link href={`/staff/clients/${client.id}`} className="block font-black uppercase text-sm italic hover:text-primary transition-colors text-white">
                           {client.name} {client.last_name}
                         </Link>
-                        <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-bold">
+                        {/* <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-bold">
                            <Phone size={10} /> {client.phone || "---"}
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </td>
@@ -199,7 +199,7 @@ export default function ClientsPage() {
                     </div>
                   </td>
 
-                  <td className="px-6 py-5 text-right">
+                  {/* <td className="px-6 py-5 text-right">
                     <div className="flex justify-end items-center gap-2">
                       <Link href={`/staff/clients/${client.id}/edit`} className="p-2 text-zinc-600 hover:text-white transition-colors">
                         <Edit3 size={16} />
@@ -208,7 +208,7 @@ export default function ClientsPage() {
                         <ChevronRight size={18} strokeWidth={3} />
                       </Link>
                     </div>
-                  </td>
+                  </td> */}
                 </tr>
               )
             })}

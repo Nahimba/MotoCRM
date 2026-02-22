@@ -207,7 +207,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
           <ChevronLeft size={18} /> 
           <span className="text-xs font-bold uppercase tracking-wider">{t("form.abort")}</span>
         </button>
-        <h1 className="text-2xl font-black uppercase text-white tracking-tight">
+        <h1 className="text-1xl font-black uppercase text-white tracking-tight">
           {id ? t("form.modify_title") : t("form.recruit_title")}
         </h1>
       </div>
