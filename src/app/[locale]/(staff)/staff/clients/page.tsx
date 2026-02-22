@@ -3,51 +3,59 @@
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
-  Search, UserPlus, Edit3, Bike, Wallet, ChevronRight, Phone, Filter, CheckCircle, RefreshCcw
+  Search, UserPlus, Edit3, Bike, Wallet, ChevronRight, Phone, Filter, CheckCircle, RefreshCcw, User
 } from "lucide-react"
 import { Link } from '@/i18n/routing'
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
+import { useAuth } from "@/context/AuthContext"
 
 export default function ClientsPage() {
   const t = useTranslations("Clients.list")
+  const { user } = useAuth()
+  
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  // Тепер це керує саме запитом до бази: true = Active, false = Inactive
+  
+  // Состояния фильтров
   const [showOnlyActive, setShowOnlyActive] = useState(true)
+  const [showOnlyMine, setShowOnlyMine] = useState(true)
 
   const loadClients = useCallback(async () => {
     setLoading(true)
     try {
-      // Використовуємо .eq() з поточним станом
-      // Важливо: переконайся, що в Supabase колонка is_active має тип BOOLEAN
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_roster_summary_view')
         .select('*')
-        .eq('is_active', showOnlyActive) 
-        .order('name', { ascending: true });
+        .eq('is_active', showOnlyActive)
+
+      // Фильтр "Мои пилоты": проверяем наличие ID пользователя в массиве инструкторов
+      if (showOnlyMine && user?.id) {
+        query = query.contains('instructor_ids', [user.id])
+      }
+
+      const { data, error } = await query.order('name', { ascending: true })
       
-      if (error) throw error;
-      setClients(data || []);
+      if (error) throw error
+      setClients(data || [])
     } catch (error: any) {
-      console.error("Fetch Error:", error);
-      toast.error(t("sync_error") || "Sync Failed");
+      console.error("Fetch Error:", error)
+      toast.error(t("sync_error") || "Sync Failed")
     } finally {
       setLoading(false)
     }
-  }, [showOnlyActive, t]);
+  }, [showOnlyActive, showOnlyMine, user?.id, t])
 
-  // Перевантажуємо дані щоразу, коли змінюється стан перемикача
   useEffect(() => {
-    loadClients();
+    loadClients()
   }, [loadClients])
 
   const filteredClients = clients.filter(c => {
-    const fullName = `${c.name || ''} ${c.last_name || ''}`.toLowerCase();
-    const search = searchTerm.toLowerCase();
-    return fullName.includes(search) || (c.phone && c.phone.includes(search));
-  });
+    const fullName = `${c.name || ''} ${c.last_name || ''}`.toLowerCase()
+    const search = searchTerm.toLowerCase()
+    return fullName.includes(search) || (c.phone && c.phone.includes(search))
+  })
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
@@ -69,13 +77,27 @@ export default function ClientsPage() {
         </div>
 
         <div className="flex flex-wrap gap-3 w-full md:w-auto items-center">
+          {/* TOGGLE: MINE vs ALL */}
+          <button 
+            type="button"
+            onClick={() => setShowOnlyMine(!showOnlyMine)}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${
+              showOnlyMine 
+                ? 'bg-primary/20 border-primary/50 text-primary' 
+                : 'bg-white/5 border-white/10 text-slate-400'
+            }`}
+          >
+            <User size={14} />
+            {showOnlyMine ? "My Pilots" : "All Pilots"}
+          </button>
+
           {/* TOGGLE: ACTIVE vs INACTIVE */}
           <button 
             type="button"
             onClick={() => setShowOnlyActive(!showOnlyActive)}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${
               showOnlyActive 
-                ? 'bg-primary/10 border-primary/50 text-primary' 
+                ? 'bg-white/10 border-white/20 text-white' 
                 : 'bg-red-500/10 border-red-500/50 text-red-500'
             }`}
           >
@@ -99,7 +121,6 @@ export default function ClientsPage() {
               className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-[11px] font-bold uppercase tracking-widest text-white outline-none focus:border-primary/50 transition-all"
             />
           </div>
-          
         </div>
       </div>
 
@@ -138,20 +159,16 @@ export default function ClientsPage() {
                 <tr key={client.id} className="group hover:bg-white/[0.01] transition-colors">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
-                      {/* <div className="relative">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-[10px] border ${
-                          showOnlyActive 
-                            ? 'bg-gradient-to-br from-white/10 to-transparent text-primary border-white/5' 
-                            : 'bg-zinc-900 text-zinc-600 border-zinc-800'
-                        }`}>
-                          {client.name?.[0]}{client.last_name?.[0]}
-                        </div>
+                      <div className="relative">
                         {client.is_graduated && (
-                          <div className="absolute -top-1 -right-1 bg-green-500 text-black rounded-full p-0.5 border-2 border-black">
+                          <div className="absolute -top-1 -right-1 bg-green-500 text-black rounded-full p-0.5 border-2 border-[#070707] z-10">
                             <CheckCircle size={10} strokeWidth={4} />
                           </div>
                         )}
-                      </div> */}
+                        <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-black text-[10px] text-slate-400 group-hover:border-primary/50 transition-colors">
+                          {client.name?.[0]}{client.last_name?.[0]}
+                        </div>
+                      </div>
                       <div>
                         <Link href={`/staff/clients/${client.id}`} className="block font-black uppercase text-sm italic hover:text-primary transition-colors text-white">
                           {client.name} {client.last_name}
