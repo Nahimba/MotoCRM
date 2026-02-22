@@ -311,12 +311,14 @@ export default function CoursesPage() {
                 </div>
               </div>
 
-              <button 
-                disabled={isSubmitting}
-                className="w-full bg-primary text-black font-black py-4 rounded-2xl uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(255,165,0,0.3)] transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isSubmitting ? t("actions.processing") : t("actions.submit")}
-              </button>
+              <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
+                <button 
+                  disabled={isSubmitting}
+                  className="w-full bg-primary text-black font-black py-4 rounded-2xl uppercase tracking-[0.2em] hover:shadow-[0_0_30px_rgba(255,165,0,0.3)] transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isSubmitting ? t("actions.processing") : t("actions.submit")}
+                </button>
+              </div>
             </div>
           </form>
         </div>

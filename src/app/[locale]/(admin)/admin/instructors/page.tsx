@@ -308,7 +308,7 @@ export default function HQStaffPage() {
                 </select>
               </div>
 
-              <div className="flex flex-col md:flex-row gap-3 pt-4">
+              <div className="flex flex-col md:flex-row gap-3 pt-4 pb-safe-bottom-mobile">
                 <button disabled={isSubmitting} className="order-1 md:order-2 flex-[2] bg-white text-black font-black py-5 rounded-2xl uppercase text-[10px] italic hover:bg-primary transition-all active:scale-95 disabled:opacity-50">
                   {isSubmitting ? "..." : t('actions.confirm_deployment')}
                 </button>

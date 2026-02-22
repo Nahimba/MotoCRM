@@ -231,7 +231,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
           </div>
 
           {/* КНОПКИ ДЕЙСТВИЯ */}
-          <div className="pt-2 space-y-3">
+          <div className="pt-2 space-y-3 pb-safe-bottom-mobile">
             <button 
               disabled={loading}
               type="submit" 

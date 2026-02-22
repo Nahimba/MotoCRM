@@ -178,6 +178,7 @@ export default function Sidebar() {
                   <>
                     <MobileExtraLink href="/admin" icon={<ShieldCheck size={18}/>} label={t('overview')} />
                     <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
+                    <MobileExtraLink href="/admin/courses" icon={<Package size={18}/>} label={t('courses')} />
                     <MobileExtraLink href="/admin/instructors" icon={<GraduationCap size={18}/>} label={t('staff')} />
                   </>
                 )}
