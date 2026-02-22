@@ -489,7 +489,7 @@
     "avatar_removed": "Аватар удален",
     "delete_confirm": "Удалить фото профиля?",
     "loading": "Загрузка...",
-    "account_type": "{role} аккаунт",
+    "account_type": "{role}",
     "basic_identity": "Основные данные",
     "first_name": "Имя",
     "last_name": "Фамилия",

@@ -226,7 +226,7 @@ export default function ProfilePage() {
       {/* --- HEADER --- */}
       <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden shadow-2xl">
         <div className="relative group shrink-0">
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+          <div className="w-48 h-48 md:w-48 md:h-48 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
@@ -265,6 +265,7 @@ export default function ProfilePage() {
           </h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3">
              <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
+               {/* {t("account_type", { role: profile.role })} */}
                {t("account_type", { role: profile.role })}
              </span>
              <span className="px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
@@ -398,7 +399,7 @@ export default function ProfilePage() {
       </div>
 
       {/* --- FOOTER ACTIONS --- */}
-      <div className="flex justify-end pt-8 border-t border-white/5">
+      <div className="flex justify-end pt-8 pb-safe-bottom-mobile">
         <button 
           onClick={handleUpdate}
           disabled={updating}

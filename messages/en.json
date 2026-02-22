@@ -494,7 +494,7 @@
     "avatar_removed": "Avatar removed",
     "delete_confirm": "Delete profile picture?",
     "loading": "Loading...",
-    "account_type": "{role} account",
+    "account_type": "{role}",
     "basic_identity": "Basic Identity",
     "first_name": "First Name",
     "last_name": "Last Name",

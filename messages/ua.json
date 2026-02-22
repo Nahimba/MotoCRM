@@ -491,7 +491,7 @@
     "avatar_removed": "Аватар видалено",
     "delete_confirm": "Видалити фото профілю?",
     "loading": "Завантаження...",
-    "account_type": "{role} акаунт",
+    "account_type": "{role}",
     "basic_identity": "Основні дані",
     "first_name": "Ім'я",
     "last_name": "Прізвище",
