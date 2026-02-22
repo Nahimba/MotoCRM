@@ -347,7 +347,7 @@ export function AddLessonModal({
           </div>
 
           {/* FOOTER ACTIONS */}
-          <div className="flex gap-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+5rem)] md:pb-0">
+          <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
             {editLesson && (
               <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
                 <Trash2 size={22} />

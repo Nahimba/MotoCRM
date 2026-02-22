@@ -59,6 +59,23 @@ html, body {
 /* Fix for the mobile scroll 'jump' END */
 
 
+
+/* Fix for the mobile bottom menu overlap 'jump' START*/
+@layer utilities {
+  .pb-safe-bottom-mobile {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem) !important;
+  }
+}
+/* Сбрасываем для десктопа, если нужно */
+@media (min-width: 768px) {
+  .pb-safe-bottom-mobile {
+    padding-bottom: 0 !important;
+  }
+}
+/* Fix for the mobile bottom menu overlap END */
+
+
+
 /* @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";

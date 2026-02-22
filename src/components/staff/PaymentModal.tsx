@@ -360,7 +360,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
           </div>
 
           
-          <div className="flex gap-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+5rem)] md:pb-0">
+          <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
             {editPayment && (
               <button 
                 type="button" 

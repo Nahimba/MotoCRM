@@ -330,13 +330,15 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                    <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={120} />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white transition-all text-sm tracking-[0.3em]"
-                >
-                  {loading ? <Loader2 className="animate-spin" /> : `${packageId ? 'Update' : t("activate")} 🏁`}
-                </Button>
+                <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
+                  <Button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white transition-all text-sm tracking-[0.3em]"
+                  >
+                    {loading ? <Loader2 className="animate-spin" /> : `${packageId ? 'Update' : t("activate")} `}
+                  </Button>
+                </div>
               </form>
             </Form>
           )}
