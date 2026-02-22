@@ -66,9 +66,9 @@ export function LessonCard({
         ${isWeek ? 'p-2' : 'p-4 md:p-5'}`}
     >
       {/* BACKGROUND ICON DECAL - Purely Aesthetic */}
-      <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
+      {/* <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
         {isMoto ? <Bike size={isWeek ? 40 : 80} /> : <Car size={isWeek ? 40 : 80} />}
-      </div>
+      </div> */}
 
       {/* TOP ROW: Client Name & Type Icon */}
       <div className="flex justify-between items-start min-w-0 z-10">

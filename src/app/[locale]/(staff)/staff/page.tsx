@@ -107,8 +107,8 @@ export default function StaffLandingPage() {
     <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter">{t('title')}</h1>
-          <p className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em]">{format(new Date(), 'EEEE, dd MMMM')}</p>
+          <h1 className="text-2xl font-black uppercase italic tracking-tighter">{t('title')}</h1>
+          <p className="text-[12px] font-bold uppercase text-slate-400 tracking-[0.2em]">{format(new Date(), 'EEEE, dd MMMM')}</p>
         </div>
         <div className="bg-[#111] border border-white/10 px-5 py-2 rounded-xl text-center">
           <p className="text-xl font-black italic text-primary leading-none">{lessons.length}</p>

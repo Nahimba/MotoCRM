@@ -215,7 +215,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 md:p-8">
           
-          <div className="flex flex-col md:flex-row items-center gap-8 mb-10 pb-10 border-b border-zinc-800/50">
+          <div className="flex flex-col md:flex-row items-center gap-2 mb-4 pb-2 border-b border-zinc-800/50">
             <div className="relative group shrink-0">
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                 {previewUrl ? (
@@ -247,10 +247,10 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
 
             <div className="text-center md:text-left">
               <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Visual ID</p>
-              <h3 className="text-white text-xl font-black uppercase italic">Identity Capture</h3>
-              <p className="text-zinc-500 text-xs mt-2 max-w-[240px] leading-relaxed">
+              {/* <h3 className="text-white text-xl font-black uppercase italic">Identity Capture</h3> */}
+              {/* <p className="text-zinc-500 text-xs mt-2 max-w-[240px] leading-relaxed">
                 {formData.avatar_url ? "Visual identification confirmed. Wipe record to reset." : "Upload a tactical headshot for the pilot roster."}
-              </p>
+              </p> */}
             </div>
           </div>
 
@@ -293,7 +293,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
             </div>
           </div>
 
-          <div className="mt-8 pt-8 border-t border-zinc-800">
+          <div className="mt-6 pt-4 border-t border-zinc-800">
             <Field label={t("form.notes")}>
               <textarea rows={3} placeholder={t("form.notes_placeholder")} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className={inputClass} />
             </Field>

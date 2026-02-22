@@ -247,7 +247,7 @@
   },
   "StaffDashboard": {
     "title": "Заняття Сьогодні",
-    "assignments": "Завдання",
+    "assignments": "Заняття",
     "noPhone": "НЕМАЄ ТЕЛЕФОНУ",
     "baseOps": "БАЗА",
     "awaitingBriefing": "Очікування брифінгу...",

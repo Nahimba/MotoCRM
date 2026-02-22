@@ -193,9 +193,10 @@ export function AddLessonModal({
               {editLesson ? t('editLesson') : t('scheduleLesson')}
             </h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500">
+          <button onClick={onClose} className="p-2 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10">
             <X size={24} />
           </button>
+          
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
@@ -346,7 +347,7 @@ export function AddLessonModal({
           </div>
 
           {/* FOOTER ACTIONS */}
-          <div className="flex gap-3 pt-2 pb-6 md:pb-0">
+          <div className="flex gap-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+5rem)] md:pb-0">
             {editLesson && (
               <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
                 <Trash2 size={22} />
