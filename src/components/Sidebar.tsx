@@ -54,7 +54,7 @@ export default function Sidebar() {
   }, [profile?.avatar_url])
 
   const toggleLanguage = () => {
-    const newLocale = locale === 'en' ? 'ru' : 'en';
+    const newLocale = locale === 'en' ? 'ua' : 'en';
     router.replace(pathname, { locale: newLocale });
   };
 
@@ -207,7 +207,7 @@ export default function Sidebar() {
                 >
                   <Languages size={18} />
                   <span className="text-[9px] font-black uppercase tracking-tight">
-                    {locale === 'en' ? 'RU' : 'EN'}
+                    {locale === 'en' ? 'UA' : 'EN'}
                   </span>
                 </button>
 
