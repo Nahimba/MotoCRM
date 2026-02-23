@@ -239,10 +239,7 @@
     "myLessons": "Мої",
     "date": "Дата",
     "time": "Час",
-    "hoursLeft": "залишилося",
-    "planned": "Очікується",
-    "completed": "Завершено",
-    "cancelled": "Скасовано"
+    "hoursLeft": "залишилося"
   },
   "StaffDashboard": {
     "title": "Заняття Сьогодні",
@@ -518,6 +515,14 @@
       "marketing": "Маркетинг/Реклама",
       "other": "Інше",
       "income_category": "Навчання"
+    },
+    "lesson_statuses": {
+      "planned": "Заплановано",
+      "completed": "Виконано",
+      "cancelled": "Скасовано (без Оплати)",
+      "rescheduled": "Перенесено (без Оплати)",
+      "no_show": "Не з'явився (з Оплатою)",
+      "late_cancelled": "Пізня відміна (з Оплатою)"
     }
   }
 }

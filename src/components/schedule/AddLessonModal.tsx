@@ -11,6 +11,9 @@ import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
 
+// Расширенный тип статусов
+type LessonStatus = 'planned' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show' | 'late_cancelled';
+
 interface AddLessonModalProps {
   isOpen: boolean
   onClose: () => void
@@ -26,6 +29,8 @@ export function AddLessonModal({
   isOpen, onClose, instructorId, initialDate, onSuccess, onOpenDossier, editLesson 
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
+  const tStatus = useTranslations("Constants.lesson_statuses")
+  
   const { profile: authProfile } = useAuth()
   
   const [loading, setLoading] = useState(false)
@@ -42,11 +47,11 @@ export function AddLessonModal({
   const [duration, setDuration] = useState("2") 
   const [locationId, setLocationId] = useState<string>("")
   const [summary, setSummary] = useState("")
-  const [status, setStatus] = useState<'planned' | 'completed' | 'cancelled'>('planned')
+  // Обновленный стейт статуса
+  const [status, setStatus] = useState<LessonStatus>('planned')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Resolve selected package and client data
   const selectedPkg = useMemo(() => 
     packages.find(p => p.id === selectedPackageId), 
     [packages, selectedPackageId]
@@ -81,7 +86,6 @@ export function AddLessonModal({
           if (pkgData) {
             const processed = pkgData.map(pkg => {
               const rawClient = (pkg.accounts as any)?.clients;
-              // Handle potential array response from Supabase join
               const profileData = Array.isArray(rawClient?.profiles) ? rawClient.profiles[0] : rawClient?.profiles;
               
               return {
@@ -96,7 +100,10 @@ export function AddLessonModal({
                     phone: profileData?.phone
                   }
                 },
-                remaining: pkg.total_hours - (pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((acc: number, curr: any) => acc + (Number(curr.duration) || 0), 0) || 0)
+                remaining: pkg.total_hours - (
+                  pkg.lessons?.filter((l: any) => l.is_counted) // Теперь фильтруем по флагу из БД
+                    .reduce((acc: number, curr: any) => acc + (Number(curr.duration) || 0), 0) || 0
+                )
               }
             })
             setPackages(processed)
@@ -177,6 +184,9 @@ export function AddLessonModal({
 
   if (!isOpen) return null
 
+  // Список всех доступных статусов
+  const allStatuses: LessonStatus[] = ['planned', 'completed', 'cancelled', 'rescheduled', 'no_show', 'late_cancelled'];
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4">
       <div className="bg-[#0A0A0A] border-t md:border border-white/10 w-full max-w-lg rounded-t-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh] animate-in slide-in-from-bottom md:zoom-in-95 duration-300">
@@ -196,7 +206,6 @@ export function AddLessonModal({
           <button onClick={onClose} className="p-2 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10">
             <X size={24} />
           </button>
-          
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
@@ -241,7 +250,7 @@ export function AddLessonModal({
             )}
           </div>
 
-          {/* QUICK INFO PANEL (Synced with Dossier Modal) */}
+          {/* QUICK INFO PANEL */}
           {clientData && (
             <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4">
               <div className="flex justify-between items-center">
@@ -277,13 +286,48 @@ export function AddLessonModal({
             </div>
           )}
 
+          {/* STATUS SELECTOR - Expanded to 2 rows grid for 6 statuses */}
+          {/* <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('status')}</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {allStatuses.map((s) => (
+                <button 
+                  key={s} 
+                  type="button" 
+                  onClick={() => setStatus(s)} 
+                  className={`py-3 rounded-xl font-black text-[9px] uppercase border transition-all leading-tight ${
+                    status === s 
+                      ? 'bg-white text-black border-white shadow-xl' 
+                      : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
+                  }`}
+                >
+                  {t(s)}
+                </button>
+              ))}
+            </div>
+          </div> */}
+
           {/* STATUS SELECTOR */}
-          <div className="grid grid-cols-3 gap-2">
-            {(['planned', 'completed', 'cancelled'] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setStatus(s)} className={`py-3 rounded-xl font-black text-[10px] uppercase border transition-all ${status === s ? 'bg-white text-black border-white shadow-xl' : 'bg-white/5 border-white/10 text-slate-500'}`}>
-                {t(s)}
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="relative">
+              <select 
+                value={status} 
+                onChange={(e) => setStatus(e.target.value as LessonStatus)}
+                className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer ${
+                  status === 'planned' ? 'text-blue-400' : 
+                  status === 'completed' ? 'text-green-400' :
+                  status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
+                  'text-red-500' // no_show, late_cancelled
+                }`}
+              >
+                {allStatuses.map((s) => (
+                  <option key={s} value={s} className="bg-[#121212] text-white">
+                    {tStatus(s)}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            </div>
           </div>
 
           {/* DATE & TIME */}

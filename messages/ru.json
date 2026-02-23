@@ -240,10 +240,7 @@
     "myLessons": "Мои",
     "date": "Дата",
     "time": "Время",
-    "hoursLeft": "осталось",
-    "planned": "Ожидается",
-    "completed": "Завершено",
-    "cancelled": "Отменено"
+    "hoursLeft": "осталось"
   },
   "StaffDashboard": {
     "title": "Занятия Сегодня",

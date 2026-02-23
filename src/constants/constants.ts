@@ -23,3 +23,16 @@ export const EXPENSE_CATEGORIES = [
 ] as const;
 
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+
+
+export const LESSON_STATUSES = [
+  "planned",
+  "completed",
+  "cancelled",
+  "rescheduled",
+  "no_show",
+  "late_cancelled"
+] as const;
+
+export type LessonStatus = (typeof LESSON_STATUSES)[number];

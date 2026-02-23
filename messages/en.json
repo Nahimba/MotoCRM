@@ -240,10 +240,7 @@
     "myLessons": "Mine",
     "date": "Date",
     "time": "Time",
-    "hoursLeft": "left",
-    "planned": "Planned",
-    "completed": "Completed",
-    "cancelled": "Cancelled"
+    "hoursLeft": "left"
   },
   "StaffDashboard": {
     "title": "STAFF Panel",
@@ -521,6 +518,14 @@
       "marketing": "Ads/Marketing",
       "other": "Other",
       "income_category": "Training"
+    },
+    "lesson_statuses": {
+      "planned": "planned",
+      "completed": "completed",
+      "cancelled": "cancelled",
+      "rescheduled": "rescheduled",
+      "no_show": "no_show",
+      "late_cancelled": "late_cancelled"
     }
   }
 }
