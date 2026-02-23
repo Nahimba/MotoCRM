@@ -280,7 +280,7 @@
     "title": "Курси",
     "subtitle": "",
     "description": "Активні контракти та облік годин",
-    "newPackage": "Новий Пакет",
+    "newPackage": "Новий Контракт",
     "searchPlaceholder": "ПОШУК ЗА ІМ'ЯМ...",
     "hoursLeft": "Залишилося: {remaining} / {total} год.",
     "cost": "Вартість",
