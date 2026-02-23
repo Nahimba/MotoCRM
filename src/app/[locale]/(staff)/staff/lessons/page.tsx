@@ -19,19 +19,16 @@ export default function StaffLandingPage() {
   const [selectedClient, setSelectedClient] = useState<any | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // 1. Calculate Dynamic Hours (Crop Timeline)
   const HOURS = useMemo(() => {
     if (lessons.length === 0) {
-      // Default view if no lessons
       return eachHourOfInterval({
         start: setHours(startOfDay(new Date()), 8),
         end: setHours(startOfDay(new Date()), 18)
       })
     }
-
     const startHours = lessons.map(l => getHours(new Date(l.session_date)))
     const minHour = Math.max(0, Math.min(...startHours) - 1)
-    const maxHour = Math.min(23, Math.max(...startHours) + 3) // +3 to ensure the last lesson card fits
+    const maxHour = Math.min(23, Math.max(...startHours) + 3)
 
     return eachHourOfInterval({
       start: setHours(startOfDay(new Date()), minHour),
@@ -68,8 +65,9 @@ export default function StaffLandingPage() {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('staff_dashboard_lessons')
-        .select('*')
+        // Используем облегченную вьюху
+        .from('staff_today_schedule_view') 
+        .select('*') // Вьюха должна включать course_package_id
         .eq('instructor_id', id)
         .gte('session_date', startOfDay(new Date()).toISOString())
         .lte('session_date', endOfDay(new Date()).toISOString())
@@ -88,7 +86,6 @@ export default function StaffLandingPage() {
 
   const getLessonStyles = (startTime: string, status: string) => {
     const date = new Date(startTime)
-    // Adjust top position based on the dynamic startHourOffset
     const top = (getHours(date) - startHourOffset) * HOUR_HEIGHT + (date.getMinutes() / 60) * HOUR_HEIGHT
     const statusColor = status === 'completed' ? '#10b981' : status === 'planned' ? '#3b82f6' : '#ef4444'
 
@@ -117,15 +114,12 @@ export default function StaffLandingPage() {
       </div>
 
       <div className="relative overflow-y-auto bg-[#080808] rounded-[2rem] border border-white/5 h-[750px] shadow-2xl custom-scrollbar">
-        {/* Empty State Check */}
         {!loading && lessons.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
               <Calendar className="text-slate-500" size={24} />
             </div>
             <h3 className="text-xl font-bold italic uppercase tracking-tight mb-2">{t('noLessonsToday')}</h3>
-            <p className="text-slate-500 text-sm mb-6 max-w-[200px]"></p>
-            {/* <p className="text-slate-500 text-sm mb-6 max-w-[200px]">{t('noLessonsDesc')}</p> */}
             <Link 
               href="/en/staff/schedule"
               className="bg-primary text-black px-8 py-3 rounded-xl font-black uppercase italic text-sm transition-transform active:scale-95"
@@ -135,7 +129,6 @@ export default function StaffLandingPage() {
           </div>
         ) : (
           <div className="relative w-full" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-            {/* Time Gutter */}
             <div className="absolute left-0 w-16 h-full border-r border-white/5 z-20 bg-black/60 backdrop-blur-md">
               {HOURS.map(h => (
                 <div key={h.toISOString()} style={{ height: `${HOUR_HEIGHT}px` }} className="pt-4 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
@@ -144,7 +137,6 @@ export default function StaffLandingPage() {
               ))}
             </div>
 
-            {/* Lessons Grid */}
             <div className="absolute left-16 right-0 h-full z-30">
               {!loading && lessons.map((l) => (
                 <div key={l.lesson_id} style={getLessonStyles(l.session_date, l.lesson_status)}
@@ -171,7 +163,7 @@ export default function StaffLandingPage() {
                         : 'bg-primary/10 text-primary border-primary/20'
                     }`}>
                       <Clock size={10} />
-                      {l.duration || l.hours_spent || '1'}H 
+                      {l.duration || '1'}H 
                     </div>
                   </div>
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { X, Phone, User, FileText, Mail, Wallet, Clock, Loader2, ShieldCheck, MapPin } from "lucide-react"
+import { X, Phone, User, FileText, Mail, Clock, Loader2, ShieldCheck, MapPin } from "lucide-react"
 
 interface ClientProfileModalProps {
-  client: any
+  client: any // Объект урока из расписания
   onClose: () => void
 }
 
@@ -15,8 +15,9 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
   const [loading, setLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
-  // Resolve the client ID (the primary key for the clients table)
+  // Получаем ID клиента и ID конкретного пакета из пропсов
   const targetClientId = client.client_id || client.id
+  const targetPackageId = client.course_package_id || client.package_id
 
   useEffect(() => {
     async function fetchFullDossier() {
@@ -27,7 +28,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
 
       setLoading(true)
       try {
-        // 1. Fetch direct data from clients table joining the profiles table
+        // 1. Загружаем основные данные профиля
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select(`
@@ -51,11 +52,13 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
           ? clientData?.profiles[0] 
           : clientData?.profiles
 
-        // 2. Fetch financial and timing stats from the tactical dossier view
+        // 2. Загружаем данные из вьюхи по конкретному пакету
+        // Фильтруем по client_id И package_id для точности
         const { data: dossierData } = await supabase
           .from('client_profile_dossier')
           .select('*')
           .eq('client_id', targetClientId)
+          .eq('package_id', targetPackageId)
           .maybeSingle()
 
         setProfile(rawProfile)
@@ -65,7 +68,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
           notes: clientData?.notes || dossierData?.client_notes 
         })
 
-        // 3. Handle Avatar URL Resolution
+        // 3. Обработка Аватара
         const rawAvatar = rawProfile?.avatar_url
         if (rawAvatar) {
           if (rawAvatar.startsWith('http')) {
@@ -85,7 +88,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
     }
 
     fetchFullDossier()
-  }, [targetClientId])
+  }, [targetClientId, targetPackageId])
 
   const firstName = profile?.first_name || client.client_name || client.name || "Unknown"
   const lastName = profile?.last_name || client.client_last_name || client.last_name || ""
@@ -100,11 +103,10 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
       
       <div className="relative w-full max-w-lg bg-[#0A0A0A] border-t md:border border-white/10 rounded-t-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
         
-        {/* MOBILE DRAG HANDLE */}
         <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden shrink-0" />
 
         <div className="overflow-y-auto custom-scrollbar flex-1">
-          {/* Header Decorative Gradient */}
+          {/* Decorative Header */}
           <div className="relative h-24 md:h-32 bg-gradient-to-br from-primary/20 via-zinc-900 to-transparent" />
 
           <div className="px-6 md:px-10 pb-10 -mt-12 relative">
@@ -137,28 +139,29 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
               <h3 className="text-3xl md:text-4xl font-black uppercase italic text-white tracking-tighter leading-none">
                 {firstName} <span className="text-primary">{lastName}</span>
               </h3>
-              <div className="flex items-center gap-2 mt-2">
-                 {/* <div className="h-[2px] w-8 bg-primary/50" />
-                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Client Info</p> */}
-              </div>
             </div>
             
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4 mt-8 mb-6">
+            {/* Training Stats - Focused on the current package */}
+            <div className="grid grid-cols-1 gap-4 mt-8 mb-6">
+              {/* Active Course Name */}
               <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Balance</p>
-                <div className="text-2xl font-black tabular-nums text-white relative z-10">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : `${details?.wallet_balance || 0} ₴`}
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Active Mission</p>
+                <div className="text-xl font-black uppercase italic text-primary relative z-10 truncate">
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (details?.active_course_name || "Training Mission")}
                 </div>
-                <Wallet className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 rotate-12" />
               </div>
 
-              <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Rem. Time</p>
-                <div className="text-2xl font-black tabular-nums text-white relative z-10">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : `${details?.remaining_hours || 0}H`}
+              {/* Remaining Hours */}
+              <div className="p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Remaining Time</p>
+                    <div className="text-4xl font-black tabular-nums text-white">
+                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : `${details?.remaining_hours || 0}H`}
+                    </div>
+                  </div>
+                  <Clock className="w-12 h-12 text-primary/20 rotate-12" />
                 </div>
-                <Clock className="absolute -right-2 -bottom-2 w-12 h-12 text-white/5 -rotate-12" />
               </div>
             </div>
 
@@ -189,7 +192,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             <div className="mt-6 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] relative overflow-hidden">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck size={14} className="text-primary" />
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Notes about CLient</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Notes about Client</span>
               </div>
               <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
                 {loading ? "Decrypting..." : (details?.notes || "No specific mission notes recorded for this pilot.")}
@@ -211,7 +214,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
 
         <button 
           onClick={onClose} 
-          className="absolute top-6 right-6  md:flex p-2.5 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10"
+          className="absolute top-6 right-6 p-2.5 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10"
         >
           <X size={20} />
         </button>

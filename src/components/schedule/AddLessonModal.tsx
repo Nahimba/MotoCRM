@@ -12,7 +12,9 @@ import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
 
 // Расширенный тип статусов
-type LessonStatus = 'planned' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show' | 'late_cancelled';
+//type LessonStatus = 'planned' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show' | 'late_cancelled';
+
+import { LESSON_STATUSES, LessonStatus } from "@/constants/constants";
 
 interface AddLessonModalProps {
   isOpen: boolean
