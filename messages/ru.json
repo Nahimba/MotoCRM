@@ -133,15 +133,6 @@
         "method": "Метод",
         "amount": "Сумма"
       },
-      "categories": {
-        "fuel": "Топливо",
-        "rent": "Аренда",
-        "salary": "Зарплата",
-        "repair": "Ремонт",
-        "marketing": "Маркетинг",
-        "other": "Прочее",
-        "income_category": "Обучение"
-      },
       "modal": {
         "edit_title": "Редактировать расход",
         "new_title": "Новый расход",
@@ -242,9 +233,6 @@
     "scheduleLesson": "Назначить урок",
     "addLesson": "Назначить урок",
     "dossier": "Досье",
-    "planned": "Ожидается",
-    "completed": "Завершено",
-    "cancelled": "Отменено",
     "selectLocation": "Локация",
     "location": "Локация",
     "allStudents": "Ученики",
@@ -252,7 +240,10 @@
     "myLessons": "Мои",
     "date": "Дата",
     "time": "Время",
-    "hoursLeft": "осталось"
+    "hoursLeft": "осталось",
+    "planned": "Ожидается",
+    "completed": "Завершено",
+    "cancelled": "Отменено"
   },
   "StaffDashboard": {
     "title": "Занятия Сегодня",
@@ -482,15 +473,6 @@
       "submitted": "Поданы в ГАИ"
     }
   },
-  "Constants": {
-    "lead_sources": {
-      "instagram": "Инстаграм",
-      "website": "Сайт",
-      "word_of_mouth": "Сарафан",
-      "google": "Гугл",
-      "other": "Другое"
-    }
-  },
   "Profile": {
     "sync_success": "Профиль синхронизирован",
     "avatar_success": "Аватар обновлен",
@@ -516,5 +498,23 @@
     "unassigned": "Не назначено",
     "update_button": "Обновить системные записи",
     "updating": "Обновление..."
+  },
+  "Constants": {
+    "lead_sources": {
+      "instagram": "Инстаграм",
+      "website": "Сайт",
+      "word_of_mouth": "Сарафан",
+      "google": "Гугл",
+      "other": "Другое"
+    },
+    "expense_categories": {
+      "fuel": "Топливо",
+      "rent": "Аренда",
+      "salary": "Зарплата",
+      "repair": "Ремонт",
+      "marketing": "Маркетинг",
+      "other": "Прочее",
+      "income_category": "Обучение"
+    }
   }
 }

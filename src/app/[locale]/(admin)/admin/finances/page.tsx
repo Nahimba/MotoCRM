@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -30,7 +30,8 @@ interface Transaction {
 export default function AdminFinances() {
   // Инициализация переводов
   const t = useTranslations('admin.finances');
-  const catT = useTranslations('admin.finances.categories');
+  const catT = useTranslations('Constants.expense_categories');
+
   const locale = useLocale();
   const dateLocale = locale === 'ru' ? ru : enUS;
 

@@ -6,6 +6,9 @@ import { X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useTranslations } from 'next-intl';
 
+// Импорт констант и типа
+import { EXPENSE_CATEGORIES, ExpenseCategory } from "@/constants/constants";
+
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,14 +17,22 @@ interface ExpenseModalProps {
 }
 
 export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: ExpenseModalProps) {
-  // Инициализация переводов
+  // Инициализация переводов согласно вашей структуре JSON
   const t = useTranslations('admin.finances.modal');
-  const catT = useTranslations('admin.finances.categories');
+  const catT = useTranslations('Constants.expense_categories');
   
   const [loading, setLoading] = useState(false);
   const [methods, setMethods] = useState<any[]>([]);
   
-  const [form, setForm] = useState({
+  // Типизированное состояние формы
+  const [form, setForm] = useState<{
+    amount: string;
+    category: ExpenseCategory;
+    type: string;
+    description: string;
+    expense_date: string;
+    payment_method: string;
+  }>({
     amount: '',
     category: 'fuel',
     type: 'Moto',
@@ -30,7 +41,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
     payment_method: 'cash'
   });
 
-  // Загружаем методы оплаты один раз при монтировании
+  // Загружаем методы оплаты
   useEffect(() => {
     const fetchMethods = async () => {
       const { data } = await supabase.from('payment_methods').select('*');
@@ -39,13 +50,13 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
     fetchMethods();
   }, []);
 
-  // Синхронизируем форму при открытии или смене editData
+  // Синхронизация формы
   useEffect(() => {
     if (isOpen) {
       if (editData) {
         setForm({
           amount: editData.amount.toString(),
-          category: editData.category || 'fuel',
+          category: (editData.category as ExpenseCategory) || 'fuel',
           type: editData.bizType || 'Moto',
           description: editData.description || '',
           expense_date: format(new Date(editData.date), 'yyyy-MM-dd'),
@@ -122,13 +133,10 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
 
   if (!isOpen) return null;
 
-  const categories = ['fuel', 'rent', 'salary', 'repair', 'marketing', 'other'];
-
   return (
     <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
       <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-[40px] w-full max-w-md relative shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
-        {/* Декоративный эффект */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 blur-[80px] rounded-full pointer-events-none" />
         
         <button 
@@ -162,14 +170,12 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
             {/* ДАТА */}
             <div className="space-y-1">
               <label className="text-[9px] font-black uppercase text-zinc-500 ml-2">{t('date')}</label>
-              <div className="relative">
-                <input 
-                  type="date" required
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-[11px] font-bold outline-none text-white appearance-none focus:border-zinc-500 transition-colors"
-                  value={form.expense_date}
-                  onChange={e => setForm({...form, expense_date: e.target.value})}
-                />
-              </div>
+              <input 
+                type="date" required
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-[11px] font-bold outline-none text-white appearance-none focus:border-zinc-500 transition-colors"
+                value={form.expense_date}
+                onChange={e => setForm({...form, expense_date: e.target.value})}
+              />
             </div>
 
             {/* МЕТОД ОПЛАТЫ */}
@@ -208,9 +214,9 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
               <select 
                 className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-[11px] font-bold outline-none text-white appearance-none cursor-pointer uppercase"
                 value={form.category}
-                onChange={e => setForm({...form, category: e.target.value})}
+                onChange={e => setForm({...form, category: e.target.value as ExpenseCategory})}
               >
-                {categories.map(cat => (
+                {EXPENSE_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>
                     {catT(cat).toUpperCase()}
                   </option>
@@ -230,7 +236,6 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
             />
           </div>
 
-          {/* КНОПКИ ДЕЙСТВИЯ */}
           <div className="pt-2 space-y-3 pb-safe-bottom-mobile">
             <button 
               disabled={loading}

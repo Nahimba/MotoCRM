@@ -133,15 +133,6 @@
         "method": "Метод",
         "amount": "Сума"
       },
-      "categories": {
-        "fuel": "Паливо",
-        "rent": "Оренда",
-        "salary": "Зарплата",
-        "repair": "Ремонт",
-        "marketing": "Маркетинг",
-        "other": "Інше",
-        "income_category": "Навчання"
-      },
       "modal": {
         "edit_title": "Редагувати витрату",
         "new_title": "Нова витрата",
@@ -241,9 +232,6 @@
     "scheduleLesson": "Призначити урок",
     "addLesson": "Призначити урок",
     "dossier": "Досьє",
-    "planned": "Очікується",
-    "completed": "Завершено",
-    "cancelled": "Скасовано",
     "selectLocation": "Локація",
     "location": "Локація",
     "allStudents": "Учні",
@@ -251,7 +239,10 @@
     "myLessons": "Мої",
     "date": "Дата",
     "time": "Час",
-    "hoursLeft": "залишилося"
+    "hoursLeft": "залишилося",
+    "planned": "Очікується",
+    "completed": "Завершено",
+    "cancelled": "Скасовано"
   },
   "StaffDashboard": {
     "title": "Заняття Сьогодні",
@@ -270,6 +261,7 @@
     "gotoSchedule": "Перейти до Розкладу"
   },
   "Staff": {
+    "title": "Панель Інструктора",
     "command": "УПРАВЛІННЯ",
     "status": "Інструктор Онлайн",
     "dailyStudents": "Студенти на сьогодні",
@@ -484,15 +476,6 @@
       "submitted": "Подані в ДАІ"
     }
   },
-  "Constants": {
-    "lead_sources": {
-      "instagram": "Інстаграм",
-      "website": "Сайт",
-      "word_of_mouth": "Сарафан",
-      "google": "Гугл",
-      "other": "Інше"
-    }
-  },
   "Profile": {
     "sync_success": "Профіль синхронізовано",
     "avatar_success": "Аватар оновлено",
@@ -518,5 +501,23 @@
     "unassigned": "Не призначено",
     "update_button": "Оновити системні записи",
     "updating": "Оновлення..."
+  },
+  "Constants": {
+    "lead_sources": {
+      "instagram": "Інстаграм",
+      "website": "Сайт",
+      "word_of_mouth": "Сарафан",
+      "google": "Гугл",
+      "other": "Інше"
+    },
+    "expense_categories": {
+      "fuel": "Паливо",
+      "rent": "Оренда",
+      "salary": "Зарплата",
+      "repair": "ТО/Ремонт",
+      "marketing": "Маркетинг/Реклама",
+      "other": "Інше",
+      "income_category": "Навчання"
+    }
   }
 }

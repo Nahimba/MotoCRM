@@ -134,15 +134,6 @@
         "method": "Method",
         "amount": "Amount"
       },
-      "categories": {
-        "fuel": "Fuel",
-        "rent": "Rent",
-        "salary": "Salary",
-        "repair": "Repair",
-        "marketing": "Marketing",
-        "other": "Other",
-        "income_category": "Training"
-      },
       "modal": {
         "edit_title": "Edit Expense",
         "new_title": "New Expense",
@@ -242,9 +233,6 @@
     "scheduleLesson": "Schedule Lesson",
     "addLesson": "Add Lesson",
     "dossier": "Dossier",
-    "planned": "Planned",
-    "completed": "Completed",
-    "cancelled": "Cancelled",
     "selectLocation": "Location",
     "location": "Location",
     "allStudents": "Students",
@@ -252,11 +240,13 @@
     "myLessons": "Mine",
     "date": "Date",
     "time": "Time",
-    "hoursLeft": "left"
-    
+    "hoursLeft": "left",
+    "planned": "Planned",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
   },
   "StaffDashboard": {
-    "title": "STAFF COMMAND",
+    "title": "STAFF Panel",
     "assignments": "Assignments",
     "noPhone": "NO PHONE",
     "baseOps": "BASE OPS",
@@ -272,6 +262,7 @@
     "gotoSchedule": "Go To Schedule"
   },
   "Staff": {
+    "title": "STAFF Panel",
     "command": "COMMAND",
     "status": "Instructor Online",
     "dailyStudents": "Daily Students",
@@ -488,15 +479,6 @@
       "submitted": "Submitted to Gov"
     }
   },
-  "Constants": {
-    "lead_sources": {
-      "instagram": "Instagram",
-      "website": "Website",
-      "word_of_mouth": "Word of Mouth",
-      "google": "Google",
-      "other": "Other"
-    }
-  },
   "Profile": {
     "sync_success": "Profile synchronized",
     "avatar_success": "Avatar updated",
@@ -522,5 +504,23 @@
     "unassigned": "Unassigned",
     "update_button": "Update System Records",
     "updating": "Updating..."
+  },
+  "Constants": {
+    "lead_sources": {
+      "instagram": "Instagram",
+      "website": "Website",
+      "word_of_mouth": "Word of Mouth",
+      "google": "Google",
+      "other": "Other"
+    },
+    "expense_categories": {
+      "fuel": "Fuel",
+      "rent": "Rent",
+      "salary": "Salary",
+      "repair": "Repair/Maintenance",
+      "marketing": "Ads/Marketing",
+      "other": "Other",
+      "income_category": "Training"
+    }
   }
 }
