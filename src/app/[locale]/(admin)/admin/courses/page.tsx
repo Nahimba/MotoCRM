@@ -117,7 +117,7 @@ export default function CoursesPage() {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+          <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">
             {t("title")}
           </h1>
           <div className="flex gap-4 mt-2">

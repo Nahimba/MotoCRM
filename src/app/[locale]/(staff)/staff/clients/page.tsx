@@ -60,7 +60,7 @@ export default function ClientsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
       {/* HEADER SECTION */}
-      <div className="flex flex-col justify-between items-end gap-6 py-2">
+      <div className="flex flex-col justify-between gap-6 py-2">
         <div>
           <h1 className="text-2xl font-black italic uppercase text-white tracking-tighter leading-none">
             {showOnlyActive ? t("title") : t("archive")} 

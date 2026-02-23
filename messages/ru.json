@@ -4,7 +4,7 @@
     "description": "Профессиональный инструмент для управления мотошколой."
   },
   "Sidebar": {
-    "director": "Директор",
+    "admin": "Администратор",
     "staffHome": "Инструктор",
     "packages": "Курсы",
     "payments": "Платежи",
@@ -38,6 +38,8 @@
     "dashboard": {
       "title": "Админ центр",
       "subtitle": "Панель администратора",
+      "admin_menu": "Admin menu",
+      "instructor_menu": "Instructor menu",
       "export_btn": "Скачать БД (Excel)",
       "export_loading": "Экспорт...",
       "stats": {
@@ -50,6 +52,8 @@
         "riders_sub": "Активно: {count}",
         "recruit": "Добавить Ученика",
         "recruit_sub": "Новая регистрация",
+        "lessons": "Lessons",
+        "lessons_sub": "Today Lessons",
         "schedule": "Расписание",
         "schedule_sub": "График Занятий",
         "finances": "Финансы",
@@ -57,7 +61,11 @@
         "courses": "Курсы",
         "courses_sub": "Настройка программ",
         "instructors": "Персонал",
-        "instructors_sub": "Инструктора"
+        "instructors_sub": "Инструктора",
+        "packages": "Packages",
+        "packages_sub": "Packages",
+        "payments": "Payments",
+        "payments_sub": "Payments"
       },
       "toasts": {
         "sync_error": "Оффлайн: ошибка синхронизации",

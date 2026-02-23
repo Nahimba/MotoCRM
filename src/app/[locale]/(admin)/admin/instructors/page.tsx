@@ -169,13 +169,13 @@ export default function HQStaffPage() {
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto mb-20">
       {/* HEADER */}
-      <div className="flex flex-col gap-6 bg-[#0D0D0D] border border-white/5 p-5 md:p-8 rounded-[2rem] md:rounded-[3rem]">
+      <div className="flex flex-col gap-2 bg-[#0D0D0D] border border-white/5 p-5 md:p-8 rounded-[2rem] md:rounded-[3rem]">
         <div className="flex justify-between items-center">
           <div className="space-y-1">
-            <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white">
+            <h1 className="text-2xl md:text-2xl font-black italic uppercase tracking-tighter text-white">
               {t('title')}<span className="text-primary">.</span>
             </h1>
-            <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">{t('subtitle')}</p>
+            {/* <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">{t('subtitle')}</p> */}
           </div>
           <button onClick={() => setShowModal(true)} className="md:hidden p-4 bg-primary text-black rounded-2xl transition-transform active:scale-95">
             <UserPlus size={20} strokeWidth={3} />

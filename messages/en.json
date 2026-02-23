@@ -4,7 +4,7 @@
     "description": "The professional tool for client management."
   },
   "Sidebar": {
-    "director": "Director",
+    "admin": "Administrator",
     "staffHome": "Instructor",
     "packages": "Packages",
     "payments": "Payments",
@@ -38,6 +38,8 @@
     "dashboard": {
       "title": "Command Center",
       "subtitle": "Admin Intelligence Suite",
+      "admin_menu": "Admin menu",
+      "instructor_menu": "Instructor menu",
       "export_btn": "Export DB to Excel",
       "export_loading": "Generating Excel...",
       "stats": {
@@ -50,6 +52,8 @@
         "riders_sub": "{count} Active",
         "recruit": "Recruit",
         "recruit_sub": "New Enrollment",
+        "lessons": "Lessons",
+        "lessons_sub": "Today Lessons",
         "schedule": "Schedule",
         "schedule_sub": "Flight Deck",
         "finances": "Finances",
@@ -57,7 +61,12 @@
         "courses": "Courses",
         "courses_sub": "Program Setup",
         "instructors": "Instructors",
-        "instructors_sub": "Fleet Staff"
+        "instructors_sub": "Fleet Staff",
+        "packages": "Packages",
+        "packages_sub": "Packages",
+        "payments": "Payments",
+        "payments_sub": "Payments"
+        
       },
       "toasts": {
         "sync_error": "Telemetry Offline: Data Sync Failed",

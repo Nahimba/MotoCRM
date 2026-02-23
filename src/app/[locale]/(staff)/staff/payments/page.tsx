@@ -95,7 +95,7 @@ export default function PaymentsPage() {
             <Wallet size={24} />
           </div>
           <div>
-            <h1 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
+            <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
               {t('title')}
             </h1>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">

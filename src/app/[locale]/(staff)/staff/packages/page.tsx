@@ -86,7 +86,7 @@ export default function PackagesPage() {
       {/* HEADER SECTION */}
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">
+          <h1 className="text-2xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">
             {t("title")} <span className="text-primary">{t("subtitle")}</span>
           </h1>
           <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block">

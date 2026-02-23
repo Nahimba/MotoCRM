@@ -318,7 +318,7 @@ export function AddLessonModal({
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
             <div className="grid grid-cols-4 gap-2">
-              {["0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4"].map((val) => (
+              {["1", "2", "3", "4"].map((val) => (
                 <button key={val} type="button" onClick={() => setDuration(val)} className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary shadow-lg scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400'}`}>
                   {val}h
                 </button>

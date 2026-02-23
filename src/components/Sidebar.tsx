@@ -94,7 +94,7 @@ export default function Sidebar() {
           {role === 'admin' && (
             <>
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-4 px-4">
-                {t('director')}
+                {t('admin')}
               </div>
               <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label={t('overview')} active={pathname === '/admin'} />
               <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/admin/finances')} />
