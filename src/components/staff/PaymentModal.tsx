@@ -6,7 +6,7 @@ import {
   X, Check, Wallet, User, 
   CreditCard, Loader2,
   Banknote, Hash, FileText, Trash2, Info, Search,
-  Layers, ChevronDown, CheckCircle2, Clock
+  Layers, ChevronDown, CheckCircle2
 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/context/AuthContext"
@@ -81,10 +81,8 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
       if (methodsData.data) setMethods(methodsData.data)
 
       if (editPayment) {
-        const currentPkgId = editPayment.course_package_id || editPayment.package_id;
-        
         setFormData({
-          course_package_id: currentPkgId || "",
+          course_package_id: editPayment.course_package_id || "",
           account_id: editPayment.account_id || "",
           amount: editPayment.amount?.toString() || "",
           payment_plan_id: editPayment.payment_plan_id || "",
@@ -93,7 +91,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
           notes: editPayment.notes || ""
         })
 
-        const current = processedPkgs.find(p => p.id === currentPkgId)
+        const current = processedPkgs.find(p => p.id === editPayment.course_package_id)
         if (current) {
           setSearchTerm(`${current.account_label} — ${current.course_name}`)
         }
@@ -110,18 +108,10 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
     fetchData()
   }, [isOpen, editPayment, instructorId])
 
-  // --- FIXED FILTER LOGIC ---
   const filteredPackages = useMemo(() => {
-    // If user is editing and hasn't changed the search term yet, 
-    // we want to ensure the current package is visible.
     return packages.filter(pkg => {
-      // 1. VIP PASS: If this is the currently selected package, ALWAYS show it.
       if (pkg.id === formData.course_package_id) return true;
-
-      // 2. If no search term, show everything
       if (!searchTerm) return true;
-
-      // 3. Normal Search
       const searchLower = searchTerm.toLowerCase();
       return (
         pkg.account_label.toLowerCase().includes(searchLower) ||
@@ -151,11 +141,13 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
 
     setLoading(true)
     const amountNum = parseFloat(formData.amount)
-    const paymentId = editPayment?.payment_id || editPayment?.id
+    const paymentId = editPayment?.id
 
     try {
+      // Подготовка payload согласно новой упрощенной схеме
       const payload = {
         account_id: formData.account_id,
+        course_package_id: formData.course_package_id, // Прямая связь
         amount: amountNum,
         payment_plan_id: formData.payment_plan_id,
         payment_method_id: formData.payment_method_id,
@@ -165,20 +157,12 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
       }
 
       if (editPayment) {
-        await supabase.from('payments').update(payload).eq('id', paymentId)
-        await supabase.from('course_payment_allocations')
-          .update({ amount_allocated: amountNum, course_package_id: formData.course_package_id })
-          .eq('payment_id', paymentId)
+        const { error } = await supabase.from('payments').update(payload).eq('id', paymentId)
+        if (error) throw error
         toast.success(t('updateSuccess'))
       } else {
-        const { data: newPay, error: pError } = await supabase.from('payments').insert([payload]).select().single()
-        if (pError) throw pError
-        
-        await supabase.from('course_payment_allocations').insert([{
-          payment_id: newPay.id,
-          course_package_id: formData.course_package_id,
-          amount_allocated: amountNum
-        }])
+        const { error } = await supabase.from('payments').insert([payload])
+        if (error) throw error
         toast.success(t('logSuccess'))
       }
       onSuccess(); onClose();
@@ -225,11 +209,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
                 type="text"
                 placeholder={t('searchStudent')}
                 value={searchTerm}
-                onFocus={() => {
-                  setIsDropdownOpen(true);
-                  // Optional: Clear search on focus to allow fresh searching immediately
-                  // if (editPayment) setSearchTerm(""); 
-                }}
+                onFocus={() => setIsDropdownOpen(true)}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4.5 pl-12 pr-10 text-sm font-bold text-white outline-none focus:border-primary/50 transition-all"
               />
@@ -283,7 +263,6 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
             )}
           </div>
 
-          {/* ... Remaining inputs (Amount, Status, Plan, Method, Notes, Buttons) are same as your original ... */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-500 ml-1 flex items-center gap-2 italic">
@@ -359,7 +338,6 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
             />
           </div>
 
-          
           <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
             {editPayment && (
               <button 
@@ -367,8 +345,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
                 onClick={async () => {
                    if (!window.confirm(t('confirmDelete'))) return;
                    setLoading(true);
-                   const idToDelete = editPayment.payment_id || editPayment.id;
-                   await supabase.from('payments').delete().eq('id', idToDelete);
+                   await supabase.from('payments').delete().eq('id', editPayment.id);
                    onSuccess(); onClose();
                 }} 
                 className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shrink-0 active:scale-95"
