@@ -13,14 +13,16 @@ import { useAuth } from "@/context/AuthContext"
 export default function ClientsPage() {
   const t = useTranslations("Clients.list")
   const { user } = useAuth()
-  
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   
   // Состояния фильтров
   const [showOnlyActive, setShowOnlyActive] = useState(true)
-  const [showOnlyMine, setShowOnlyMine] = useState(true)
+  // Проверка на админа
+  const isAdmin = user?.user_metadata?.role === 'admin'
+  // Если админ — показываем всех (false), если нет — только своих (true)
+  const [showOnlyMine, setShowOnlyMine] = useState(!isAdmin)
 
   const loadClients = useCallback(async () => {
     setLoading(true)
