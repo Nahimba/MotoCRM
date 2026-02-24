@@ -13,13 +13,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { Clock, ShieldCheck, Loader2, Tag, Lock } from "lucide-react"
+import { Clock, ShieldCheck, Loader2, Tag, Lock, Activity } from "lucide-react"
+
+export const PACKAGE_STATUSES = ["active", "finished", "cancelled"] as const;
+export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
 const formSchema = z.object({
   account_id: z.string().min(1, "Required"),
@@ -27,6 +30,7 @@ const formSchema = z.object({
   total_hours: z.coerce.number().min(1),
   contract_price: z.coerce.number().min(0),
   use_discount: z.boolean().default(false),
+  status: z.enum(PACKAGE_STATUSES).default("active"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -65,6 +69,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
       total_hours: 10,
       contract_price: 0,
       use_discount: false,
+      status: "active",
     },
   })
 
@@ -112,7 +117,17 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
   useEffect(() => {
     async function loadExistingPackage() {
       if (!packageId || !isOpen) {
-        if (!packageId) setIsLocked(false)
+        if (!packageId) {
+          setIsLocked(false)
+          form.reset({
+            account_id: "",
+            course_id: "",
+            total_hours: 10,
+            contract_price: 0,
+            use_discount: false,
+            status: "active",
+          })
+        }
         return
       }
       setFetching(true)
@@ -120,7 +135,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         const { data: pkg } = await supabase.from("course_packages").select("*").eq("id", packageId).single()
         
         const [payments, lessons] = await Promise.all([
-            supabase.from("course_payment_allocations").select("id", { count: 'exact', head: true }).eq("course_package_id", packageId),
+            supabase.from("payments").select("id", { count: 'exact', head: true }).eq("course_package_id", packageId),
             supabase.from("lessons").select("id", { count: 'exact', head: true }).eq("course_package_id", packageId)
         ])
 
@@ -133,7 +148,8 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
             course_id: pkg.course_id,
             total_hours: pkg.total_hours,
             contract_price: pkg.contract_price,
-            use_discount: false, // Всегда false при загрузке, чтобы не ломать ручную цену
+            use_discount: false,
+            status: pkg.status as PackageStatus,
           })
         }
       } catch (err: any) {
@@ -165,6 +181,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
             course_id: values.course_id,
             contract_price: values.contract_price,
             total_hours: values.total_hours,
+            status: values.status,
           })
           .eq("id", packageId)
         if (error) throw error
@@ -198,13 +215,13 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         <div className="p-8 md:p-12 overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-10 text-left">
             <DialogTitle className="text-4xl font-black italic tracking-tighter uppercase leading-none">
-              {packageId ? "Edit" : t("title")} <span className="text-primary">{packageId ? "Package" : t("subtitle")}</span>
+              {packageId ? t("edit") : t("title")} <span className="text-primary">{packageId ? "Package" : t("subtitle")}</span>
             </DialogTitle>
             {isLocked && (
-                <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl w-fit">
                     <Lock size={14} className="text-amber-500" />
                     <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest">
-                        LOCKED: Payments or lessons already exist
+                        LOCKED: Payments or lessons exist
                     </p>
                 </div>
             )}
@@ -265,31 +282,69 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                   />
                 </div>
 
-                <FormField
-                  control={control}
-                  name="use_discount"
-                  render={({ field }) => {
-                    const selectedCourse = courses.find(c => c.id === form.watch("course_id"));
-                    const hasDiscount = !!selectedCourse?.discounted_price;
-                    return (
-                      <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-2xl border border-white/5 p-4 bg-white/5">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            disabled={!hasDiscount || isLocked}
-                            onCheckedChange={(checked) => {
-                              field.onChange(checked);
-                              updatePrice(form.getValues("course_id"), !!checked);
-                            }}
-                          />
-                        </FormControl>
-                        <FormLabel className={`text-[10px] font-black uppercase flex items-center gap-2 ${hasDiscount && !isLocked ? "text-white" : "text-slate-600"}`}>
-                            <Tag size={12} className={hasDiscount ? "text-primary" : ""} /> Apply promotional price
-                        </FormLabel>
-                      </FormItem>
-                    );
-                  }}
-                />
+                {/* DISCOUNT AND STATUS ROW */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={control}
+                    name="use_discount"
+                    render={({ field }) => {
+                      const selectedCourse = courses.find(c => c.id === form.watch("course_id"));
+                      const hasDiscount = !!selectedCourse?.discounted_price;
+                      return (
+                        <FormItem className="space-y-3">
+                          {/* <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Offers</FormLabel> */}
+                          <div className="flex items-center space-x-3 h-16 rounded-xl border border-white/5 px-4 bg-white/5">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                disabled={!hasDiscount || isLocked}
+                                onCheckedChange={(checked) => {
+                                  field.onChange(checked);
+                                  updatePrice(form.getValues("course_id"), !!checked);
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className={`text-[10px] font-black uppercase flex items-center gap-2 cursor-pointer ${hasDiscount && !isLocked ? "text-white" : "text-slate-600"}`}>
+                                <Tag size={12} className={hasDiscount ? "text-primary" : ""} /> Promo Price
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      );
+                    }}
+                  />
+
+                  {packageId ? (
+                    <FormField
+                      control={control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3">
+                          {/* <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                            <Activity size={12} /> Status
+                          </FormLabel> */}
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                              {PACKAGE_STATUSES.map(s => (
+                                <SelectItem key={s} value={s} className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer">
+                                  {s.toUpperCase()}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <div className="h-16 flex items-center px-4 bg-white/5 rounded-xl border border-dashed border-white/10">
+                       <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">New Package: Active</p>
+                    </div>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   <FormField
@@ -321,22 +376,22 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                 </div>
 
                 <div className="p-8 bg-primary/5 rounded-[2rem] border border-primary/10 flex justify-between items-center relative overflow-hidden">
-                   <div className="relative z-10">
+                    <div className="relative z-10">
                       <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.3em] mb-2">{t("totalValue")}</p>
                       <div className="text-4xl font-black italic text-primary uppercase tracking-tighter">
                          {Number(form.watch("contract_price") || 0).toLocaleString()} <span className="text-xs not-italic text-primary/40 ml-2">UAH</span>
                       </div>
-                   </div>
-                   <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={120} />
+                    </div>
+                    <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={120} />
                 </div>
 
-                <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
+                <div className="flex gap-3 pt-2">
                   <Button 
                     type="submit" 
                     disabled={loading}
                     className="w-full bg-primary text-black font-black uppercase py-10 rounded-2xl hover:bg-white transition-all text-sm tracking-[0.3em]"
                   >
-                    {loading ? <Loader2 className="animate-spin" /> : `${packageId ? 'Update' : t("activate")} `}
+                    {loading ? <Loader2 className="animate-spin" /> : (packageId ? t("save") : t("activate"))}
                   </Button>
                 </div>
               </form>
@@ -347,7 +402,6 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
     </Dialog>
   )
 }
-
 
                 {/* <FormField
                   control={control}

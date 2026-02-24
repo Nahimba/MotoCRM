@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
-  Plus, Search, ArrowRight, Loader2, 
-  Clock, Banknote, Target, Archive, ShieldCheck, Briefcase 
+  Plus, Search, Loader2, 
+  Clock, Banknote, Target, Archive, Briefcase, ChevronRight 
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useTranslations } from "next-intl"
@@ -19,7 +19,7 @@ interface TrainingPackage {
   contract_price: number
   status: string
   account_label: string
-  course_name?: string // Changed from package_name to match DB view logic
+  course_name?: string
   instructor_profile_id: string
   instructor_name: string
   created_at: string
@@ -45,8 +45,6 @@ export default function PackagesPage() {
   async function fetchPackages() {
     if (!user?.id) return
     setLoading(true)
-    
-    // Убедитесь, что в представлении staff_packages_view есть колонка course_name
     const { data, error } = await supabase
       .from("staff_packages_view")
       .select("*")
@@ -86,7 +84,7 @@ export default function PackagesPage() {
       {/* HEADER SECTION */}
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">
+          <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">
             {t("title")} <span className="text-primary">{t("subtitle")}</span>
           </h1>
           <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block">
@@ -96,7 +94,7 @@ export default function PackagesPage() {
 
         <button 
           onClick={handleCreateNew}
-          className="flex-shrink-0 flex items-center justify-center gap-2 bg-primary text-black px-5 py-3 md:px-8 md:py-4 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-white transition-all active:scale-95"
+          className="flex-shrink-0 flex items-center justify-center gap-2 bg-primary text-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-white transition-all active:scale-95"
         >
           <Plus size={18} strokeWidth={4} /> 
           <span className="hidden sm:inline">{t("newPackage")}</span>
@@ -148,7 +146,7 @@ export default function PackagesPage() {
       </div>
 
       {/* LIST SECTION */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-4">
             <Loader2 className="animate-spin text-primary" size={32} />
@@ -156,84 +154,82 @@ export default function PackagesPage() {
           </div>
         ) : filtered.length > 0 ? (
           filtered.map((pkg) => {
-            const hoursRemaining = pkg.total_hours - pkg.hours_used;
-            const isLow = hoursRemaining <= 2;
+            const isLow = (pkg.total_hours - pkg.hours_used) <= 2;
             const isFullyPaid = pkg.total_paid >= pkg.contract_price;
 
             return (
               <div 
                 key={pkg.id} 
                 onClick={() => handleEdit(pkg.id)}
-                className="bg-[#0A0A0A] border border-white/5 rounded-2xl p-5 md:px-8 md:py-6 hover:bg-white/[0.02] transition-all cursor-pointer group"
+                className="bg-[#0A0A0A] border border-white/5 rounded-xl p-3 md:px-8 md:py-5 hover:bg-white/[0.02] transition-all cursor-pointer group"
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="flex items-center justify-between gap-4">
                   
-                  {/* Info Block */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-black uppercase text-slate-600 bg-white/5 px-2 py-0.5 rounded">ID: {pkg.id.split('-')[0]}</span>
-                      {isFullyPaid && <ShieldCheck size={12} className="text-emerald-500" />}
-                      {!isFullyPaid && <span className="text-[8px] font-bold text-orange-500/80 uppercase">Payment Pending</span>}
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-xl md:text-2xl font-black uppercase italic tracking-tighter truncate group-hover:text-primary transition-colors leading-none">
-                        {pkg.account_label}
-                      </h3>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <Briefcase size={10} className="text-primary/60" />
-                        <p className="text-[10px] md:text-[12px] font-black uppercase text-slate-300 tracking-wider truncate">
-                          {pkg.course_name || "Custom Training Package"}
+                  {/* 1. Account, Course & Instructor Info */}
+                  <div className="flex-1 min-w-0 md:max-w-[40%] space-y-1">
+                    <h3 className="text-sm md:text-xl font-black uppercase italic tracking-tighter truncate group-hover:text-primary transition-colors leading-tight">
+                      {pkg.account_label}
+                    </h3>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Briefcase size={10} className="text-primary/60 flex-shrink-0" />
+                        <p className="text-[9px] md:text-[11px] font-bold uppercase text-slate-300 truncate tracking-wide">
+                          {pkg.course_name || "Training"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Target size={10} className="text-slate-600 flex-shrink-0" />
+                        <p className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 truncate tracking-widest">
+                          {pkg.instructor_name || "Unassigned"}
                         </p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2 text-slate-500">
-                      <Target size={12} />
-                      <span className="text-[9px] font-bold uppercase tracking-widest truncate">
-                        {pkg.instructor_name || 'Unassigned Instructor'}
-                      </span>
-                    </div>
                   </div>
 
-                  {/* Stats Group */}
-                  <div className="grid grid-cols-2 md:flex items-center gap-8 md:gap-16 border-t lg:border-0 border-white/5 pt-4 lg:pt-0">
+                  {/* 2. Usage & Payment Grouped */}
+                  <div className="flex items-center gap-4 md:gap-12">
                     
                     {/* Usage */}
-                    <div className="space-y-1">
-                      <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1">
-                        <Clock size={10} /> Usage
-                      </p>
-                      <p className={`text-xl font-black tabular-nums ${isLow ? 'text-red-500' : 'text-white'}`}>
-                        {pkg.hours_used}<span className="text-slate-600 text-[11px] ml-1">/ {pkg.total_hours}</span>
+                    <div className="flex flex-col items-end md:items-start md:border-l border-white/5 md:pl-8 min-w-[60px]">
+                      <div className="flex items-center gap-1 text-slate-600 mb-0.5">
+                        <Clock size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Usage</span>
+                      </div>
+                      <p className={`text-sm md:text-lg font-black tabular-nums ${isLow ? 'text-red-500' : 'text-white'}`}>
+                        {pkg.hours_used}<span className="text-slate-600 text-[9px] md:text-[11px] ml-0.5">/{pkg.total_hours}</span>
                       </p>
                     </div>
 
                     {/* Payment */}
-                    <div className="space-y-1 text-right lg:text-left">
-                      <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest flex items-center justify-end lg:justify-start gap-1">
-                        <Banknote size={10} /> Payment
-                      </p>
-                      <div className="flex flex-col items-end lg:items-start">
-                        <p className={`text-xl font-black tabular-nums ${isFullyPaid ? 'text-emerald-500' : 'text-white'}`}>
+                    <div className="flex flex-col items-end md:items-start md:border-l border-white/5 md:pl-8 min-w-[70px]">
+                      <div className="flex items-center gap-1 text-slate-600 mb-0.5">
+                        <Banknote size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Paid</span>
+                      </div>
+                      <div className="flex flex-col items-end md:items-start">
+                        <p className={`text-sm md:text-lg font-black tabular-nums ${isFullyPaid ? 'text-emerald-500' : 'text-white'}`}>
                           {pkg.total_paid?.toLocaleString()}
                         </p>
                         {!isFullyPaid && (
-                          <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">
-                             Debt: {(pkg.contract_price - pkg.total_paid).toLocaleString()}
+                          <span className="text-[8px] font-black text-orange-500 uppercase leading-none">
+                            -{ (pkg.contract_price - pkg.total_paid).toLocaleString() }
                           </span>
                         )}
                       </div>
                     </div>
-
-                    <ArrowRight className="hidden lg:block text-slate-700 group-hover:text-primary transition-all group-hover:translate-x-1" size={20} />
                   </div>
+
+                  {/* 3. Action */}
+                  <div className="flex-shrink-0 pl-2">
+                    <ChevronRight size={18} className="text-slate-700 group-hover:text-primary transition-all group-hover:translate-x-1" />
+                  </div>
+
                 </div>
               </div>
             );
           })
         ) : (
-          <div className="py-24 text-center border border-dashed border-white/5 rounded-3xl">
+          <div className="py-24 text-center border border-dashed border-white/5 rounded-2xl">
             <Archive size={40} className="mx-auto text-slate-800 mb-4" />
             <p className="text-slate-500 font-black uppercase tracking-[0.2em] text-[10px]">No packages found</p>
           </div>

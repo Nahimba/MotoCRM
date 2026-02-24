@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
-  Search, UserPlus, Edit3, Bike, Wallet, ChevronRight, Phone, Filter, CheckCircle, RefreshCcw, User
+  Search, UserPlus, Bike, Wallet, Filter, RefreshCcw, User
 } from "lucide-react"
 import { Link } from '@/i18n/routing'
 import { toast } from "sonner"

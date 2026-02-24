@@ -36,3 +36,13 @@ export const LESSON_STATUSES = [
 ] as const;
 
 export type LessonStatus = (typeof LESSON_STATUSES)[number];
+
+
+
+export const PACKAGE_STATUSES = [
+  "active", 
+  "finished", 
+  "cancelled"
+] as const;
+
+export type PackageStatus = (typeof PACKAGE_STATUSES)[number];

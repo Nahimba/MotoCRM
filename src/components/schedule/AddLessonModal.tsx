@@ -10,10 +10,6 @@ import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
-
-// Расширенный тип статусов
-//type LessonStatus = 'planned' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show' | 'late_cancelled';
-
 import { LESSON_STATUSES, LessonStatus } from "@/constants/constants";
 
 interface AddLessonModalProps {
@@ -47,9 +43,12 @@ export function AddLessonModal({
   const [selectedMinute, setSelectedMinute] = useState("00")
   
   const [duration, setDuration] = useState("2") 
-  const [locationId, setLocationId] = useState<string>("")
+  
+  // ЛОГИКА ЛОКАЦИИ: "custom" по умолчанию
+  const [locationId, setLocationId] = useState<string>("custom")
+  const [customAddress, setCustomAddress] = useState("")
+  
   const [summary, setSummary] = useState("")
-  // Обновленный стейт статуса
   const [status, setStatus] = useState<LessonStatus>('planned')
 
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -79,7 +78,7 @@ export function AddLessonModal({
                   profiles:profile_id ( first_name, last_name, avatar_url, email, phone )
                 )
               ),
-              lessons ( duration, status )
+              lessons ( duration, status, is_counted )
             `)
             .eq('status', 'active')
           
@@ -103,7 +102,7 @@ export function AddLessonModal({
                   }
                 },
                 remaining: pkg.total_hours - (
-                  pkg.lessons?.filter((l: any) => l.is_counted) // Теперь фильтруем по флагу из БД
+                  pkg.lessons?.filter((l: any) => l.is_counted)
                     .reduce((acc: number, curr: any) => acc + (Number(curr.duration) || 0), 0) || 0
                 )
               }
@@ -123,12 +122,32 @@ export function AddLessonModal({
         setSelectedHour(format(dateObj, "HH"))
         setSelectedMinute(format(dateObj, "mm"))
         setDuration(editLesson.duration?.toString() || "2")
-        setLocationId(editLesson.location_id || "")
+        
+        // Загрузка локации при редактировании
+        if (editLesson.location_id) {
+            setLocationId(editLesson.location_id)
+            setCustomAddress("") 
+        } else {
+            setLocationId("custom")
+            setCustomAddress(editLesson.custom_location_address || "")
+        }
+        
         setSummary(editLesson.summary || "")
         setStatus(editLesson.status || 'planned')
+      } else {
+          // Сброс для нового урока
+          setLocationId("custom")
+          setCustomAddress("")
       }
     }
   }, [isOpen, editLesson])
+
+  // Автоматическое заполнение адреса, если выбрана локация из списка
+  const displayAddress = useMemo(() => {
+    if (locationId === "custom") return customAddress
+    const loc = locations.find(l => l.id === locationId)
+    return loc?.address || ""
+  }, [locationId, locations, customAddress])
 
   const filteredPackages = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
@@ -152,12 +171,17 @@ export function AddLessonModal({
     const [year, month, day] = lessonDate.split('-').map(Number)
     const finalDate = new Date(year, month - 1, day, parseInt(selectedHour), parseInt(selectedMinute))
 
+    const isCustom = locationId === "custom"
+
     const payload = {
       course_package_id: selectedPackageId,
       instructor_id: instructorId,
       duration: parseFloat(duration),
       session_date: finalDate.toISOString(),
-      location_id: locationId || null,
+      // location_id nullable если custom
+      location_id: isCustom ? null : locationId,
+      // записываем в db только если Custom
+      custom_location_address: isCustom ? customAddress : null,
       summary,
       status,
       created_by_profile_id: authProfile?.id
@@ -186,7 +210,6 @@ export function AddLessonModal({
 
   if (!isOpen) return null
 
-  // Список всех доступных статусов
   const allStatuses: LessonStatus[] = ['planned', 'completed', 'cancelled', 'rescheduled', 'no_show', 'late_cancelled'];
 
   return (
@@ -195,7 +218,6 @@ export function AddLessonModal({
         
         <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden" />
 
-        {/* HEADER */}
         <div className="px-6 py-4 md:px-8 md:py-6 border-b border-white/5 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
@@ -212,7 +234,6 @@ export function AddLessonModal({
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
           
-          {/* STUDENT SELECTION */}
           <div className="space-y-3 relative" ref={dropdownRef}>
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('selectStudent')}</label>
             <div className="relative group">
@@ -252,7 +273,6 @@ export function AddLessonModal({
             )}
           </div>
 
-          {/* QUICK INFO PANEL */}
           {clientData && (
             <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4">
               <div className="flex justify-between items-center">
@@ -288,28 +308,6 @@ export function AddLessonModal({
             </div>
           )}
 
-          {/* STATUS SELECTOR - Expanded to 2 rows grid for 6 statuses */}
-          {/* <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('status')}</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {allStatuses.map((s) => (
-                <button 
-                  key={s} 
-                  type="button" 
-                  onClick={() => setStatus(s)} 
-                  className={`py-3 rounded-xl font-black text-[9px] uppercase border transition-all leading-tight ${
-                    status === s 
-                      ? 'bg-white text-black border-white shadow-xl' 
-                      : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
-                  }`}
-                >
-                  {t(s)}
-                </button>
-              ))}
-            </div>
-          </div> */}
-
-          {/* STATUS SELECTOR */}
           <div className="space-y-2">
             <div className="relative">
               <select 
@@ -319,7 +317,7 @@ export function AddLessonModal({
                   status === 'planned' ? 'text-blue-400' : 
                   status === 'completed' ? 'text-green-400' :
                   status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
-                  'text-red-500' // no_show, late_cancelled
+                  'text-red-500'
                 }`}
               >
                 {allStatuses.map((s) => (
@@ -332,7 +330,6 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* DATE & TIME */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('date')}</label>
@@ -360,7 +357,6 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* DURATION PRESETS */}
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
             <div className="grid grid-cols-4 gap-2">
@@ -372,27 +368,50 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* LOCATION */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
-            <div className="relative">
-              <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                <option value="" className="bg-black">{t('selectLocation')}</option>
-                {filteredLocations.map(loc => (
-                  <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          {/* LOCATION SECTION */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
+              <div className="relative">
+                <select 
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none pr-12" 
+                    value={locationId} 
+                    onChange={(e) => setLocationId(e.target.value)}
+                >
+                  <option value="custom" className="bg-black text-primary font-black italic">✦ Custom Location</option>
+                  {filteredLocations.map(loc => (
+                    <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* ТЕКСТОВОЕ ПОЛЕ АДРЕСА */}
+            <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40">
+                    <MapPin size={18} />
+                </div>
+                <input 
+                    type="text"
+                    placeholder="Enter custom address..."
+                    readOnly={locationId !== "custom"}
+                    value={displayAddress}
+                    onChange={(e) => setCustomAddress(e.target.value)}
+                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none ${
+                        locationId === "custom" 
+                        ? "border-primary/30 text-white focus:border-primary" 
+                        : "border-white/5 text-slate-500 opacity-60 grayscale cursor-not-allowed"
+                    }`}
+                />
             </div>
           </div>
 
-          {/* NOTES */}
           <div className="relative">
             <textarea placeholder={t('notesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[80px] resize-none" value={summary} onChange={(e) => setSummary(e.target.value)} />
             <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
           </div>
 
-          {/* FOOTER ACTIONS */}
           <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
             {editLesson && (
               <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
@@ -413,3 +432,28 @@ export function AddLessonModal({
     </div>
   )
 }
+
+
+
+
+
+          {/* STATUS SELECTOR - Expanded to 2 rows grid for 6 statuses */}
+          {/* <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('status')}</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {allStatuses.map((s) => (
+                <button 
+                  key={s} 
+                  type="button" 
+                  onClick={() => setStatus(s)} 
+                  className={`py-3 rounded-xl font-black text-[9px] uppercase border transition-all leading-tight ${
+                    status === s 
+                      ? 'bg-white text-black border-white shadow-xl' 
+                      : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
+                  }`}
+                >
+                  {t(s)}
+                </button>
+              ))}
+            </div>
+          </div> */}

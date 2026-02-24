@@ -8,7 +8,6 @@ interface LessonCardProps {
   getStyles: () => any 
   viewMode: 'day' | 'week'
   hourHeight: number
-  currentInstructorId?: string | null
 }
 
 export function LessonCard({ 
@@ -16,35 +15,35 @@ export function LessonCard({
   onEdit, 
   getStyles, 
   viewMode, 
-  hourHeight, 
-  currentInstructorId
+  hourHeight
 }: LessonCardProps) {
   const isWeek = viewMode === 'week'
   
-  // Space calculations for responsive text and UI density
+  // Расчет пространства для адаптивного текста
   const duration = Number(lesson.duration) || 1
   const pixelHeight = duration * hourHeight
   const hasSpace = pixelHeight > 75 
   const isVeryShort = pixelHeight < 50
 
-  // Fallback logic for data from View
-  const displayLocation = lesson.location_name || 'BASE OPS'
-  const locationColor = lesson.location_color || null
-  const isMoto = lesson.course_type?.toLowerCase() === 'moto'
+  // Логика локации: приоритет кастомного адреса над системной локацией
+  const isCustom = !!lesson.custom_location_address
+  const displayLocation = lesson.custom_location_address || lesson.location_name || 'BASE OPS'
+  const locationColor = isCustom ? '#A855F7' : (lesson.location_color || null) // Пурпурный для кастомных или из базы
   
+  const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   const instructorName = lesson.lesson_instructor_name || 'Unassigned';
 
   const getStatusStyles = () => {
-    // 1. Cancelled State
+    // 1. Отменено
     if (lesson.status === 'cancelled') {
       return 'border-l-red-500 opacity-40 bg-[#1a0a0a] grayscale-[0.5]'
     }
-    // 2. Completed State
+    // 2. Завершено
     if (lesson.status === 'completed') {
       return 'border-l-emerald-500 bg-[#0d1410]'
     }
 
-    // 3. Planned State (Color code based on Course Type)
+    // 3. Запланировано (Цвет зависит от типа курса)
     if (isMoto) {
       return 'border-l-fuchsia-500 bg-[#130d14] shadow-lg shadow-fuchsia-500/5'
     }
@@ -65,11 +64,6 @@ export function LessonCard({
         ${getStatusStyles()} 
         ${isWeek ? 'p-2' : 'p-4 md:p-5'}`}
     >
-      {/* BACKGROUND ICON DECAL - Purely Aesthetic */}
-      {/* <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity pointer-events-none">
-        {isMoto ? <Bike size={isWeek ? 40 : 80} /> : <Car size={isWeek ? 40 : 80} />}
-      </div> */}
-
       {/* TOP ROW: Client Name & Type Icon */}
       <div className="flex justify-between items-start min-w-0 z-10">
         <div className="min-w-0 flex-1">
@@ -78,9 +72,6 @@ export function LessonCard({
                <Bike size={12} className="text-fuchsia-400 shrink-0" /> : 
                <Car size={12} className="text-primary shrink-0" />
              }
-             {/* <span className={`font-black uppercase tracking-widest ${isWeek ? 'text-[7px]' : 'text-[9px]'} ${isMoto ? 'text-fuchsia-400' : 'text-primary'}`}>
-               {lesson.course_type || 'Auto'}
-             </span> */}
           </div>
           <h4 className={`font-black uppercase italic text-white group-hover:text-primary transition-colors truncate 
             ${isWeek ? 'text-[10px] leading-tight' : 'text-sm md:text-lg'}`}>
@@ -93,10 +84,10 @@ export function LessonCard({
         </span>
       </div>
 
-      {/* SIMPLE INSTRUCTOR ROW */}
+      {/* INSTRUCTOR ROW */}
       {(hasSpace || !isWeek) && (
         <div className="flex items-center gap-1 mt-1 z-10">
-          <div className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-white/8 border border-white/10">
+          <div className="shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-white/5 border border-white/10">
             <User size={10} className="text-slate-500" />
           </div>
           <span className={`font-bold uppercase tracking-tighter truncate ${isWeek ? 'text-[8px]' : 'text-[10px]'} text-slate-500`}>
@@ -117,17 +108,17 @@ export function LessonCard({
             </div>
           )}
           
-          <div className="flex items-center gap-2">
-            {/* Dynamic Location Color from Database View */}
+          <div className={`flex items-center gap-2 ${isCustom ? 'bg-purple-500/5 py-0.5 px-1 -ml-1 rounded-md border border-purple-500/10' : ''}`}>
             <MapPin 
                 size={isWeek ? 10 : 13} 
                 style={{ color: locationColor || (isMoto ? '#e879f9' : '#3b82f6') }}
-                className="shrink-0" 
+                className={`shrink-0 ${isCustom ? 'animate-pulse' : ''}`} 
             />
             <span 
                 style={{ color: locationColor || '#e2e8f0' }}
-                className={`font-black uppercase truncate ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'}`}
+                className={`font-black uppercase truncate ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'} ${isCustom ? 'italic' : ''}`}
             >
+              {isCustom && <span className="text-[8px] mr-1 opacity-60">✦</span>}
               {displayLocation}
             </span>
           </div>

@@ -180,12 +180,12 @@ export default function UnifiedDashboard() {
 
       {/* QUICK NAV */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <NavButton 
+        {/* <NavButton 
           href="/staff/lessons" 
           icon={<ClipboardList size={20}/>} 
           label={t('nav.lessons')} 
           sub={t('nav.lessons_sub')} 
-        />
+        /> */}
         <NavButton 
           href="/staff/schedule" 
           icon={<Calendar size={20}/>} 

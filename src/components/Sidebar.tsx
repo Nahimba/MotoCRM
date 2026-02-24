@@ -108,7 +108,7 @@ export default function Sidebar() {
               <div className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mb-2 mt-6 px-4">
                 {t('staffHome')}
               </div>
-              <SidebarLink href="/staff/lessons" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff/lessons'} />
+              {/* <SidebarLink href="/staff/lessons" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff/lessons'} /> */}
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
               <SidebarLink href="/staff/clients" icon={<GraduationCap size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
               <SidebarLink href="/staff/packages" icon={<Bike size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
@@ -185,7 +185,7 @@ export default function Sidebar() {
 
                 {(role === 'admin' || role === 'instructor') && (
                   <>
-                    <MobileExtraLink href="/staff/lessons" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} />
+                    {/* <MobileExtraLink href="/staff/lessons" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} /> */}
                     <MobileExtraLink href="/staff/payments" icon={<Banknote size={18}/>} label={t('payments') || 'Payments'} />
                     <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
                     <MobileExtraLink href="/staff/packages" icon={<Bike size={18}/>} label={t('packages')} />
