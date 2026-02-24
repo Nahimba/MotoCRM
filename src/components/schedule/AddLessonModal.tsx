@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { format, parseISO } from "date-fns"
 import { 
-  X, Check, Trash2, Calendar as CalendarIcon, Search,
+  X, Check, Trash2, Calendar as CalendarIcon, 
   MapPin, FileText, Loader2, Contact2, ChevronDown, Clock, User
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
-import { LESSON_STATUSES, LessonStatus } from "@/constants/constants";
+import { LessonStatus } from "@/constants/constants"
+import { StudentSelector } from "./StudentSelector" // Импорт созданного компонента
 
 interface AddLessonModalProps {
   isOpen: boolean
@@ -34,24 +35,17 @@ export function AddLessonModal({
   const [loading, setLoading] = useState(false)
   const [packages, setPackages] = useState<any[]>([])
   const [locations, setLocations] = useState<any[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
   const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [selectedHour, setSelectedHour] = useState("12")
   const [selectedMinute, setSelectedMinute] = useState("00")
-  
   const [duration, setDuration] = useState("2") 
   
-  // ЛОГИКА ЛОКАЦИИ: "custom" по умолчанию
   const [locationId, setLocationId] = useState<string>("custom")
   const [customAddress, setCustomAddress] = useState("")
-  
   const [summary, setSummary] = useState("")
   const [status, setStatus] = useState<LessonStatus>('planned')
-
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const selectedPkg = useMemo(() => 
     packages.find(p => p.id === selectedPackageId), 
@@ -70,7 +64,7 @@ export function AddLessonModal({
           const { data: pkgData, error: pkgError } = await supabase
             .from('course_packages')
             .select(`
-              id, instructor_id, total_hours,
+              id, instructor_id, total_hours, status,
               courses:course_id ( name, type ),
               accounts:account_id (
                 clients:client_id ( 
@@ -123,39 +117,29 @@ export function AddLessonModal({
         setSelectedMinute(format(dateObj, "mm"))
         setDuration(editLesson.duration?.toString() || "2")
         
-        // Загрузка локации при редактировании
         if (editLesson.location_id) {
-            setLocationId(editLesson.location_id)
-            setCustomAddress("") 
+          setLocationId(editLesson.location_id)
+          setCustomAddress("") 
         } else {
-            setLocationId("custom")
-            setCustomAddress(editLesson.custom_location_address || "")
+          setLocationId("custom")
+          setCustomAddress(editLesson.custom_location_address || "")
         }
         
         setSummary(editLesson.summary || "")
         setStatus(editLesson.status || 'planned')
       } else {
-          // Сброс для нового урока
-          setLocationId("custom")
-          setCustomAddress("")
+        setLocationId("custom")
+        setCustomAddress("")
+        setSelectedPackageId("")
       }
     }
   }, [isOpen, editLesson])
 
-  // Автоматическое заполнение адреса, если выбрана локация из списка
   const displayAddress = useMemo(() => {
     if (locationId === "custom") return customAddress
     const loc = locations.find(l => l.id === locationId)
     return loc?.address || ""
   }, [locationId, locations, customAddress])
-
-  const filteredPackages = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim()
-    if (!q) return packages
-    return packages.filter(p => 
-      `${p.accounts?.clients?.name} ${p.accounts?.clients?.last_name}`.toLowerCase().includes(q)
-    )
-  }, [packages, searchQuery])
 
   const filteredLocations = useMemo(() => {
     if (!selectedPkg) return locations
@@ -178,9 +162,7 @@ export function AddLessonModal({
       instructor_id: instructorId,
       duration: parseFloat(duration),
       session_date: finalDate.toISOString(),
-      // location_id nullable если custom
       location_id: isCustom ? null : locationId,
-      // записываем в db только если Custom
       custom_location_address: isCustom ? customAddress : null,
       summary,
       status,
@@ -234,47 +216,16 @@ export function AddLessonModal({
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
           
-          <div className="space-y-3 relative" ref={dropdownRef}>
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('selectStudent')}</label>
-            <div className="relative group">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input 
-                type="text"
-                autoComplete="off"
-                placeholder={selectedPkg ? `${selectedPkg.accounts.clients.name} ${selectedPkg.accounts.clients.last_name}` : t('searchStudent')}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:border-primary transition-all outline-none"
-                value={searchQuery}
-                onFocus={() => setIsDropdownOpen(true)}
-                onChange={(e) => { setSearchQuery(e.target.value); setIsDropdownOpen(true); }}
-              />
-            </div>
-
-            {isDropdownOpen && (
-              <div className="absolute z-50 w-full top-full mt-2 bg-[#121212] border border-white/10 rounded-2xl shadow-2xl max-h-[200px] overflow-y-auto p-2">
-                {filteredPackages.map(p => (
-                  <button 
-                    key={p.id} type="button" 
-                    className={`w-full flex items-center justify-between p-3 rounded-xl mb-1 ${p.id === selectedPackageId ? 'bg-primary/20 border border-primary/40' : 'hover:bg-white/5 border border-transparent'}`}
-                    onClick={() => { setSelectedPackageId(p.id); setSearchQuery(""); setIsDropdownOpen(false); }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-black text-slate-500">
-                        {p.accounts?.clients?.name?.[0]}
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <span className="text-sm font-bold text-white">{p.accounts?.clients?.name} {p.accounts?.clients?.last_name}</span>
-                        <span className="text-[9px] text-slate-500 uppercase font-bold italic">{(p.courses as any)?.name}</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-black text-primary italic">{p.remaining}h</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* ИСПОЛЬЗОВАНИЕ НОВОГО КОМПОНЕНТА */}
+          <StudentSelector 
+            packages={packages}
+            selectedPackageId={selectedPackageId}
+            onSelect={setSelectedPackageId}
+            currentInstructorId={instructorId}
+          />
 
           {clientData && (
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4">
+            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
@@ -368,7 +319,6 @@ export function AddLessonModal({
             </div>
           </div>
 
-          {/* LOCATION SECTION */}
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
@@ -387,7 +337,6 @@ export function AddLessonModal({
               </div>
             </div>
 
-            {/* ТЕКСТОВОЕ ПОЛЕ АДРЕСА */}
             <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40">
                     <MapPin size={18} />
@@ -432,7 +381,6 @@ export function AddLessonModal({
     </div>
   )
 }
-
 
 
 
