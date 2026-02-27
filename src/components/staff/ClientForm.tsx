@@ -1,15 +1,16 @@
 "use client"
+
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, Loader2, Bike, 
-  Target, Fingerprint, CheckCircle2,
-  Power, Upload, Camera, Trash2
+  Target, Fingerprint, 
+  Power, Upload, Camera, Trash2, GraduationCap, ChevronDown
 } from "lucide-react"
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
-import { LEAD_SOURCES, type LeadSource } from "@/constants/constants"
+import { LEAD_SOURCES, STUDENT_STAGES, type LeadSource, type StudentStage } from "@/constants/constants"
 
 export default function RiderForm({ initialData, id }: { initialData?: any, id?: string }) {
   const t = useTranslations("Clients")
@@ -38,9 +39,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         : ""
     ) as LeadSource | "",
     notes: initialData?.notes || "",
-    is_graduated: initialData?.is_graduated || false,
+    training_stage: (initialData?.training_stage || "lead") as StudentStage,
     is_active: initialData?.is_active ?? true,
-    tags: initialData?.tags?.join(", ") || "",
   })
 
   useEffect(() => {
@@ -123,12 +123,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     if (uploading) return 
     setLoading(true)
     
-    const tagsArray = formData.tags 
-      ? formData.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean) 
-      : []
-
     try {
-      // 1. Get current user for audit trail
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("Unauthorized")
 
@@ -146,23 +141,19 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         gear_type: formData.gear_type, 
         lead_source: formData.lead_source || null, 
         notes: formData.notes, 
-        is_graduated: formData.is_graduated,
-        is_active: formData.is_active, 
-        tags: tagsArray,
+        training_stage: formData.training_stage,
+        is_active: formData.is_active,
       }
 
       if (id) {
-        // UPDATE
         const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
         if (pError) throw pError
 
         const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
         if (cError) throw cError
       } else {
-        // CREATE CHAIN
         const newProfileId = crypto.randomUUID()
         
-        // A. Insert Profile
         const { error: pError } = await supabase.from('profiles').insert([{
             id: newProfileId, 
             ...profilePayload,
@@ -170,18 +161,16 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         }])
         if (pError) throw pError
 
-        // B. Insert Client
         const { data: clientData, error: cError } = await supabase.from('clients').insert([{
             profile_id: newProfileId,
-            created_by_profile_id: user.id, // Audit trail
+            created_by_profile_id: user.id,
             ...clientPayload
         }]).select().single()
         if (cError) throw cError
 
-        // C. Insert Account
         const { error: aError } = await supabase.from('accounts').insert([{
             client_id: clientData.id,
-            created_by_profile_id: user.id, // Audit trail
+            created_by_profile_id: user.id,
             account_status: 'active'
         }])
         if (aError) throw aError
@@ -247,10 +236,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
 
             <div className="text-center md:text-left">
               <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Visual ID</p>
-              {/* <h3 className="text-white text-xl font-black uppercase italic">Identity Capture</h3> */}
-              {/* <p className="text-zinc-500 text-xs mt-2 max-w-[240px] leading-relaxed">
-                {formData.avatar_url ? "Visual identification confirmed. Wipe record to reset." : "Upload a tactical headshot for the pilot roster."}
-              </p> */}
             </div>
           </div>
 
@@ -288,7 +273,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                   </select>
                 </Field>
               </div>
-              <Field label={t("form.tags")}><input placeholder={t("form.tags_placeholder")} value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} className={inputClass} /></Field>
               <Field label={t("form.address")}><input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className={inputClass} /></Field>
             </div>
           </div>
@@ -301,19 +285,46 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button type="button" onClick={() => setFormData({...formData, is_active: !formData.is_active})} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${formData.is_active ? 'border-primary bg-primary/10 text-primary' : 'border-zinc-800 text-zinc-500'}`}>
-            <span className="text-xs font-bold uppercase tracking-widest">Active Status</span>
+          <button 
+            type="button" 
+            onClick={() => setFormData({...formData, is_active: !formData.is_active})} 
+            className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${formData.is_active ? 'border-primary bg-primary/10 text-primary' : 'border-zinc-800 text-zinc-500'}`}
+          >
+            <span className="text-xs font-black uppercase tracking-widest">Active Status</span>
             <Power size={20} />
           </button>
 
-          <button type="button" onClick={() => setFormData({...formData, is_graduated: !formData.is_graduated})} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${formData.is_graduated ? 'border-green-500 bg-green-500/10 text-green-500' : 'border-zinc-800 text-zinc-500'}`}>
-            <span className="text-xs font-bold uppercase tracking-widest">{t("form.graduation_status")}</span>
-            <CheckCircle2 size={20} />
-          </button>
+          <div className="relative group">
+            <div className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all border-zinc-800 bg-black focus-within:border-primary`}>
+              <GraduationCap size={20} className="text-primary shrink-0" />
+              <div className="flex-1">
+                <label className="block text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1 leading-none">
+                  {t("form.training_stage")}
+                </label>
+                <div className="relative">
+                  <select 
+                    value={formData.training_stage} 
+                    onChange={e => setFormData({...formData, training_stage: e.target.value as StudentStage})} 
+                    className="w-full bg-transparent text-white outline-none text-[13px] font-black uppercase italic tracking-wider cursor-pointer appearance-none"
+                  >
+                    {STUDENT_STAGES.map((stage) => (
+                      <option key={stage} value={stage} className="bg-zinc-900 text-white">
+                        {tConst(`student_stages.${stage}`)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <button disabled={loading || uploading} className="w-full bg-primary text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-xs hover:bg-white transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-          {loading ? <Loader2 className="animate-spin" /> : <Bike size={18} />}
+        <button 
+          disabled={loading || uploading} 
+          className="w-full bg-primary text-black font-black py-6 rounded-[2rem] uppercase tracking-[0.3em] text-xs hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-[0_20px_50px_rgba(var(--primary-rgb),0.2)]"
+        >
+          {loading ? <Loader2 className="animate-spin" /> : <Bike size={20} />}
           {id ? t("form.update_btn") : t("form.recruit_btn")}
         </button>
       </form>
@@ -324,7 +335,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
 function Field({ label, children }: { label: string, children: React.ReactNode }) {
   return (
     <div className="space-y-2 w-full">
-      <label className="text-[10px] font-bold text-zinc-500 uppercase ml-1 tracking-widest">{label}</label>
+      <label className="text-[10px] font-black text-zinc-500 uppercase ml-1 tracking-[0.2em]">{label}</label>
       {children}
     </div>
   )

@@ -411,8 +411,7 @@
       "transmission": "Тип КПП",
       "lead_source": "Джерело звернення",
       "select_source": "Оберіть джерело...",
-      "tags": "Теги / Мітки",
-      "tags_placeholder": "VIP, Корпоратив, Вихідні...",
+      "training_stage": "Тег навчання",
       "graduation_status": "Статус: Випускник",
       "update_btn": "Зберегти зміни",
       "recruit_btn": "Створити клієнта",
@@ -523,6 +522,14 @@
       "rescheduled": "Перенесено (без Оплати)",
       "no_show": "Не з'явився (з Оплатою)",
       "late_cancelled": "Пізня відміна (з Оплатою)"
+    },
+    "student_stages": {
+      "lead": "Новий",
+      "theory_learning": "Вчить теорію",
+      "theory_passed": "Здав теорію",
+      "practice": "Практика",
+      "graduated": "Випустився",
+      "upskilling": "Підвищує кваліфікацію"
     }
   }
 }

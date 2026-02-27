@@ -414,8 +414,7 @@
       "transmission": "Transmission Type",
       "lead_source": "Lead Source",
       "select_source": "Select where the client came from...",
-      "tags": "Tags / Labels",
-      "tags_placeholder": "VIP, Corporate, Weekend...",
+      "training_stage": "Training Stage",
       "graduation_status": "Graduated / Completed",
       "update_btn": "Save Changes",
       "recruit_btn": "Create Client",
@@ -526,6 +525,15 @@
       "rescheduled": "rescheduled",
       "no_show": "no_show",
       "late_cancelled": "late_cancelled"
+    },
+    "student_stages": {
+      "lead": "lead",
+      "theory_learning": "theory_learning",
+      "theory_passed": "theory_passed",
+      "practice": "practice",
+      "graduated": "graduated",
+      "upskilling": "upskilling"
     }
+
   }
 }

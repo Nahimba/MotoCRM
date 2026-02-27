@@ -46,3 +46,16 @@ export const PACKAGE_STATUSES = [
 ] as const;
 
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
+
+
+
+export const STUDENT_STAGES = [
+  "lead",
+  "theory_learning",
+  "theory_passed",
+  "practice",
+  "graduated",
+  "upskilling"
+] as const;
+
+export type StudentStage = (typeof STUDENT_STAGES)[number];
