@@ -35,21 +35,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     if (!error) setDocCount(count || 0);
   };
 
+  const [isSending, setIsSending] = useState(false);
+
   const handleSendInvite = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    const { data, error } = await supabase.functions.invoke('send-invite', {
-      body: { 
-        profile_id: client?.profile_id, // Ensure this matches your table schema
-        template_slug: 'invitation_email_ua' 
-      },
-      //headers: { Authorization: `Bearer ${session?.access_token}` }
-    });
+    setIsSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('send-invite', {
+        body: { profile_id: client?.profile_id, template_slug: 'invitation_email_ua' },
+        headers: { Authorization: `Bearer ${session?.access_token}` }
+      });
   
-    if (error) {
-      alert("Failed to send email");
-    } else {
+      if (error) throw error; // This will trigger the catch block
       alert("Email sent successfully!");
+    } catch (err: any) {
+      console.error("Full Error Details:", err); // CHECK THIS IN YOUR BROWSER CONSOLE
+      alert(`Error: ${err.message || "Something went wrong"}`);
+    } finally {
+      setIsSending(false);
     }
   };
   
@@ -177,9 +180,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
           <button 
             onClick={handleSendInvite}
-            className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-black transition-all"
+            disabled={isSending}
+            className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-black transition-all disabled:opacity-50"
           >
-            {t("send_invite")}
+            {isSending ? t("sending") : t("send_invite")}
           </button>
         </div>
       </div>
