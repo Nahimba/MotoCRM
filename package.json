@@ -48,9 +48,6 @@
   },
   "overrides": {
     "minimatch": "^10.2.1",
-    "glob": "^11.0.0",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-import": "npm:eslint-plugin-import-x@latest",
-    "eslint": "$eslint"
+    "glob": "^11.0.0"
   }
 }
