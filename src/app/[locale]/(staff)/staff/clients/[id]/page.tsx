@@ -41,20 +41,51 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     setIsSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('send-invite', {
         body: { profile_id: client?.profile_id, template_slug: 'invitation_email_ua' },
-        headers: { Authorization: `Bearer ${session?.access_token}` }
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
       });
   
-      if (error) throw error; // This will trigger the catch block
+      if (error) throw new Error(error.message || "Function call failed");
+      
       alert("Email sent successfully!");
     } catch (err: any) {
-      console.error("Full Error Details:", err); // CHECK THIS IN YOUR BROWSER CONSOLE
-      alert(`Error: ${err.message || "Something went wrong"}`);
+      console.error("DEBUG:", err);
+      alert(`Failed: ${err.message}`);
     } finally {
       setIsSending(false);
     }
   };
+
+  // const [isSending, setIsSending] = useState(false);
+
+  // const handleSendInvite = async () => {
+  //   setIsSending(true);
+  //   try {
+  //     const { data: { session } } = await supabase.auth.getSession();
+      
+  //     const { data, error } = await supabase.functions.invoke('send-invite', {
+  //       method: 'POST', // Explicitly set to POST
+  //       body: { 
+  //         profile_id: client?.profile_id, 
+  //         template_slug: 'invitation_email_ua' 
+  //       },
+  //       headers: { 
+  //         Authorization: `Bearer ${session?.access_token}` 
+  //       }
+  //     })
+
+  //     if (error) throw new Error(error.message || 'Failed to send invite');
+      
+  //     alert("Email sent successfully!");
+  //   } catch (err: any) {
+  //     console.error("Invite Error:", err);
+  //     alert(err.message);
+  //   } finally {
+  //     setIsSending(false);
+  //   }
+  // };
   
 
   useEffect(() => {
