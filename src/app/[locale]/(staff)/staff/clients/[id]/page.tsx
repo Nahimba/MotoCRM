@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, Edit3, Phone, Mail, 
-  MapPin, CreditCard, Clock, Bike, ShieldCheck
+  MapPin, CreditCard, Clock, Bike, ShieldCheck,
+  AlertCircle, CheckCircle2, BadgePercent, Activity, FileText
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
+
+import { DocumentModal } from "@/components/staff/DocumentModal"
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
@@ -17,6 +20,39 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const router = useRouter()
+
+  
+
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false)
+  const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
+
+  const refreshData = async () => {
+    const { count, error } = await supabase
+      .from('client_documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', id);
+  
+    if (!error) setDocCount(count || 0);
+  };
+
+  const handleSendInvite = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    const { data, error } = await supabase.functions.invoke('send-invite', {
+      body: { 
+        profile_id: client?.profile_id, // Ensure this matches your table schema
+        template_slug: 'invitation_email_ua' 
+      },
+      //headers: { Authorization: `Bearer ${session?.access_token}` }
+    });
+  
+    if (error) {
+      alert("Failed to send email");
+    } else {
+      alert("Email sent successfully!");
+    }
+  };
+  
 
   useEffect(() => {
     async function loadClientData() {
@@ -32,7 +68,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             course_packages (
               *,
               courses (name),
-              lessons (duration, status)
+              lessons (duration, status, is_counted)
             )
           )
         `)
@@ -59,6 +95,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setLoading(false)
     }
     loadClientData()
+    refreshData()
   }, [id, router])
 
   if (loading) return (
@@ -72,22 +109,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const account = client?.accounts?.[0]
   const packages = account?.course_packages || []
   
-  // AGGREGATED STATS (Total across all packages)
+  // 1. FILTERED AGGREGATED STATS
   const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
+  
   const totalUsedHours = packages.reduce((sum: number, p: any) => {
-    const pUsed = p.lessons?.filter((l: any) => l.status === 'completed')
+    const pUsed = p.lessons?.filter((l: any) => l.is_counted === true) // Filter by is_counted
                    .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0
     return sum + pUsed
   }, 0)
   
   const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours)
   
-  // FINANCIAL STANDING
+  // 2. FINANCIAL STANDING (Using is_paid)
   const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0)
-  const totalPaid = account?.payments?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
+  const totalPaid = account?.payments?.filter((p: any) => p.is_paid === true) // Filter by is_paid
+                             .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
   const totalDebt = totalContractValue - totalPaid
 
   const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
+
+
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-24 px-4 pt-6">
@@ -97,6 +139,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <span className="text-[10px] font-black uppercase tracking-widest">{t("return")}</span>
       </Link>
 
+      {/* HEADER */}
       <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-hidden shadow-2xl">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
@@ -114,7 +157,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             <div className="text-center md:text-left">
-              <div className="space-y-0 md:-space-y-0">
+              <div className="space-y-0">
                 <h1 className="text-2xl md:text-3xl font-black italic uppercase text-white tracking-tighter leading-none">{profile?.first_name}</h1>
                 <h1 className="text-2xl md:text-3xl font-black italic uppercase text-primary tracking-tighter leading-none">{profile?.last_name}</h1>
               </div>
@@ -131,11 +174,18 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-3 shadow-xl group">
             <Edit3 size={16} className="group-hover:rotate-12 transition-transform" /> {t("modify")}
           </Link>
+
+          <button 
+            onClick={handleSendInvite}
+            className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-black transition-all"
+          >
+            {t("send_invite")}
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT: CORE INTEL */}
+        {/* LEFT: INFO */}
         <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 space-y-8 relative overflow-hidden">
           <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
           <div className="space-y-6">
@@ -156,67 +206,80 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {client?.gear_type || 'Manual'}
             </span>
           </div>
+
+          <button 
+            onClick={() => setIsDocModalOpen(true)}
+            className="w-full bg-primary/10 border border-primary/20 hover:bg-primary hover:text-black py-4 rounded-2xl flex items-center justify-center gap-3 group transition-all font-black uppercase text-[10px] tracking-widest text-primary"
+          >
+            <FileText size={16} />
+            Documents {docCount > 0 && <span className="bg-primary text-black px-2 py-0.5 rounded-md ml-1">{docCount}</span>}
+          </button>
+          
         </div>
 
-        {/* RIGHT COLUMN: TRAINING & FINANCE */}
+
+        {/* RIGHT: STATS & PACKAGES */}
         <div className="lg:col-span-2 space-y-6">
-          {/* STAT CARDS SECTION */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard 
-              label={t("rem_time")} 
-              value={`${totalRemainingHours}H`} 
-              icon={<Clock size={20} className="text-primary" />} 
-              sub={t("deployment", { total: totalHoursAll })} 
-              variant="default"
+              label="Account Balance" 
+              value={`${totalDebt > 0 ? `-${totalDebt}` : 'Settled'}`} 
+              unit={totalDebt > 0 ? "₴" : ""}
+              icon={<CreditCard size={18} className={totalDebt > 0 ? "text-red-500" : "text-green-400"} />} 
+              variant={totalDebt > 0 ? "danger" : "success"}
             />
             <StatCard 
-              label={t("fin_standing")} 
-              value={`${totalDebt > 0 ? `-${totalDebt}` : '0'}`} 
-              unit="₴"
-              icon={<CreditCard size={20} className={totalDebt > 0 ? "text-red-500" : "text-green-500"} />} 
-              sub={totalDebt > 0 ? t("outstanding") : t("settled")} 
-              variant={totalDebt > 0 ? "danger" : "success"}
+              label="Total Remaining" 
+              value={`${totalRemainingHours}H`} 
+              icon={<Clock size={18} className="text-primary" />} 
+              variant="default"
             />
           </div>
 
-          {/* PACKAGE LIST */}
           <div className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">{t("active_module")}</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">Training Modules</h3>
             {packages.length > 0 ? packages.map((pkg: any) => {
-              const used = pkg.lessons?.filter((l: any) => l.status === 'completed').reduce((s: number, l: any) => s + Number(l.duration), 0) || 0;
+              const used = pkg.lessons?.filter((l: any) => l.is_counted).reduce((s: number, l: any) => s + Number(l.duration), 0) || 0;
               const percent = pkg.total_hours > 0 ? Math.round((used / pkg.total_hours) * 100) : 0;
               
               return (
-                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] p-8 relative overflow-hidden group">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <p className="text-2xl font-black text-white italic uppercase tracking-tighter">{pkg.courses?.name || 'Package'}</p>
-                        <span className={`text-[8px] px-2 py-0.5 rounded-full border font-black uppercase ${pkg.status === 'active' ? 'border-primary text-primary' : 'border-slate-700 text-slate-700'}`}>
-                          {pkg.status}
-                        </span>
+                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-6 relative overflow-hidden group">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-white/5 rounded-xl text-slate-500">
+                        {percent === 100 ? <CheckCircle2 size={16} className="text-green-500" /> : <Activity size={16} className="text-primary" />}
                       </div>
-                      <p className="text-[12px] text-slate-600 font-black uppercase tracking-widest">{t("valuation")}: {pkg.contract_price} ₴</p>
+                      <div>
+                        <p className="text-lg font-black text-white italic uppercase tracking-tighter">{pkg.courses?.name || 'Package'}</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} of {pkg.total_hours} Hours Complete</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-black text-white italic leading-none">{percent}%</p>
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">{t("completion")}</p>
+                    <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg">
+                       <span className="text-[10px] font-black text-white uppercase">{pkg.contract_price} ₴</span>
                     </div>
                   </div>
-                  <div className="h-4 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
                     <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${percent}%` }} />
                   </div>
                 </div>
               );
             }) : (
-              <div className="bg-[#0a0a0a] border-2 border-dashed border-white/5 rounded-[3rem] py-16 text-center">
-                <p className="text-slate-600 font-black uppercase tracking-[0.2em] text-xs">{t("no_deployment")}</p>
+              <div className="bg-[#0a0a0a] border-2 border-dashed border-white/5 rounded-[2rem] py-12 text-center">
+                <p className="text-slate-600 font-black uppercase tracking-[0.2em] text-xs">No active packages</p>
               </div>
             )}
           </div>
         </div>
       </div>
+      <DocumentModal 
+        clientId={id} 
+        isOpen={isDocModalOpen} 
+        onClose={() => setIsDocModalOpen(false)} 
+        onUpdate={refreshData}
+      />
     </div>
+    
   )
 }
 
