@@ -250,7 +250,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
               </div>
               <Field label={t("form.phone")}><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="+380..." /></Field>
               <Field label={t("form.email")}><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClass} /></Field>
-              <Field label="Social Link"><input value={formData.social_link} onChange={e => setFormData({...formData, social_link: e.target.value})} className={inputClass} placeholder="Instagram/Facebook URL" /></Field>
+              <Field label={t("form.address")}><input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className={inputClass} /></Field>
+              
             </div>
 
             <div className="space-y-6">
@@ -273,7 +274,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                   </select>
                 </Field>
               </div>
-              <Field label={t("form.address")}><input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className={inputClass} /></Field>
+              <Field label="Social Link"><input value={formData.social_link} onChange={e => setFormData({...formData, social_link: e.target.value})} className={inputClass} placeholder="Instagram/Facebook URL" /></Field>
             </div>
           </div>
 

@@ -140,15 +140,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
           <div className="space-y-6">
             <div className="flex items-center justify-between group/row">
-              <InfoRow icon={<Phone size={14}/>} label={t("comms")} value={profile?.phone} fallback="N/A" />
+              <InfoRow icon={<Phone size={14}/>} label={t("phone")} value={profile?.phone} fallback="N/A" />
               {profile?.phone && (
                 <a href={`tel:${profile.phone}`} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl">
                   <Phone size={16} />
                 </a>
               )}
             </div>
-            <InfoRow icon={<Mail size={14}/>} label={t("network")} value={profile?.email} fallback="N/A" />
-            <InfoRow icon={<MapPin size={14}/>} label={t("sector")} value={profile?.address} fallback="N/A" />
+            <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
+            <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
           </div>
           <div className="pt-4 border-t border-white/5">
             <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
