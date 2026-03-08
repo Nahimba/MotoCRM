@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "supabase/**", // Add this line to ignore the supabase directory
   ]),
 ]);
 

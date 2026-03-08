@@ -41,6 +41,8 @@ serve(async (req) => {
   const { data: template } = await supabaseAdmin.from("email_templates").select("subject, body_html").eq("slug", template_slug).single();
   if (!template) return new Response("Template not found", { status: 404, headers: corsHeaders });
 
+  const htmlBody = template.body_html.replace("{{name}}", profile.first_name || "User");
+
   // 3. Send Email
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -49,13 +51,15 @@ serve(async (req) => {
       from: "MotoCRM <noreply@yourdomain.com>",
       to: [target.email],
       subject: template.subject,
-      html: template.body_html.replace("{{invite_link}}", invite.user.email_confirm_link),
+      html: htmlBody.replace("{{invite_link}}", invite.user.email_confirm_link),
     }),
   });
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
 
+
+//http://localhost:3000/#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired&sb=
 
 
 // import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
