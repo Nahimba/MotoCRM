@@ -59,19 +59,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     if (!client?.profile_id) return;
     setIsSending(true);
     try {
+      // 1. Get the current session
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
-      
-      const { error } = await supabase.functions.invoke('send-invite', {
+  
+      // 2. Invoke with Authorization header
+      const { data, error } = await supabase.functions.invoke('send-invite', {
         body: { profile_id: client.profile_id, template_slug: 'invitation_email_ua' },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
   
-      if (error) throw new Error(error.message || "Function call failed");
-      alert("Email sent successfully!");
+      if (error) throw new Error(error.message);
+      
+      // 3. Handle response status
+      if (data?.status === "already_confirmed") {
+        alert("This student has already activated their account.");
+      } else {
+        alert("Invitation sent successfully!");
+      }
     } catch (err: any) {
       console.error("DEBUG:", err);
-      alert(`Failed: ${err.message}`);
+      alert(`Failed: ${err.message || "An unexpected error occurred."}`);
     } finally {
       setIsSending(false);
     }
