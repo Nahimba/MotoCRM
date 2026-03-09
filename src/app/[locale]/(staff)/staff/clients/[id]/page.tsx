@@ -35,20 +35,39 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     if (!error) setDocCount(count || 0);
   };
 
+
+//   3. Production Call (React/Node)
+
+// In production, your client must be authenticated. The invoke method automatically attaches the user's JWT.
+// JavaScript
+
+// const handleSendInvite = async (clientId) => {
+//   const { data, error } = await supabase.functions.invoke('send-invite', {
+//     body: { targetUserId: clientId }
+//   })
+
+//   if (error) {
+//     console.error('Action failed:', error)
+//     return
+//   }
+//   alert('Invite sent successfully!')
+// }
+
   const [isSending, setIsSending] = useState(false);
 
   const handleSendInvite = async () => {
+    if (!client?.profile_id) return;
     setIsSending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
       
-      const { data, error } = await supabase.functions.invoke('send-invite', {
-        body: { profile_id: client?.profile_id, template_slug: 'invitation_email_ua' },
-        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { profile_id: client.profile_id, template_slug: 'invitation_email_ua' },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
   
       if (error) throw new Error(error.message || "Function call failed");
-      
       alert("Email sent successfully!");
     } catch (err: any) {
       console.error("DEBUG:", err);
@@ -57,6 +76,29 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setIsSending(false);
     }
   };
+
+  // const handleSendInvite = async () => {
+  //   setIsSending(true);
+  //   try {
+  //     const { data: { session } } = await supabase.auth.getSession();
+      
+  //     const { data, error } = await supabase.functions.invoke('send-invite', {
+  //       body: { profile_id: client?.profile_id, template_slug: 'invitation_email_ua' },
+  //       headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+  //     });
+  
+  //     if (error) throw new Error(error.message || "Function call failed");
+      
+  //     alert("Email sent successfully!");
+  //   } catch (err: any) {
+  //     console.error("DEBUG:", err);
+  //     alert(`Failed: ${err.message}`);
+  //   } finally {
+  //     setIsSending(false);
+  //   }
+  // };
+
+
 
   // const [isSending, setIsSending] = useState(false);
 
@@ -205,17 +247,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-3 shadow-xl group">
-            <Edit3 size={16} className="group-hover:rotate-12 transition-transform" /> {t("modify")}
-          </Link>
-
-          <button 
-            onClick={handleSendInvite}
-            disabled={isSending}
-            className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-primary hover:text-black transition-all disabled:opacity-50"
-          >
-            {isSending ? t("sending") : t("send_invite")}
-          </button>
+          <div className="flex gap-4">
+            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all">
+              {t("modify")}
+            </Link>
+            <button onClick={handleSendInvite} disabled={isSending} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
+              {isSending ? t("sending") : t("send_invite")}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -9,22 +9,28 @@ export async function proxy(request: NextRequest) {
   // 1. Initialize i18n response
   let response = intlMiddleware(request)
 
+  // 2. Initialize Supabase client with the latest cookie methods
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        set(name: string, value: string, options: any) {
-          // SYNC: Update request AND response
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
+        getAll() {
+          return request.cookies.getAll()
         },
-        remove(name: string, options: any) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
+        setAll(cookiesToSet) {
+          // Sync cookies to the request so downstream components can read them
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          )
+          
+          // Generate a new response to propagate the cookies
+          response = NextResponse.next({ request })
+          
+          // Sync cookies to the actual HTTP response
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
         },
       },
     }
