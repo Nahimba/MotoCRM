@@ -6,7 +6,7 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
-  // 1. Handle root redirect to default locale to avoid 404
+  // 1. Root redirect: Force locale
   if (request.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
   }
@@ -39,11 +39,16 @@ export async function proxy(request: NextRequest) {
   const purePathname = '/' + segments.slice(2).join('/')
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
-  // 4. Protection Logic
+  // 4. Enhanced Protection Logic
+  // Check for the recovery type in the URL query if possible, or explicit callback paths
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  if (isAuthCallback) return response;
+  // CRITICAL: If the URL contains an access token or is the callback page, 
+  // skip the redirect logic so the client can process the hash.
+  if (isAuthCallback || request.nextUrl.hash.includes('access_token')) {
+    return response;
+  }
 
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'))
