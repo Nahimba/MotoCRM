@@ -27,33 +27,71 @@ export default function ConfirmPage() {
   //   init()
   // }, [])
 
-  useEffect(() => {
-    const init = async () => {
-      // 1. Try to get the session from the URL hash automatically
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  // useEffect(() => {
+  //   const init = async () => {
+  //     // 1. Try to get the session from the URL hash automatically
+  //     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
-      // 2. If no session, the listener below will pick it up once the hash is parsed
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-          if (session?.user) {
-            setEmail(session.user.email || "")
-            setIsInitializing(false)
-          }
-        }
-      })
+  //     // 2. If no session, the listener below will pick it up once the hash is parsed
+  //     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+  //       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+  //         if (session?.user) {
+  //           setEmail(session.user.email || "")
+  //           setIsInitializing(false)
+  //         }
+  //       }
+  //     })
 
-      // If we already have a session (e.g. from cookie), get the user
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setEmail(user.email || "")
-        setIsInitializing(false)
+  //     // If we already have a session (e.g. from cookie), get the user
+  //     const { data: { user } } = await supabase.auth.getUser()
+  //     if (user) {
+  //       setEmail(user.email || "")
+  //       setIsInitializing(false)
+  //     }
+
+  //     return () => subscription.unsubscribe()
+  //   }
+    
+  //   init()
+  // }, [])
+
+  useEffect(() => {
+    const handleAuth = async () => {
+      // 1. Manually parse the hash
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        // 2. IMPORTANT: Await the setSession call
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          toast.error("Помилка при спробі входу. Спробуйте ще раз.");
+          setIsInitializing(false);
+          return;
+        }
       }
 
-      return () => subscription.unsubscribe()
-    }
-    
-    init()
-  }, [])
+      // 3. Verify the user AFTER the session is confirmed
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (user) {
+        setEmail(user.email || "");
+        setIsInitializing(false);
+      } else {
+        toast.error("Сесія недійсна або термін дії вичерпано.");
+        setIsInitializing(false);
+      }
+    };
+
+    handleAuth();
+  }, []);
 
   const validation = {
     length: password.length >= 8,
