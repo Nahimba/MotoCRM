@@ -6,7 +6,7 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
-  // 1. Root redirect: Force locale
+  // 1. Root redirect: Force locale to default to prevent 404s
   if (request.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
   }
@@ -40,15 +40,13 @@ export async function proxy(request: NextRequest) {
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
   // 4. Protection Logic
-  // Check the PATH, not the hash. 
-  // Ensure your recovery link in Supabase points to: /ua/auth/confirm
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
-  // Check specifically for Supabase recovery type in the hash
-  const isRecoveryFlow = request.nextUrl.hash.includes('type=recovery');
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  // If this is the callback path, let it pass regardless of session state
-  if (isAuthCallback|| isRecoveryFlow) {
+  // CRITICAL: Skip redirect logic for recovery and callback flows
+  // Note: request.nextUrl.hash is not available in middleware, 
+  // so rely on the path /auth/confirm which is set in your Supabase URL Configuration
+  if (isAuthCallback) {
     return response;
   }
 
@@ -71,6 +69,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 }
+
 
 // import { createServerClient } from '@supabase/ssr'
 // import { NextResponse, type NextRequest } from 'next/server'
