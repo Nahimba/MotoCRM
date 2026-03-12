@@ -14,16 +14,44 @@ export default function ConfirmPage() {
   const [isInitializing, setIsInitializing] = useState(true)
   const router = useRouter()
 
+  // useEffect(() => {
+  //   const init = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser()
+  //     if (user) {
+  //       setEmail(user.email || "")
+  //     } else {
+  //       toast.error("Сесія відсутня. Спробуйте натиснути посилання в листі знову.")
+  //     }
+  //     setIsInitializing(false)
+  //   }
+  //   init()
+  // }, [])
+
   useEffect(() => {
     const init = async () => {
+      // 1. Try to get the session from the URL hash automatically
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      // 2. If no session, the listener below will pick it up once the hash is parsed
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+          if (session?.user) {
+            setEmail(session.user.email || "")
+            setIsInitializing(false)
+          }
+        }
+      })
+
+      // If we already have a session (e.g. from cookie), get the user
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setEmail(user.email || "")
-      } else {
-        toast.error("Сесія відсутня. Спробуйте натиснути посилання в листі знову.")
+        setIsInitializing(false)
       }
-      setIsInitializing(false)
+
+      return () => subscription.unsubscribe()
     }
+    
     init()
   }, [])
 

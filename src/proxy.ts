@@ -39,14 +39,16 @@ export async function proxy(request: NextRequest) {
   const purePathname = '/' + segments.slice(2).join('/')
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
-  // 4. Enhanced Protection Logic
-  // Check for the recovery type in the URL query if possible, or explicit callback paths
+  // 4. Protection Logic
+  // Check the PATH, not the hash. 
+  // Ensure your recovery link in Supabase points to: /ua/auth/confirm
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  // Check specifically for Supabase recovery type in the hash
+  const isRecoveryFlow = request.nextUrl.hash.includes('type=recovery');
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  // CRITICAL: If the URL contains an access token or is the callback page, 
-  // skip the redirect logic so the client can process the hash.
-  if (isAuthCallback || request.nextUrl.hash.includes('access_token')) {
+  // If this is the callback path, let it pass regardless of session state
+  if (isAuthCallback|| isRecoveryFlow) {
     return response;
   }
 
