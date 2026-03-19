@@ -6,15 +6,13 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
-  // 1. Root redirect: Force locale to default to prevent 404s
-  if (request.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
-  }
+  // 1. Basic Localization
+  const { pathname } = request.nextUrl;
+  if (pathname === '/') return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
 
-  // 2. Initialize response with intlMiddleware
   let response = intlMiddleware(request);
 
-  // 3. Initialize Supabase client
+  // 2. Setup Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,55 +20,40 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
-  )
+  );
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const role = user?.user_metadata?.role
-  
-  const { pathname, searchParams } = request.nextUrl
-  const segments = pathname.split('/')
+  // 3. Identify Route & User
+  const { data: { user } } = await supabase.auth.getUser();
+  const segments = pathname.split('/');
+  const purePathname = '/' + segments.slice(2).join('/');
   const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
-  const purePathname = '/' + segments.slice(2).join('/')
-  const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
+  const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
 
-  const isAuthCallback = purePathname.startsWith('/auth/confirm');
-  const isUpdatePassword = purePathname.startsWith('/auth/update-password');
-  const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
-
-  // --- NEW PROTECTION LOGIC ---
-
-  // 1. If user is trying to update password, let them through NO MATTER WHAT.
-  // The client component will handle the session from the URL #hash.
-  if (isUpdatePassword || isAuthCallback) {
+  // 4. THE FIX: If it's an Auth page, IGNORE it. 
+  // Don't check for 'user', don't check for 'role'. Just let them pass.
+  if (purePathname.startsWith('/auth')) {
     return response;
   }
 
-  // 2. If not logged in and trying to access a private route, send to home
-  if (!user && !isPublicRoute) {
-    return NextResponse.redirect(localize('/'))
+  // 5. Private Route Protection
+  const isPublic = purePathname === '/' || purePathname === '/register';
+  if (!user && !isPublic) {
+    return NextResponse.redirect(localize('/'));
   }
 
-  // 3. If logged in but on a public page, send to dashboard (unless it's auth related)
-  if (user && isPublicRoute && !isUpdatePassword) {
+  // 6. Logged-in User Redirection (Don't let logged-in users see the Landing page)
+  if (user && isPublic) {
+    const role = user?.user_metadata?.role;
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-    return NextResponse.redirect(localize(dash))
+    return NextResponse.redirect(localize(dash));
   }
 
-  // 4. Admin protection
-  if (purePathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(localize('/account'))
-  }
-
-  return response
-}
-
-export const config = {
-  matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+  return response;
 }
 
 // import { createServerClient } from '@supabase/ssr'

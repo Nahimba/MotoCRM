@@ -36,38 +36,27 @@ export default function UpdatePasswordPage() {
   // }, [router, supabase.auth])
 
   useEffect(() => {
-    const init = async () => {
-      // 1. Give the browser SDK a moment to parse the #hash from the URL
-      const { data: { session } } = await supabase.auth.getSession();
-      
+    // Listen for the moment Supabase "sees" the token in the URL
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setEmail(session.user.email || "");
         setIsInitializing(false);
-      } else {
-        // 2. Listen for the auth state change in case the parsing is slow
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (session?.user) {
-            setEmail(session.user.email || "");
-            setIsInitializing(false);
-          }
-        });
-  
-        // 3. Wait 2 seconds before giving up
-        const timer = setTimeout(() => {
-          if (!email) {
-            toast.error("Сесія відсутня або посилання застаріло.");
-            router.push('/');
-          }
-        }, 2000);
-  
-        return () => {
-          subscription.unsubscribe();
-          clearTimeout(timer);
-        }
       }
+    });
+  
+    // If after 3 seconds we still have no session, THEN show the error
+    const timer = setTimeout(() => {
+      if (isInitializing) {
+        toast.error("Посилання недійсне або сесія закінчилася.");
+        router.push('/');
+      }
+    }, 3000);
+  
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
     };
-    init();
-  }, [router, supabase.auth]);
+  }, []);
 
   const validation = {
     length: password.length >= 8,
