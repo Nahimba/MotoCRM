@@ -4,11 +4,26 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ locale: string }> }) {
+
+  console.log("CALLBACK HIT:", request.url);
+
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const next = searchParams.get('next') ?? '/account'
   const { locale } = await params
+
+
+  console.log("DEBUG: Token Hash exists?", !!token_hash);
+  console.log("DEBUG: Full URL received by server:", request.url);
+
+  if (!token_hash) {
+    // If there's no token_hash, but there IS a hash in the browser (which we can't see here),
+    // we should redirect to a client-side "bridge" or just the update-password page
+    // where the Supabase Client can parse the # fragment automatically.
+    return NextResponse.redirect(new URL(`/${locale}/auth/update-password`, request.url))
+  }
+
 
   // Prepare the redirect URL
   const redirectTo = request.nextUrl.clone()
@@ -54,7 +69,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
       return NextResponse.redirect(redirectTo)
     }
+
+    if (error) {
+      // CHECK YOUR VERCEL LOGS FOR THIS:
+      console.error("DEBUG: Auth Verification Failed. Reason:", error.message);
+    }
+    
   }
+
 
   // Redirect to login if something goes wrong
   return NextResponse.redirect(new URL(`/${locale}/login?error=auth-code-error`, request.url))
