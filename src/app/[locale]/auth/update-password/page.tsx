@@ -36,18 +36,29 @@ export default function UpdatePasswordPage() {
   // }, [router, supabase.auth])
 
   useEffect(() => {
-    // Listen for the moment Supabase "sees" the token in the URL
+    // 1. Define the listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // This triggers the MOMENT the SDK "swallows" the #hash from the URL
       if (session?.user) {
         setEmail(session.user.email || "");
         setIsInitializing(false);
       }
     });
   
-    // If after 3 seconds we still have no session, THEN show the error
+    // 2. Safety Check: If we already had a cookie session, catch it immediately
+    const checkInitial = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setEmail(session.user.email || "");
+        setIsInitializing(false);
+      }
+    };
+    checkInitial();
+  
+    // 3. Timeout: If nothing happens in 3 seconds, the link is definitely dead
     const timer = setTimeout(() => {
       if (isInitializing) {
-        toast.error("Посилання недійсне або сесія закінчилася.");
+        toast.error("Сесія відсутня. Спробуйте ще раз.");
         router.push('/');
       }
     }, 3000);
@@ -56,7 +67,9 @@ export default function UpdatePasswordPage() {
       subscription.unsubscribe();
       clearTimeout(timer);
     };
-  }, []);
+  }, [supabase.auth, router]);
+
+  
 
   const validation = {
     length: password.length >= 8,
