@@ -6,12 +6,15 @@ import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, Edit3, Phone, Mail, 
   MapPin, CreditCard, Clock, Bike, ShieldCheck,
-  AlertCircle, CheckCircle2, BadgePercent, Activity, FileText
+  AlertCircle, CheckCircle2, BadgePercent, Activity, FileText,
+  Loader2
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
 import { DocumentModal } from "@/components/staff/DocumentModal"
+
+import { toast } from "sonner"
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
@@ -84,6 +87,45 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setIsSending(false);
     }
   };
+
+  
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetRequest = async (studentId: string) => {
+    if (!studentId) return;
+    
+    setIsResetting(true);
+    
+    try {
+      // 1. Get the current session to pass the Admin's JWT
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
+  
+      // 2. Invoke the Edge Function with Authorization header
+      const { data, error } = await supabase.functions.invoke('reset-password-admin', {
+        body: { profile_id: studentId },
+        headers: { 
+          Authorization: `Bearer ${session.access_token}` 
+        },
+      });
+  
+      if (error) throw new Error(error.message);
+  
+      // 3. Handle specific response status or generic success
+      if (data?.status === "already_confirmed") {
+        toast.info("Цей учень вже активував свій акаунт, але лист для скидання пароля все одно надіслано.");
+      } else {
+        toast.success("Лист для скидання пароля надіслано успішно!");
+      }
+  
+    } catch (err: any) {
+      console.error("DEBUG_RESET:", err);
+      toast.error(`Помилка відправки: ${err.message || "Непередбачена помилка"}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
 
   // const handleSendInvite = async () => {
   //   setIsSending(true);
@@ -260,8 +302,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               {t("modify")}
             </Link>
             <button onClick={handleSendInvite} disabled={isSending} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
-              {isSending ? t("sending") : t("send_invite")}
+              {/* {isSending ? t("sending") : t("send_invite")} */}
+              {isResetting ? <Loader2 className="animate-spin" /> : "Надіслати Запрошення"}
             </button>
+            <button onClick={() => handleResetRequest(client.profile_id)} disabled={isResetting} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
+              {/* {isReseting ? t("sending") : t("reset_password")} */}
+              {isResetting ? <Loader2 className="animate-spin" /> : "Скинути Пароль"}
+            </button>
+            {/* <button disabled={isResetting} onClick={() => handleResetRequest(client.profile_id)}>
+              {isResetting ? <Loader2 className="animate-spin" /> : "Скинути пароль"}
+            </button> */}
+            
           </div>
         </div>
       </div>
