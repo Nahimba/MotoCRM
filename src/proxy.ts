@@ -21,19 +21,9 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
-        // setAll(cookiesToSet) {
-        //   cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-        //   response = NextResponse.next({ request }) // This line can sometimes reset the intlMiddleware headers
-        //   cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-        // },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value) // Update request for getUser()
-          })
-          // Update the response object directly without re-initializing NextResponse.next()
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     }
@@ -42,48 +32,36 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.user_metadata?.role
   
-  //const { pathname } = request.nextUrl
   const { pathname, searchParams } = request.nextUrl
   const segments = pathname.split('/')
   const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
   const purePathname = '/' + segments.slice(2).join('/')
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
-  // 4. Protection Logic
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
-  const isUpdatePassword = purePathname.startsWith('/auth/update-password'); // New check
-  const isRecovery = searchParams.get('type') === 'recovery'; // Detect Reset Password
+  const isUpdatePassword = purePathname.startsWith('/auth/update-password');
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  
-  // Allow the update password page if the type is recovery
-  if (isUpdatePassword && isRecovery) {
-    return response;
-  }
-  // CRITICAL: Skip redirect logic for recovery and callback flows
-  // Note: request.nextUrl.hash is not available in middleware, 
-  // so rely on the path /auth/confirm which is set in your Supabase URL Configuration
-  if (isAuthCallback) {
+  // --- NEW PROTECTION LOGIC ---
+
+  // 1. If user is trying to update password, let them through NO MATTER WHAT.
+  // The client component will handle the session from the URL #hash.
+  if (isUpdatePassword || isAuthCallback) {
     return response;
   }
 
+  // 2. If not logged in and trying to access a private route, send to home
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'))
   }
 
-  
-
-  // if (user && isPublicRoute) {
-  //   const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-  //   return NextResponse.redirect(localize(dash))
-  // }
-  // If user is logged in but trying to access login/register
-  // IMPORTANT: Don't redirect if it's a recovery flow, or they can't reach the reset page
-  if (user && isPublicRoute && !isRecovery) {
+  // 3. If logged in but on a public page, send to dashboard (unless it's auth related)
+  if (user && isPublicRoute && !isUpdatePassword) {
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
     return NextResponse.redirect(localize(dash))
   }
 
+  // 4. Admin protection
   if (purePathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(localize('/account'))
   }
@@ -94,7 +72,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 }
-
 
 // import { createServerClient } from '@supabase/ssr'
 // import { NextResponse, type NextRequest } from 'next/server'
