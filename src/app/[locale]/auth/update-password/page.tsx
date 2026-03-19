@@ -35,33 +35,30 @@ export default function UpdatePasswordPage() {
   //   checkSession()
   // }, [router, supabase.auth])
 
+  
   useEffect(() => {
-    // 1. Define the listener
+    // Listen for the INITIAL session from the URL hash
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // This triggers the MOMENT the SDK "swallows" the #hash from the URL
       if (session?.user) {
         setEmail(session.user.email || "");
         setIsInitializing(false);
       }
     });
   
-    // 2. Safety Check: If we already had a cookie session, catch it immediately
-    const checkInitial = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+    // Fallback: Check if session is already in cookies
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
         setEmail(session.user.email || "");
         setIsInitializing(false);
       }
-    };
-    checkInitial();
+    });
   
-    // 3. Timeout: If nothing happens in 3 seconds, the link is definitely dead
     const timer = setTimeout(() => {
       if (isInitializing) {
         toast.error("Сесія відсутня. Спробуйте ще раз.");
         router.push('/');
       }
-    }, 3000);
+    }, 5000); // 5 seconds to allow for hash processing
   
     return () => {
       subscription.unsubscribe();
@@ -69,7 +66,6 @@ export default function UpdatePasswordPage() {
     };
   }, [supabase.auth, router]);
 
-  
 
   const validation = {
     length: password.length >= 8,

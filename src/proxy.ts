@@ -6,10 +6,9 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
-  // 1. Basic Localization
   const { pathname } = request.nextUrl;
-  if (pathname === '/') return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
-
+  
+  // 1. Handle Localization first
   let response = intlMiddleware(request);
 
   // 2. Setup Supabase
@@ -21,33 +20,30 @@ export async function proxy(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = intlMiddleware(request);
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
   );
 
-  // 3. Identify Route & User
   const { data: { user } } = await supabase.auth.getUser();
   const segments = pathname.split('/');
   const purePathname = '/' + segments.slice(2).join('/');
   const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
 
-  // 4. THE FIX: If it's an Auth page, IGNORE it. 
-  // Don't check for 'user', don't check for 'role'. Just let them pass.
-  if (purePathname.startsWith('/auth')) {
-    return response;
-  }
+  // 3. THE FIX: Define PUBLIC routes correctly
+  // Added '/auth' to isPublic so the middleware doesn't kick out users clicking email links
+  const isPublic = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  // 5. Private Route Protection
-  const isPublic = purePathname === '/' || purePathname === '/register';
+  // 4. Protection Logic
   if (!user && !isPublic) {
     return NextResponse.redirect(localize('/'));
   }
 
-  // 6. Logged-in User Redirection (Don't let logged-in users see the Landing page)
-  if (user && isPublic) {
+  // 5. Redirection for logged-in users (don't redirect if they are on /auth/update-password)
+  if (user && (purePathname === '/' || purePathname === '/register')) {
     const role = user?.user_metadata?.role;
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
     return NextResponse.redirect(localize(dash));
