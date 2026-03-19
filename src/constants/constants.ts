@@ -59,3 +59,12 @@ export const STUDENT_STAGES = [
 ] as const;
 
 export type StudentStage = (typeof STUDENT_STAGES)[number];
+
+
+export const BUSINESS_TYPES = [
+  'Auto', 
+  'Moto', 
+  'General'
+] as const;
+
+export type BusinessType = (typeof BUSINESS_TYPES)[number];

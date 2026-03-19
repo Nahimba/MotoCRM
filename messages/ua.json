@@ -8,6 +8,7 @@
     "staffHome": "Інструктор",
     "packages": "Курси",
     "payments": "Платежі",
+    "expences": "Витрати",
     "clientHome": "Центр учнів",
     "overview": "Огляд",
     "finances": "Фінанси",
@@ -65,7 +66,9 @@
         "packages": "Курси",
         "packages_sub": "Курси учнів",
         "payments": "Платежі",
-        "payments_sub": "Платежі"
+        "payments_sub": "Платежі",
+        "expences": "Витрати",
+        "expences_sub": "Витрати"
       },
       "toasts": {
         "sync_error": "Офлайн: помилка синхронізації",
@@ -116,7 +119,12 @@
       "add_expense": "Додати витрату",
       "chart_title": "Аналітика по днях",
       "tabs": {
-        "all": "Всі"
+        "all": "Всі",
+        "types": {
+          "Auto": "Авто",
+          "Moto": "Мото",
+          "General": "Загальні"
+        }
       },
       "stats": {
         "income": "Дохід",
@@ -530,6 +538,14 @@
       "practice": "Практика",
       "graduated": "Випустився",
       "upskilling": "Підвищує кваліфікацію"
+    },
+    "payment": {
+      "method": {
+        "card_online": "Онлайн",
+        "terminal": "Термінал",
+        "fop": "ФОП",
+        "cash": "Готівка"
+      }
     }
   }
 }

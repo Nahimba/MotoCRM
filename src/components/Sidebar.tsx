@@ -97,7 +97,7 @@ export default function Sidebar() {
                 {t('admin')}
               </div>
               <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label={t('overview')} active={pathname === '/admin'} />
-              <SidebarLink href="/admin/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/admin/finances')} />
+              <SidebarLink href="/staff/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/staff/finances')} />
               <SidebarLink href="/admin/courses" icon={<Package size={16}/>} label={t('courses')} active={pathname.startsWith('/admin/courses')} />
               <SidebarLink href="/admin/instructors" icon={<Users size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
             </>
@@ -113,6 +113,11 @@ export default function Sidebar() {
               <SidebarLink href="/staff/clients" icon={<GraduationCap size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
               <SidebarLink href="/staff/packages" icon={<Bike size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
               <SidebarLink href="/staff/payments" icon={<Banknote size={16}/>} label={t('payments') || 'Payments'} active={pathname.startsWith('/staff/payments')} />
+              {role === 'instructor' && (
+                <>
+                <SidebarLink href="/staff/finances" icon={<ClipboardList size={16}/>} label={t('expences') || 'Expences'} active={pathname.startsWith('/staff/expences')} />
+                </>
+              )}
             </>
           )}
 
@@ -177,7 +182,7 @@ export default function Sidebar() {
                 {role === 'admin' && (
                   <>
                     <MobileExtraLink href="/admin" icon={<ShieldCheck size={18}/>} label={t('overview')} />
-                    <MobileExtraLink href="/admin/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
+                    <MobileExtraLink href="/staff/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
                     <MobileExtraLink href="/admin/courses" icon={<Package size={18}/>} label={t('courses')} />
                     <MobileExtraLink href="/admin/instructors" icon={<GraduationCap size={18}/>} label={t('staff')} />
                   </>
@@ -189,6 +194,12 @@ export default function Sidebar() {
                     <MobileExtraLink href="/staff/payments" icon={<Banknote size={18}/>} label={t('payments') || 'Payments'} />
                     <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
                     <MobileExtraLink href="/staff/packages" icon={<Bike size={18}/>} label={t('packages')} />
+                  </>
+                )}
+
+                {(role === 'instructor') && (
+                  <>
+                    <MobileExtraLink href="/staff/finances" icon={<ClipboardList size={18}/>} label={t('expences')} />
                   </>
                 )}
 

@@ -8,6 +8,7 @@
     "staffHome": "Инструктор",
     "packages": "Курсы",
     "payments": "Платежи",
+    "expences": "Расходы",
     "clientHome": "Центр учеников",
     "overview": "Обзор",
     "finances": "Финансы",
@@ -511,6 +512,14 @@
       "marketing": "Маркетинг",
       "other": "Прочее",
       "income_category": "Обучение"
+    },
+    "payment": {
+      "method": {
+        "card_online": "Онлайн",
+        "terminal": "Терминал",
+        "fop": "ФОП",
+        "cash": "Наличные"
+      }
     }
   }
 }

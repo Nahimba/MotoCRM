@@ -19,7 +19,8 @@ interface ExpenseModalProps {
 export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: ExpenseModalProps) {
   // Инициализация переводов согласно вашей структуре JSON
   const t = useTranslations('admin.finances.modal');
-  const catT = useTranslations('Constants.expense_categories');
+  const tc = useTranslations('Constants');
+  const tm = useTranslations('Constants.payment.method');
   
   const [loading, setLoading] = useState(false);
   const [methods, setMethods] = useState<any[]>([]);
@@ -61,6 +62,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
           description: editData.description || '',
           expense_date: format(new Date(editData.date), 'yyyy-MM-dd'),
           payment_method: editData.payment_method || 'cash'
+          //payment_method: editData.payment_method.slug || 'cash'
         });
       } else {
         setForm({
@@ -96,7 +98,9 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
       const { error: updateError } = await supabase
         .from('business_expenses')
         .update(payload)
-        .eq('id', editData.id);
+        .eq('id', editData.id)
+        // Add this to ensure RLS compliance for non-admins
+        .eq('created_by_profile_id', user?.id);
       error = updateError;
     } else {
       const { error: insertError } = await supabase
@@ -119,14 +123,19 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
     if (!editData || !window.confirm(t('delete_confirm'))) return;
     
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser(); // Get current user
+  
     const { error } = await supabase
       .from('business_expenses')
       .delete()
-      .eq('id', editData.id);
-
+      .eq('id', editData.id)
+      .eq('created_by_profile_id', user?.id); // Ensure user owns the record
+  
     if (!error) {
       onSuccess();
       onClose();
+    } else {
+      console.error("Delete Error:", error);
     }
     setLoading(false);
   };
@@ -187,7 +196,9 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
                 onChange={e => setForm({...form, payment_method: e.target.value})}
               >
                 {methods.map(m => (
-                  <option key={m.id} value={m.slug}>{m.slug.toUpperCase()}</option>
+                  //<option key={m.id} value={m.slug}>{m.slug.toUpperCase()}</option>
+                  <option key={m.id} value={m.slug}>{tc(`${m.label_key}`)}</option>
+                  // <option key={m.id} value={m.slug}>{tm(m.slug)}</option>
                 ))}
               </select>
             </div>
@@ -218,7 +229,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
               >
                 {EXPENSE_CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>
-                    {catT(cat).toUpperCase()}
+                    {tc(`expense_categories.${cat}`)}
                   </option>
                 ))}
               </select>

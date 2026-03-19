@@ -21,10 +21,19 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() { return request.cookies.getAll() },
+        // setAll(cookiesToSet) {
+        //   cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        //   response = NextResponse.next({ request }) // This line can sometimes reset the intlMiddleware headers
+        //   cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+        // },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value) // Update request for getUser()
+          })
+          // Update the response object directly without re-initializing NextResponse.next()
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
+          })
         },
       },
     }
@@ -33,7 +42,8 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.user_metadata?.role
   
-  const { pathname } = request.nextUrl
+  //const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
   const segments = pathname.split('/')
   const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
   const purePathname = '/' + segments.slice(2).join('/')
@@ -41,6 +51,7 @@ export async function proxy(request: NextRequest) {
 
   // 4. Protection Logic
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  const isRecovery = searchParams.get('type') === 'recovery'; // Detect Reset Password
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
   // CRITICAL: Skip redirect logic for recovery and callback flows
@@ -54,7 +65,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(localize('/'))
   }
 
-  if (user && isPublicRoute) {
+  
+
+  // if (user && isPublicRoute) {
+  //   const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
+  //   return NextResponse.redirect(localize(dash))
+  // }
+  // If user is logged in but trying to access login/register
+  // IMPORTANT: Don't redirect if it's a recovery flow, or they can't reach the reset page
+  if (user && isPublicRoute && !isRecovery) {
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
     return NextResponse.redirect(localize(dash))
   }

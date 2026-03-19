@@ -75,6 +75,12 @@ export default function UnifiedDashboard() {
           label={t('nav.payments')} 
           sub={t('nav.payments_sub')} 
         />
+        <NavButton 
+          href="/staff/finances" 
+          icon={<ClipboardList size={20}/>} 
+          label={t('nav.expences')} 
+          sub={t('nav.expences_sub')} 
+        />
       </div>
 
 

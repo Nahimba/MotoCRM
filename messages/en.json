@@ -8,6 +8,7 @@
     "staffHome": "Instructor",
     "packages": "Packages",
     "payments": "Payments",
+    "expences": "Expences",
     "clientHome": "Client Central",
     "overview": "Overview",
     "finances": "Finances",
@@ -65,7 +66,9 @@
         "packages": "Packages",
         "packages_sub": "Packages",
         "payments": "Payments",
-        "payments_sub": "Payments"
+        "payments_sub": "Payments",
+        "expences": "Expences",
+        "expences_sub": "Expences"
         
       },
       "toasts": {
@@ -117,7 +120,12 @@
       "add_expense": "Add Expense",
       "chart_title": "Daily Analytics",
       "tabs": {
-        "all": "All"
+        "all": "All",
+        "types": {
+          "Auto": "Auto",
+          "Moto": "Moto",
+          "General": "General"
+        }
       },
       "stats": {
         "income": "Income",
@@ -533,7 +541,14 @@
       "practice": "practice",
       "graduated": "graduated",
       "upskilling": "upskilling"
+    },
+    "payment": {
+      "method": {
+        "card_online": "Online",
+        "terminal": "Terminal",
+        "fop": "FOP",
+        "cash": "Cash"
+      }
     }
-
   }
 }
