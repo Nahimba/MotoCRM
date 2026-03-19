@@ -42,7 +42,7 @@ export default function UpdatePasswordPage() {
   // }, [router, supabase.auth])
 
 
-useEffect(() => {
+  useEffect(() => {
     let mounted = true;
 
     // 1. Listen for the auth state change (catches the hash fragment)
