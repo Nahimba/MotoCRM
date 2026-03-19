@@ -7,9 +7,18 @@ const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // 1. Handle Localization first
+  const segments = pathname.split('/');
+  const purePathname = '/' + segments.slice(2).join('/');
+  const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
+  const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
+
   let response = intlMiddleware(request);
+
+  // 1. IMMEDIATE BYPASS for Auth routes
+  // This ensures that the server doesn't interfere while the client is parsing the hash
+  if (purePathname.startsWith('/auth')) {
+    return response;
+  }
 
   // 2. Setup Supabase
   const supabase = createServerClient(
@@ -20,6 +29,7 @@ export async function proxy(request: NextRequest) {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          // Re-generate response to include new cookies
           response = intlMiddleware(request);
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
@@ -27,23 +37,15 @@ export async function proxy(request: NextRequest) {
     }
   );
 
+  // 3. User & Route Protection
   const { data: { user } } = await supabase.auth.getUser();
-  const segments = pathname.split('/');
-  const purePathname = '/' + segments.slice(2).join('/');
-  const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
-  const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
+  const isPublic = purePathname === '/' || purePathname === '/register';
 
-  // 3. THE FIX: Define PUBLIC routes correctly
-  // Added '/auth' to isPublic so the middleware doesn't kick out users clicking email links
-  const isPublic = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
-
-  // 4. Protection Logic
   if (!user && !isPublic) {
     return NextResponse.redirect(localize('/'));
   }
 
-  // 5. Redirection for logged-in users (don't redirect if they are on /auth/update-password)
-  if (user && (purePathname === '/' || purePathname === '/register')) {
+  if (user && isPublic) {
     const role = user?.user_metadata?.role;
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
     return NextResponse.redirect(localize(dash));
@@ -51,6 +53,7 @@ export async function proxy(request: NextRequest) {
 
   return response;
 }
+
 
 // import { createServerClient } from '@supabase/ssr'
 // import { NextResponse, type NextRequest } from 'next/server'
