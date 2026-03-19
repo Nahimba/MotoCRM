@@ -21,7 +21,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // If there's no token_hash, but there IS a hash in the browser (which we can't see here),
     // we should redirect to a client-side "bridge" or just the update-password page
     // where the Supabase Client can parse the # fragment automatically.
-    return NextResponse.redirect(new URL(`/${locale}/auth/update-password`, request.url))
+    
+    // Use a URL object to ensure the hash (#) from the original request is preserved
+    const target = new URL(`/${locale}/auth/update-password`, request.url)
+    target.searchParams.set('type', 'recovery') // Force the recovery flag for middleware
+    return NextResponse.redirect(target)
   }
 
 

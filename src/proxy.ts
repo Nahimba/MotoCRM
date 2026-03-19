@@ -51,9 +51,15 @@ export async function proxy(request: NextRequest) {
 
   // 4. Protection Logic
   const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  const isUpdatePassword = purePathname.startsWith('/auth/update-password'); // New check
   const isRecovery = searchParams.get('type') === 'recovery'; // Detect Reset Password
   const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
+  
+  // Allow the update password page if the type is recovery
+  if (isUpdatePassword && isRecovery) {
+    return response;
+  }
   // CRITICAL: Skip redirect logic for recovery and callback flows
   // Note: request.nextUrl.hash is not available in middleware, 
   // so rely on the path /auth/confirm which is set in your Supabase URL Configuration

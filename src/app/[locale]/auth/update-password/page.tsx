@@ -19,18 +19,43 @@ export default function UpdatePasswordPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  // useEffect(() => {
+  //   const checkSession = async () => {
+  //     // The route.ts already set the cookies, so getUser() will work immediately
+  //     const { data: { user }, error } = await supabase.auth.getUser()
+      
+  //     if (user) {
+  //       setEmail(user.email || "")
+  //     } else {
+  //       toast.error("Сесія відсутня або посилання застаріло.")
+  //       router.push('/')
+  //     }
+  //     setIsInitializing(false)
+  //   }
+  //   checkSession()
+  // }, [router, supabase.auth])
+
   useEffect(() => {
     const checkSession = async () => {
-      // The route.ts already set the cookies, so getUser() will work immediately
-      const { data: { user }, error } = await supabase.auth.getUser()
+      // 1. Check for existing session (from route.ts or hash)
+      const { data: { session } } = await supabase.auth.getSession()
       
-      if (user) {
-        setEmail(user.email || "")
+      if (session?.user) {
+        setEmail(session.user.email || "")
+        setIsInitializing(false)
       } else {
-        toast.error("Сесія відсутня або посилання застаріло.")
-        router.push('/')
+        // 2. Small delay to allow SDK to finish parsing the # fragment if it's slow
+        setTimeout(async () => {
+          const { data: { session: retrySession } } = await supabase.auth.getSession()
+          if (retrySession?.user) {
+            setEmail(retrySession.user.email || "")
+          } else {
+            toast.error("Сесія відсутня або посилання застаріло.")
+            router.push('/')
+          }
+          setIsInitializing(false)
+        }, 500)
       }
-      setIsInitializing(false)
     }
     checkSession()
   }, [router, supabase.auth])
