@@ -102,7 +102,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
   
       // 2. Invoke the Edge Function with Authorization header
-      const { data, error } = await supabase.functions.invoke('reset-password-admin', {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
         body: { profile_id: studentId },
         headers: { 
           Authorization: `Bearer ${session.access_token}` 
