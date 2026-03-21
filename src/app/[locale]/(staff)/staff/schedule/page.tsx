@@ -12,7 +12,7 @@ import {
   format, addDays, subDays, startOfDay, 
   eachHourOfInterval, setHours, startOfWeek, getDay, isSameDay
 } from "date-fns"
-import { ru, enUS } from "date-fns/locale"
+import { uk,  enUS } from "date-fns/locale"
 import { useTranslations, useLocale } from "next-intl"
 
 // Sub-components
@@ -30,7 +30,7 @@ type ViewMode = 'day' | 'week'
 export default function SchedulePage() {
   const t = useTranslations("Schedule")
   const locale = useLocale()
-  const dateLocale = locale === "ru" ? ru : enUS
+  const dateLocale = locale === "ua" ? uk : enUS
   const { profile } = useAuth()
   
   const [viewMode, setViewMode] = useState<ViewMode>('week')

@@ -75,7 +75,7 @@ export function StudentSelector({
         >
           {showAllStudents ? <Users size={12} /> : <UserCheck size={12} />}
           <span className="text-[9px] font-black uppercase italic">
-            {showAllStudents ? 'All Packages' : 'My Students'}
+            {showAllStudents ? 'Всі учні' : 'Мої учні'}
           </span>
         </button>
       </div>
@@ -149,7 +149,7 @@ export function StudentSelector({
             ))
           ) : (
             <div className="p-4 text-center text-slate-500 text-xs italic">
-              No students found
+              Не знайдено учнів
             </div>
           )}
         </div>

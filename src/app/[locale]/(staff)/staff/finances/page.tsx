@@ -193,7 +193,7 @@ export default function AdminFinances() {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
-            <h1 className="text-5xl font-black italic tracking-tighter uppercase leading-none">{t('title')}</h1>
+            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">{t('title')}</h1>
             {user?.role === 'instructor' && (
               <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Personal Dashboard</div>
             )}

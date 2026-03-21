@@ -314,7 +314,7 @@
     "title": "Payments",
     "addPayment": "Add Payment",
     "searchStudent": "Search student or course...",
-    "adjustTransaction": "Adjust Transaction",
+    "adjustPayment": "Adjust Payment",
     "logPayment": "Log Payment",
     "targetPackage": "Target Course Package",
     "selectPackage": "Select package...",
@@ -363,8 +363,7 @@
     }
   },
   "NewPackage": {
-    "title": "New",
-    "subtitle": "Contract",
+    "контракту": "New",
     "description": "Deploy training hours and initial payment",
     "back": "Back to Packages",
     "client": "Client",

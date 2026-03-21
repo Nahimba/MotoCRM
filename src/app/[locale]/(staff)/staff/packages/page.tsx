@@ -87,9 +87,9 @@ export default function PackagesPage() {
           <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">
             {t("title")} <span className="text-primary">{t("subtitle")}</span>
           </h1>
-          <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block">
+          {/* <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block">
             {profile?.role === 'admin' ? "Global Fleet Management" : t("description")}
-          </p>
+          </p> */}
         </div>
 
         <button 

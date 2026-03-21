@@ -328,7 +328,7 @@ export function AddLessonModal({
                     value={locationId} 
                     onChange={(e) => setLocationId(e.target.value)}
                 >
-                  <option value="custom" className="bg-black text-primary font-black italic">✦ Custom Location</option>
+                  <option value="custom" className="bg-black text-primary font-black italic">✦ Адреса</option>
                   {filteredLocations.map(loc => (
                     <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
                   ))}
@@ -343,7 +343,7 @@ export function AddLessonModal({
                 </div>
                 <input 
                     type="text"
-                    placeholder="Enter custom address..."
+                    placeholder="Адреса..."
                     readOnly={locationId !== "custom"}
                     value={displayAddress}
                     onChange={(e) => setCustomAddress(e.target.value)}

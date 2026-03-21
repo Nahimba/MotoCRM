@@ -215,13 +215,13 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         <div className="p-8 md:p-12 overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-10 text-left">
             <DialogTitle className="text-4xl font-black italic tracking-tighter uppercase leading-none">
-              {packageId ? t("edit") : t("title")} <span className="text-primary">{packageId ? "Package" : t("subtitle")}</span>
+              {packageId ? t("edit") : t("new")}
             </DialogTitle>
             {isLocked && (
                 <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl w-fit">
                     <Lock size={14} className="text-amber-500" />
                     <p className="text-amber-500 text-[9px] font-black uppercase tracking-widest">
-                        LOCKED: Payments or lessons exist
+                        Є Оплата / Урок
                     </p>
                 </div>
             )}
@@ -305,7 +305,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                               />
                             </FormControl>
                             <FormLabel className={`text-[10px] font-black uppercase flex items-center gap-2 cursor-pointer ${hasDiscount && !isLocked ? "text-white" : "text-slate-600"}`}>
-                                <Tag size={12} className={hasDiscount ? "text-primary" : ""} /> Promo Price
+                                <Tag size={12} className={hasDiscount ? "text-primary" : ""} /> Знижка
                             </FormLabel>
                           </div>
                         </FormItem>
@@ -341,7 +341,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                     />
                   ) : (
                     <div className="h-16 flex items-center px-4 bg-white/5 rounded-xl border border-dashed border-white/10">
-                       <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">New Package: Active</p>
+                       <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Новий Контракт</p>
                     </div>
                   )}
                 </div>

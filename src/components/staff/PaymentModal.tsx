@@ -187,9 +187,9 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
             </div>
             <div>
               <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">
-                {editPayment ? t('adjustTransaction') : t('logPayment')}
+                {editPayment ? t('adjustPayment') : t('logPayment')}
               </h2>
-              <p className="text-[10px] font-bold text-primary uppercase italic">{editPayment ? 'Modification' : 'New Entry'}</p>
+              {/* <p className="text-[10px] font-bold text-primary uppercase italic">{editPayment ? 'Modification' : 'New Entry'}</p> */}
             </div>
           </div>
           <button onClick={onClose} className="p-2.5 hover:bg-white/10 rounded-full text-slate-400">
@@ -200,7 +200,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
           <div className="space-y-3 relative" ref={dropdownRef}>
             <label className="text-[10px] font-black uppercase text-slate-500 ml-1 flex items-center gap-2 italic">
-              <User size={12} className="text-primary" /> {t('clientAndPackage')}
+              <User size={12} className="text-primary" /> {t('targetPackage')}
             </label>
             
             <div className="relative">
