@@ -99,38 +99,57 @@ export async function proxy(request: NextRequest) {
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
   // 4. Protection Logic
-  const isAuthCallback = purePathname.startsWith('/auth/confirm');
-  const isRecovery = searchParams.get('type') === 'recovery'; // Detect Reset Password
-  const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
+  // const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  // const isUpdatePassword = purePathname.includes('/auth/update-password');
+  // const isRecovery = searchParams.get('type') === 'recovery' || searchParams.get('type') === 'invite'; // Detect Reset Password
+  // const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
 
-  // CRITICAL: Skip redirect logic for recovery and callback flows
-  // Note: request.nextUrl.hash is not available in middleware, 
-  // so rely on the path /auth/confirm which is set in your Supabase URL Configuration
-  if (isAuthCallback) {
+  // --- 4. Логіка захисту та виключень (Bypass) ---
+
+  // Перевірка спеціальних шляхів Supabase
+  const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  const isUpdatePassword = purePathname.startsWith('/auth/update-password');
+  
+  // Перевірка типів у query params (для надійності)
+  const type = searchParams.get('type');
+  const isRecovery = type === 'recovery' || type === 'invite' || type === 'signup';
+
+  // Публічні маршрути (де сесія не обов'язкова)
+  const isPublicRoute = 
+    purePathname === '/' || 
+    purePathname === '/register' || 
+    purePathname.startsWith('/auth') || 
+    isUpdatePassword;
+
+  // КРИТИЧНО: Якщо це шлях обробки токена або оновлення пароля — пропускаємо НЕГАЙНО.
+  // Це запобігає редиректу, який затирає токени в URL (особливо для #access_token).
+  if (isAuthCallback || isUpdatePassword || isRecovery) {
     return response;
   }
 
+  // --- 5. Редиректи на основі стану авторизації ---
+
+  // А) Користувач НЕ залогінений і намагається зайти на приватну сторінку
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'))
   }
 
-  
-
-  // if (user && isPublicRoute) {
-  //   const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-  //   return NextResponse.redirect(localize(dash))
-  // }
-  // If user is logged in but trying to access login/register
-  // IMPORTANT: Don't redirect if it's a recovery flow, or they can't reach the reset page
+  // Б) Користувач ЗАЛОГІНЕНИЙ і намагається зайти на публічні сторінки (Login/Register)
+  // Ми ігноруємо цей редирект, якщо йде процес відновлення/інвайту (isRecovery вже перевірено вище)
   if (user && isPublicRoute && !isRecovery) {
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-    return NextResponse.redirect(localize(dash))
+    
+    // Перевірка, щоб не редиректити, якщо ми вже на потрібному дашборді
+    if (!purePathname.startsWith(dash)) {
+      return NextResponse.redirect(localize(dash))
+    }
   }
 
+  // В) Захист адмінки від звичайних користувачів
   if (purePathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(localize('/account'))
   }
-
+  
   return response
 }
 

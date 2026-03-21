@@ -107,8 +107,11 @@ export default function UpdatePasswordPage() {
     
     // Localized redirect based on role
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
+    // router.push(dash)
+    // router.refresh()
+    // Slightly more robust for SSR
+    router.refresh() 
     router.push(dash)
-    router.refresh()
   }
 
   if (isInitializing) return <div className="min-h-screen bg-black flex items-center justify-center text-primary"><Loader2 className="animate-spin" size={32}/></div>
@@ -166,7 +169,7 @@ export default function UpdatePasswordPage() {
               disabled={isLoading || !isStrongEnough}
               className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all disabled:opacity-30"
             >
-              {isLoading ? <Loader2 className="animate-spin mx-auto" size={16} /> : "Завершити активацію"}
+              {isLoading ? <Loader2 className="animate-spin mx-auto" size={16} /> : "Підтвердити"}
             </button>
           </form>
         </div>
