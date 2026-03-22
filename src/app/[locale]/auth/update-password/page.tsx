@@ -42,40 +42,39 @@ export default function UpdatePasswordPage() {
   // }, [router, supabase.auth])
 
 
+  // http://localhost:3000/ua/auth/confirm
+  // #access_token=eyJhbGciOiJFUzI1NiIsImtpZCI6ImVhMjM4ZjNjLWFlYTctNGMyNi05NWU1LTJjOGNjMzJmODViMyIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL3d2bmF2anJpY2dud3lzYXdiYmlnLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI2MTdjZmVkMC0wN2YyLTRjM2EtOWYyNS01ZTE5OThmYjAxNzYiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzc0MTc5NzI4LCJpYXQiOjE3NzQxNzYxMjgsImVtYWlsIjoibmFoaW1iYTg4QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWxfdmVyaWZpZWQiOnRydWUsImZ1bGxfbmFtZSI6ImRmZ2ZnZmdmZGcgZGZnZmRnZGZnIiwicm9sZSI6InJpZGVyIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib3RwIiwidGltZXN0YW1wIjoxNzc0MTc2MTI4fV0sInNlc3Npb25faWQiOiIxMmY0ODI2MC1jMjcxLTRkZmQtYTI2Zi00MDJlMTE5ZmZkOTAiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.4BjZvbBuP6YNQIUjnUmasYc6t6A5YzHJvN7IM304Y0Zaai1d6rdKqGF-BNMEXLsKmGmDrOEnimCi8hffdCMAFw
+  // &expires_at=1774179728&expires_in=3600&refresh_token=2lvu6zsc3gna&sb=&token_type=bearer&type=recovery
+
+
   useEffect(() => {
     let mounted = true;
-
-    // 1. Listen for the auth state change (catches the hash fragment)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (mounted && (event === "SIGNED_IN" || event === "PASSWORD_RECOVERY" || session)) {
-        setEmail(session?.user?.email || "");
-        setIsInitializing(false);
-      }
-    });
   
-    // 2. Immediate check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted && session) {
-        setEmail(session.user.email || "");
-        setIsInitializing(false);
+    const checkSession = async () => {
+      // Оскільки Route Handler вже встановив куки, сесія має бути тут
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (mounted) {
+        if (user) {
+          setEmail(user.email || "");
+          setIsInitializing(false);
+        } else {
+          // Останній шанс: можливо сесія тільки-но з'явилася в Auth State
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setEmail(session.user.email || "");
+            setIsInitializing(false);
+          } else {
+            toast.error("Сесія відсутня або посилання застаріло.");
+            router.push('/');
+          }
+        }
       }
-    });
-  
-    // 3. Robust Timeout: Use a separate check to avoid stale closures
-    const timer = setTimeout(() => {
-      if (mounted && isInitializing) {
-        setIsInitializing(false); // Stop loader even on failure
-        toast.error("Сесія відсутня або посилання застаріло.");
-        router.push('/');
-      }
-    }, 5000); // Increased to 5s to allow slower devices to parse JWT
-  
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      clearTimeout(timer);
     };
-  }, [supabase, router]); // isInitializing removed from deps to prevent loop
+  
+    checkSession();
+    return () => { mounted = false; };
+  }, [supabase, router]);
 
 
 

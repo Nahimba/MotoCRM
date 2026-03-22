@@ -24,7 +24,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const isLocal = window.location.hostname === "localhost"
+      // const isLocal = window.location.hostname === "localhost"
       const justLoggedOut = sessionStorage.getItem('manualLogout')
   
       // IF MANUALLY LOGGED OUT: Stop everything and show the login form
@@ -35,18 +35,18 @@ export default function LandingPage() {
         return 
       }
   
-      // IF IN DEV MODE: Proceed with auto-login only if not just logged out
-      if (isLocal) {
-        setIsAutoLogging(true)
-        const { data: { session } } = await supabase.auth.getSession()
+      // // IF IN DEV MODE: Proceed with auto-login only if not just logged out
+      // if (isLocal) {
+      //   setIsAutoLogging(true)
+      //   const { data: { session } } = await supabase.auth.getSession()
         
-        if (session) {
-          handleRedirect(session.user.user_metadata.role)
-        } else {
-          // Auto-login to admin by default in local dev
-          await handleLogin(null, 'admin')
-        }
-      }
+      //   if (session) {
+      //     handleRedirect(session.user.user_metadata.role)
+      //   } else {
+      //     // Auto-login to admin by default in local dev
+      //     await handleLogin(null, 'admin')
+      //   }
+      // }
     };
     
     checkSession();
@@ -93,18 +93,18 @@ export default function LandingPage() {
     }
   }
 
-  if (isAutoLogging) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Loader2 className="animate-spin text-primary" size={40} />
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-            {t("init_protocol")}
-          </p>
-        </div>
-      </div>
-    )
-  }
+  // if (isAutoLogging) {
+  //   return (
+  //     <div className="min-h-screen bg-black flex items-center justify-center">
+  //       <div className="flex flex-col items-center gap-4 text-center">
+  //         <Loader2 className="animate-spin text-primary" size={40} />
+  //         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+  //           {t("init_protocol")}
+  //         </p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 font-sans">

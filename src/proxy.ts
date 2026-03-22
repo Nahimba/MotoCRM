@@ -55,7 +55,6 @@
 // }
 
 
-
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
@@ -64,101 +63,102 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
-  // 1. Root redirect: Force locale to default to prevent 404s
+  // 1. Початковий редирект для кореневого шляху (/)
   if (request.nextUrl.pathname === '/') {
     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
   }
 
-  // 2. Initialize response with intlMiddleware
+  // 2. Ініціалізація відповіді через i18n middleware
   let response = intlMiddleware(request);
 
-  // 3. Initialize Supabase client
+  // 3. Ініціалізація клієнта Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
+        getAll() {
+          return request.cookies.getAll()
+        },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          console.log("Middleware: Setting cookies", cookiesToSet.map(c => c.name));
+          // ВИПРАВЛЕНО: Використовуємо об'єктний синтаксис для сумісності з типами Next.js
+          cookiesToSet.forEach(({ name, value, options }) => 
+            request.cookies.set({ name, value, ...options })
+          )
+          
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set({ name, value, ...options })
+          )
         },
       },
     }
   )
 
+  // Отримуємо користувача
   const { data: { user } } = await supabase.auth.getUser()
   const role = user?.user_metadata?.role
   
-  //const { pathname } = request.nextUrl
+  // ВИПРАВЛЕНО: Логіка визначення локалі, щоб уникнути 'undefined'
   const { pathname, searchParams } = request.nextUrl
   const segments = pathname.split('/')
-  const locale = routing.locales.includes(segments[1] as any) ? segments[1] : routing.defaultLocale;
-  const purePathname = '/' + segments.slice(2).join('/')
+  
+  // Перевіряємо, чи перший сегмент є валідною локаллю
+  const isLocalePresent = routing.locales.includes(segments[1] as any);
+  const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
+  
+  // Якщо локаль є в URL, purePathname починається з 2-го сегмента, якщо ні — з 1-го
+  const purePathname = isLocalePresent 
+    ? '/' + segments.slice(2).join('/') 
+    : '/' + segments.slice(1).join('/');
+
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url)
 
-  // 4. Protection Logic
-  // const isAuthCallback = purePathname.startsWith('/auth/confirm');
-  // const isUpdatePassword = purePathname.includes('/auth/update-password');
-  // const isRecovery = searchParams.get('type') === 'recovery' || searchParams.get('type') === 'invite'; // Detect Reset Password
-  // const isPublicRoute = purePathname === '/' || purePathname === '/register' || purePathname.startsWith('/auth');
+  // --- 4. Логіка виключень (Bypass) ---
 
-  // --- 4. Логіка захисту та виключень (Bypass) ---
-
-  // Перевірка спеціальних шляхів Supabase
-  const isAuthCallback = purePathname.startsWith('/auth/confirm');
+  const isAuthConfirm = purePathname.startsWith('/auth/confirm');
   const isUpdatePassword = purePathname.startsWith('/auth/update-password');
-  
-  // Перевірка типів у query params (для надійності)
-  const type = searchParams.get('type');
-  const isRecovery = type === 'recovery' || type === 'invite' || type === 'signup';
+  const isRecoveryFlow = searchParams.get('type') === 'recovery' || searchParams.get('type') === 'invite';
 
-  // Публічні маршрути (де сесія не обов'язкова)
   const isPublicRoute = 
     purePathname === '/' || 
     purePathname === '/register' || 
     purePathname.startsWith('/auth') || 
     isUpdatePassword;
 
-  // КРИТИЧНО: Якщо це шлях обробки токена або оновлення пароля — пропускаємо НЕГАЙНО.
-  // Це запобігає редиректу, який затирає токени в URL (особливо для #access_token).
-  if (isAuthCallback || isUpdatePassword || isRecovery) {
+  // КРИТИЧНО: Bypass для процесів авторизації
+  if (isAuthConfirm || isUpdatePassword || isRecoveryFlow) {
     return response;
   }
 
-  // --- 5. Редиректи на основі стану авторизації ---
+  // --- 5. Редиректи ---
 
-  // А) Користувач НЕ залогінений і намагається зайти на приватну сторінку
+  // Редирект для неавторизованих
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'))
   }
 
-  // Б) Користувач ЗАЛОГІНЕНИЙ і намагається зайти на публічні сторінки (Login/Register)
-  // Ми ігноруємо цей редирект, якщо йде процес відновлення/інвайту (isRecovery вже перевірено вище)
-  if (user && isPublicRoute && !isRecovery) {
+  // Редирект для авторизованих
+  if (user && isPublicRoute && !isRecoveryFlow) {
     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-    
-    // Перевірка, щоб не редиректити, якщо ми вже на потрібному дашборді
     if (!purePathname.startsWith(dash)) {
       return NextResponse.redirect(localize(dash))
     }
   }
 
-  // В) Захист адмінки від звичайних користувачів
+  // Захист адмінки
   if (purePathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(localize('/account'))
   }
-  
+
   return response
 }
 
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 }
-
-
-
 
 
 
