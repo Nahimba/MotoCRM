@@ -573,7 +573,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                 ))}
 
 
-                <div className="absolute inset-0 z-30">
+                <div className="absolute inset-0 z-50 pointer-events-none">
                   {!loading && lessons.map(l => (
                     <LessonCard 
                       key={l.id} 

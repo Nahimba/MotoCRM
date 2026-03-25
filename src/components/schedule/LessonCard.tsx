@@ -58,7 +58,7 @@ export function LessonCard({
         onEdit(lesson);
       }}
       style={getStyles()}
-      className={`absolute border border-white/10 border-l-[4px] rounded-xl group 
+      className={`absolute pointer-events-auto border border-white/10 border-l-[4px] rounded-xl group 
         hover:bg-[#1a1a1a] hover:border-white/20 transition-all cursor-pointer 
         overflow-hidden flex flex-col z-30 shadow-2xl
         ${getStatusStyles()} 
