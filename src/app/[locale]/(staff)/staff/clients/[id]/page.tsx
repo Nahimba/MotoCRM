@@ -24,7 +24,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const router = useRouter()
 
-  
 
   const [isDocModalOpen, setIsDocModalOpen] = useState(false)
   const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
@@ -55,6 +54,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 //   }
 //   alert('Invite sent successfully!')
 // }
+
+
 
   const [isSending, setIsSending] = useState(false);
 
@@ -234,6 +235,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const profile = client?.profiles
   const account = client?.accounts?.[0]
   const packages = account?.course_packages || []
+
+  
+  // Перевіряємо, чи користувач вже хоча б раз підтвердив пошту / залогінився
+  const isConfirmed = profile?.is_confirmed || false;
   
   // 1. FILTERED AGGREGATED STATS
   const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
@@ -301,14 +306,35 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all">
               {t("modify")}
             </Link>
-            <button onClick={handleSendInvite} disabled={isSending} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
-              {/* {isSending ? t("sending") : t("send_invite")} */}
+            {!isConfirmed ? (
+              /* КНОПКА ЗАПРОШЕННЯ: показуємо, якщо НЕ підтверджено */
+              <button 
+                onClick={handleSendInvite} 
+                disabled={isSending} 
+                className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSending ? <Loader2 className="animate-spin" size={16} /> : "Надіслати Запрошення"}
+              </button>
+            ) : (
+              /* КНОПКА СКИНУТИ ПАРОЛЬ: показуємо, якщо вже підтверджено */
+              <button 
+                onClick={() => handleResetRequest(client.profile_id)} 
+                disabled={isResetting} 
+                className="bg-zinc-800 text-zinc-400 border border-white/5 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isResetting ? <Loader2 className="animate-spin" size={16} /> : "Скинути Пароль"}
+              </button>
+            )}
+            {/* <button onClick={handleSendInvite} disabled={isSending} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
+              
               {isResetting ? <Loader2 className="animate-spin" /> : "Надіслати Запрошення"}
             </button>
             <button onClick={() => handleResetRequest(client.profile_id)} disabled={isResetting} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
-              {/* {isReseting ? t("sending") : t("reset_password")} */}
+              
               {isResetting ? <Loader2 className="animate-spin" /> : "Скинути Пароль"}
-            </button>
+            </button> */}
+            {/* {isSending ? t("sending") : t("send_invite")} */}
+            {/* {isReseting ? t("sending") : t("reset_password")} */}
             {/* <button disabled={isResetting} onClick={() => handleResetRequest(client.profile_id)}>
               {isResetting ? <Loader2 className="animate-spin" /> : "Скинути пароль"}
             </button> */}

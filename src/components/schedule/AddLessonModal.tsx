@@ -21,7 +21,7 @@ interface AddLessonModalProps {
   onSuccess: () => void
   onOpenDossier: (client: any) => void
   editLesson: any | null
-  existingLessons: any[]
+  // existingLessons: any[]
 }
 
 export function AddLessonModal({ 
