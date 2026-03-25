@@ -55,6 +55,8 @@ export default function SchedulePage() {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+
+
   // 1. Responsive UI logic
   useEffect(() => {
     const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
@@ -83,6 +85,23 @@ export default function SchedulePage() {
     }
     init()
   }, [profile])
+
+  // useEffect(() => {
+  //   if (viewMode === 'week' && showAllInstructors) {
+  //     setShowAllInstructors(false);
+  //   }
+  // }, [viewMode]);
+  
+  useEffect(() => {
+    if (viewMode === 'week' && showAllInstructors) {
+      setShowAllInstructors(false);
+      // Якщо targetInstructorId був порожнім, повертаємо на себе
+      if (!targetInstructorId && profile) {
+        const myId = instructors.find(i => i.profile_id === profile.id)?.id;
+        if (myId) setTargetInstructorId(myId);
+      }
+    }
+  }, [viewMode, showAllInstructors, instructors, profile, targetInstructorId]);
 
 
 
@@ -145,68 +164,36 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
 
 
 // 3. Проверка рабочего времени
-const isNonWorkingHour = (time: Date) => {
-  if (showAllInstructors && viewMode === 'day') return false; // В режиме команды не затемняем
-  const dayOfWeek = getDay(time); 
-  const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek);
-  if (!schedule) return true;
+// const isNonWorkingHour = (time: Date) => {
+//   if (showAllInstructors && viewMode === 'day') return false; // В режиме команды не затемняем
+//   const dayOfWeek = getDay(time); 
+//   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek);
+//   if (!schedule) return true;
 
-  const currentTime = format(time, 'HH:mm:ss');
-  return currentTime < schedule.start_time || currentTime >= schedule.end_time;
-}
-
-// // 4. Стили для исключений (блокировок)
-// const getExceptionStyles = (ex: any) => {
-//   const start = new Date(ex.start_at);
-//   const end = new Date(ex.end_at);
-//   const durationHours = (end.getTime() - start.getTime()) / 3600000;
-  
-//   const top = (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight;
-//   const dayIdx = (getDay(start) + 6) % 7;
-//   const colWidthPct = 100 / 7;
-
-//   return {
-//     position: 'absolute' as const,
-//     top: `${top}px`,
-//     left: viewMode === 'day' ? '4px' : `calc(${dayIdx * colWidthPct}% + 4px)`,
-//     width: viewMode === 'day' ? 'calc(100% - 8px)' : `calc(${colWidthPct}% - 8px)`,
-//     height: ex.is_all_day ? `${HOURS.length * hourHeight}px` : `${durationHours * hourHeight}px`,
-//     zIndex: 40,
-//   }
+//   const currentTime = format(time, 'HH:mm:ss');
+//   return currentTime < schedule.start_time || currentTime >= schedule.end_time;
 // }
+  const isNonWorkingHour = (time: Date, instructorId?: string | null) => {
+    // Якщо ми не маємо ID інструктора (наприклад, у загальному режимі тижня), 
+    // використовуємо targetInstructorId (ваш власний)
+    const effectiveId = instructorId || targetInstructorId;
+    if (!effectiveId) return false;
 
+    const dayOfWeek = getDay(time); 
+    // Шукаємо графік конкретного інструктора
+    const schedule = workHours.find(wh => 
+      wh.day_of_week === dayOfWeek && 
+      wh.instructor_id === effectiveId
+    );
+    
+    if (!schedule) return true;
 
-// const getExceptionStyles = (ex: any) => {
-//   const start = new Date(ex.start_at);
-//   const end = new Date(ex.end_at);
+    const currentTime = format(time, 'HH:mm:ss');
+    return currentTime < schedule.start_time || currentTime >= schedule.end_time;
+  }
   
-//   // Розрахунок позиції TOP
-//   // Якщо "весь день", ставимо в 0 (початок сітки, тобто 7:00)
-//   // Інакше розраховуємо відносно 7:00
-//   const top = ex.is_all_day 
-//     ? 0 
-//     : (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight;
 
-//   // Розрахунок висоти
-//   // Якщо "весь день", висота = кількість годин у HOURS * висоту години
-//   // Інакше розраховуємо тривалість між start та end
-//   const durationHours = (end.getTime() - start.getTime()) / 3600000;
-//   const height = ex.is_all_day 
-//     ? HOURS.length * hourHeight 
-//     : durationHours * hourHeight;
 
-//   const dayIdx = (getDay(start) + 6) % 7;
-//   const colWidthPct = 100 / 7;
-
-//   return {
-//     position: 'absolute' as const,
-//     top: `${top}px`,
-//     left: viewMode === 'day' ? '4px' : `calc(${dayIdx * colWidthPct}% + 4px)`,
-//     width: viewMode === 'day' ? 'calc(100% - 8px)' : `calc(${colWidthPct}% - 8px)`,
-//     height: `${height}px`,
-//     zIndex: 40,
-//   }
-// }
 
 const getExceptionStyles = (ex: any, targetDate: Date) => {
   const start = new Date(ex.start_at)
@@ -374,7 +361,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
               </button>
             </div>
 
-            {profile?.role === 'admin' && (
+            {/* {profile?.role === 'admin' && (
               <button 
                 onClick={() => setShowAllInstructors(!showAllInstructors)}
                 className={`p-2 md:px-4 md:py-2 rounded-xl border transition-all flex items-center justify-center ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
@@ -385,6 +372,59 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                 </span>
               </button>
             )}
+
+
+            {(!showAllInstructors || viewMode === 'week') && instructors.length > 0 && (
+              <select
+                value={targetInstructorId || ''}
+                onChange={(e) => setTargetInstructorId(e.target.value)}
+                className="bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase rounded-xl px-3 py-2 outline-none hover:bg-white/10 transition-all cursor-pointer appearance-none"
+              >
+                {instructors.map((ins) => (
+                  <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
+                    {ins.profiles?.first_name} {ins.profiles?.last_name}
+                  </option>
+                ))}
+              </select>
+            )} */}
+
+            {instructors.length > 0 && (
+              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-3 group hover:bg-white/10 transition-all cursor-pointer">
+                <Users size={14} className="text-slate-500 mr-2" />
+                <select
+                  value={showAllInstructors && viewMode === 'day' ? 'all' : (targetInstructorId || '')}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'all') {
+                      setShowAllInstructors(true);
+                    } else {
+                      setShowAllInstructors(false);
+                      setTargetInstructorId(val);
+                    }
+                  }}
+                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-4"
+                >
+                  {/* Опція "Усі" показується тільки в режимі дня */}
+                  {viewMode === 'day' && profile?.role === 'admin' && (
+                    <option value="all" className="bg-[#0A0A0A] font-black text-primary">
+                      {t('allLessons')} (TEAM)
+                    </option>
+                  )}
+                  
+                  {/* Список конкретних інструкторів */}
+                  {instructors.map((ins) => (
+                    <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
+                      {ins.profiles?.first_name} {ins.profiles?.last_name}
+                    </option>
+                  ))}
+                </select>
+                {/* Кастомна стрілочка вниз, бо ми приховали стандартну через appearance-none */}
+                <div className="absolute right-2 pointer-events-none text-slate-500">
+                  <ChevronLeft size={10} className="-rotate-90" />
+                </div>
+              </div>
+            )}
+
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
@@ -491,7 +531,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
 
 
                 {/* Background Grid with Stripe Effect for Non-working hours */}
-                <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
+                {/* <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
                   {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, dayIdx) => (
                     <div key={dayIdx} className="border-r border-white/5 h-full">
                       {HOURS.map(h => {
@@ -506,30 +546,42 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                       })}
                     </div>
                   ))}
+                </div> */}
+
+                <div 
+                  className="absolute inset-0 grid pointer-events-none z-10" 
+                  style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                >
+                  {Array.from({ length: gridColumns }).map((_, colIdx) => {
+                    // Визначаємо інструктора для цієї колонки (тільки для Team View)
+                    const colInstructorId = isTeamView ? instructors[colIdx]?.id : targetInstructorId;
+                    // Визначаємо дату для цієї колонки (тільки для Week View)
+                    const colDate = viewMode === 'week' ? weekDays[colIdx] : selectedDate;
+
+                    return (
+                      <div key={colIdx} className="border-r border-white/5 h-full relative">
+                        {HOURS.map(h => {
+                          // Очищаємо час від зайвих хвилин/секунд selectedDate
+                          const currentHourDate = setHours(startOfDay(colDate), h.getHours());
+                          
+                          return (
+                            <div 
+                              key={h.toString()} 
+                              style={{ height: `${hourHeight}px` }} 
+                              className={`border-b border-white/[0.03] transition-colors ${
+                                isNonWorkingHour(currentHourDate, colInstructorId) 
+                                  ? 'bg-white/[0.02] stripe-bg opacity-40' 
+                                  : ''
+                              }`} 
+                            />
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Exceptions / Blocked Slots */}
-                {/* {exceptions.map(ex => (
-                  <div 
-                    key={ex.id} 
-                    onClick={() => {
-                      setEditingException(ex);
-                      setIsExceptionModalOpen(true);
-                    }}
-                    style={getExceptionStyles(ex)} 
-                    className={`rounded-lg border-l-4 flex flex-col p-2 overflow-hidden 
-                    ${
-                      ex.type === 'vacation' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 
-                      ex.type === 'sick' ? 'bg-red-500/10 border-red-500 text-red-400' : 
-                      'bg-slate-500/10 border-slate-500 text-slate-400'
-                    }`}>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {ex.type === 'vacation' ? <Palmtree size={12}/> : ex.type === 'busy' ? <Coffee size={12}/> : <ShieldAlert size={12}/>}
-                      <span className="text-[10px] font-black uppercase truncate">{ex.title}</span>
-                    </div>
-                    {ex.is_all_day && <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>}
-                  </div>
-                ))} */}
+
 
                 {/* Exceptions / Blocked Slots */}
                 {(viewMode === 'week' ? weekDays : [selectedDate]).map((currentDay) => (
@@ -595,6 +647,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         instructorId={targetInstructorId} 
+        instructors= {instructors}
         initialDate={selectedDate} 
         onSuccess={fetchAllData} 
         editLesson={editingLesson} 
@@ -696,6 +749,97 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
   // }, [fetchLessons])
 
 
+
+
+
+
+
+
+
+// // 4. Стили для исключений (блокировок)
+// const getExceptionStyles = (ex: any) => {
+//   const start = new Date(ex.start_at);
+//   const end = new Date(ex.end_at);
+//   const durationHours = (end.getTime() - start.getTime()) / 3600000;
+  
+//   const top = (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight;
+//   const dayIdx = (getDay(start) + 6) % 7;
+//   const colWidthPct = 100 / 7;
+
+//   return {
+//     position: 'absolute' as const,
+//     top: `${top}px`,
+//     left: viewMode === 'day' ? '4px' : `calc(${dayIdx * colWidthPct}% + 4px)`,
+//     width: viewMode === 'day' ? 'calc(100% - 8px)' : `calc(${colWidthPct}% - 8px)`,
+//     height: ex.is_all_day ? `${HOURS.length * hourHeight}px` : `${durationHours * hourHeight}px`,
+//     zIndex: 40,
+//   }
+// }
+
+
+// const getExceptionStyles = (ex: any) => {
+//   const start = new Date(ex.start_at);
+//   const end = new Date(ex.end_at);
+  
+//   // Розрахунок позиції TOP
+//   // Якщо "весь день", ставимо в 0 (початок сітки, тобто 7:00)
+//   // Інакше розраховуємо відносно 7:00
+//   const top = ex.is_all_day 
+//     ? 0 
+//     : (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight;
+
+//   // Розрахунок висоти
+//   // Якщо "весь день", висота = кількість годин у HOURS * висоту години
+//   // Інакше розраховуємо тривалість між start та end
+//   const durationHours = (end.getTime() - start.getTime()) / 3600000;
+//   const height = ex.is_all_day 
+//     ? HOURS.length * hourHeight 
+//     : durationHours * hourHeight;
+
+//   const dayIdx = (getDay(start) + 6) % 7;
+//   const colWidthPct = 100 / 7;
+
+//   return {
+//     position: 'absolute' as const,
+//     top: `${top}px`,
+//     left: viewMode === 'day' ? '4px' : `calc(${dayIdx * colWidthPct}% + 4px)`,
+//     width: viewMode === 'day' ? 'calc(100% - 8px)' : `calc(${colWidthPct}% - 8px)`,
+//     height: `${height}px`,
+//     zIndex: 40,
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+                {/* Exceptions / Blocked Slots */}
+                {/* {exceptions.map(ex => (
+                  <div 
+                    key={ex.id} 
+                    onClick={() => {
+                      setEditingException(ex);
+                      setIsExceptionModalOpen(true);
+                    }}
+                    style={getExceptionStyles(ex)} 
+                    className={`rounded-lg border-l-4 flex flex-col p-2 overflow-hidden 
+                    ${
+                      ex.type === 'vacation' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 
+                      ex.type === 'sick' ? 'bg-red-500/10 border-red-500 text-red-400' : 
+                      'bg-slate-500/10 border-slate-500 text-slate-400'
+                    }`}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      {ex.type === 'vacation' ? <Palmtree size={12}/> : ex.type === 'busy' ? <Coffee size={12}/> : <ShieldAlert size={12}/>}
+                      <span className="text-[10px] font-black uppercase truncate">{ex.title}</span>
+                    </div>
+                    {ex.is_all_day && <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>}
+                  </div>
+                ))} */}
 
 
 

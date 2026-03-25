@@ -33,6 +33,8 @@ export function LessonCard({
   const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   const instructorName = lesson.lesson_instructor_name || 'Unassigned';
 
+  
+
   const getStatusStyles = () => {
     // 1. Отменено
     if (lesson.status === 'cancelled') {

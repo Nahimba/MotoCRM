@@ -17,6 +17,7 @@ interface AddLessonModalProps {
   isOpen: boolean
   onClose: () => void
   instructorId: string | null
+  instructors: any[]
   initialDate: Date
   onSuccess: () => void
   onOpenDossier: (client: any) => void
@@ -25,12 +26,14 @@ interface AddLessonModalProps {
 }
 
 export function AddLessonModal({ 
-  isOpen, onClose, instructorId, initialDate, onSuccess, onOpenDossier, editLesson 
+  isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson 
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
   const tStatus = useTranslations("Constants.lesson_statuses")
   
   const { profile: authProfile } = useAuth()
+
+  const [selectedInstructorId, setSelectedInstructorId] = useState<string>("")
   
   const [loading, setLoading] = useState(false)
   const [packages, setPackages] = useState<any[]>([])
@@ -112,6 +115,7 @@ export function AddLessonModal({
       if (editLesson) {
         const dateObj = parseISO(editLesson.session_date)
         setSelectedPackageId(editLesson.course_package_id)
+        setSelectedInstructorId(editLesson.instructor_id)
         setLessonDate(format(dateObj, "yyyy-MM-dd"))
         setSelectedHour(format(dateObj, "HH"))
         setSelectedMinute(format(dateObj, "mm"))
@@ -131,9 +135,10 @@ export function AddLessonModal({
         setLocationId("custom")
         setCustomAddress("")
         setSelectedPackageId("")
+        setSelectedInstructorId(instructorId || "")
       }
     }
-  }, [isOpen, editLesson])
+  }, [isOpen, editLesson, instructorId])
 
   const displayAddress = useMemo(() => {
     if (locationId === "custom") return customAddress
@@ -150,6 +155,7 @@ export function AddLessonModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedPackageId) return toast.error(t("selectStudentError"))
+    if (!selectedInstructorId) return toast.error("Оберіть інструктора")
     
     setLoading(true)
     const [year, month, day] = lessonDate.split('-').map(Number)
@@ -159,7 +165,7 @@ export function AddLessonModal({
 
     const payload = {
       course_package_id: selectedPackageId,
-      instructor_id: instructorId,
+      instructor_id: selectedInstructorId,
       duration: parseFloat(duration),
       session_date: finalDate.toISOString(),
       location_id: isCustom ? null : locationId,
@@ -216,6 +222,29 @@ export function AddLessonModal({
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
           
+
+          {/* Вибір Інструктора*/}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+              Інструктор
+            </label>
+            <div className="relative">
+              <select 
+                value={selectedInstructorId}
+                onChange={(e) => setSelectedInstructorId(e.target.value)}
+                className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black text-white outline-none focus:border-primary transition-all cursor-pointer"
+              >
+                {instructors.map((ins) => (
+                  <option key={ins.id} value={ins.id} className="bg-[#121212]">
+                    {ins.profiles?.first_name} {ins.profiles?.last_name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            </div>
+          </div>
+
+
           {/* ИСПОЛЬЗОВАНИЕ НОВОГО КОМПОНЕНТА */}
           <StudentSelector 
             packages={packages}
