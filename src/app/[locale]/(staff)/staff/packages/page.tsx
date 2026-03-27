@@ -239,6 +239,8 @@ export default function PackagesPage() {
       <PackageFormModal 
         isOpen={isModalOpen}
         packageId={selectedPackageId}
+        
+        //accountId={null} 
         onClose={() => {
           setIsModalOpen(false)
           setSelectedPackageId(null)

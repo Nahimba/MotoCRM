@@ -46,12 +46,13 @@ interface Course {
 
 interface Props {
   isOpen: boolean
-  packageId: string | null 
+  packageId: string | null
+  accountId?: string | null
   onClose: () => void
   onSuccess: () => void
 }
 
-export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess }: Props) {
+export default function PackageFormModal({ isOpen, packageId, accountId, onClose, onSuccess }: Props) {
   const t = useTranslations("NewPackage")
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
@@ -118,8 +119,6 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         }
 
         
-
-
         const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
         if (accData) {
           const formatted = accData.map((acc: any) => ({
@@ -131,6 +130,12 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
 
         const { data: courData } = await supabase.from("courses").select("*").eq("is_active", true)
         if (courData) setCourses(courData as Course[])
+
+        // ADD THIS: If we are creating a new package and have an accountId prop
+        if (!packageId && accountId) {
+          form.setValue("account_id", accountId)
+        }
+
       } catch (err: any) {
         toast.error("Failed to load data")
       } finally {
@@ -138,7 +143,8 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
       }
     }
     fetchData()
-  }, [user?.id, isOpen])
+  }, [user?.id, isOpen, accountId, packageId])
+
 
   useEffect(() => {
     async function loadExistingPackage() {
@@ -146,7 +152,8 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         if (!packageId) {
           setIsLocked(false)
           form.reset({
-            account_id: "",
+            // account_id: "",
+            account_id: accountId || "",
             course_id: "",
             total_hours: 10,
             contract_price: 0,
@@ -190,7 +197,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
       }
     }
     loadExistingPackage()
-  }, [packageId, isOpen, form])
+  }, [packageId, isOpen, form, accountId])
 
   const onCourseChange = (courseId: string) => {
     if (isLocked) return 
@@ -302,7 +309,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
+                  {/* <FormField
                     control={control}
                     name="account_id"
                     render={({ field }) => (
@@ -318,6 +325,41 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                             {accounts.map(a => (
                               <SelectItem key={a.id} value={a.id} className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer">
                                 {a.account_label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  /> */}
+
+                  <FormField
+                    control={control}
+                    name="account_id"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                          {t("client")}
+                        </FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                          // Combined logic: lock if prop provided, if editing, or if loading
+                          disabled={!!accountId || !!packageId || fetching}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl focus:ring-primary focus:border-primary">
+                              <SelectValue placeholder={t("selectClient")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                            {accounts.map((acc) => (
+                              <SelectItem 
+                                key={acc.id} 
+                                value={acc.id} 
+                                className="focus:bg-primary focus:text-black font-bold uppercase text-[10px] tracking-widest cursor-pointer"
+                              >
+                                {acc.account_label}
                               </SelectItem>
                             ))}
                           </SelectContent>

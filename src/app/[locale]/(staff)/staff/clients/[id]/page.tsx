@@ -7,12 +7,15 @@ import {
   ChevronLeft, Edit3, Phone, Mail, 
   MapPin, CreditCard, Clock, Bike, ShieldCheck,
   AlertCircle, CheckCircle2, BadgePercent, Activity, FileText,
-  Loader2
+  Loader2, Plus
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
 import { DocumentModal } from "@/components/staff/DocumentModal"
+
+
+import PackageFormModal from "@/components/staff/packages/PackageFormModal"
 
 import { toast } from "sonner"
 
@@ -28,6 +31,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [isDocModalOpen, setIsDocModalOpen] = useState(false)
   const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
 
+  const [isPackageModalOpen, setIsPackageModalOpen] = useState(false)
+
   const refreshData = async () => {
     const { count, error } = await supabase
       .from('client_documents')
@@ -36,6 +41,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
     if (!error) setDocCount(count || 0);
   };
+
+  // Function to refresh client data after a new package is added
+  const refreshClientData = async () => {
+    setLoading(true)
+    // Re-run your existing fetch logic or move it to a named function
+    // For now, we can just trigger a router refresh or re-fetch manually
+    router.refresh() 
+    // Note: Since you use local state 'setClient', it's better to 
+    // wrap your existing useEffect logic into a function called 'loadClientData' 
+    // and call it here.
+  }
 
 
 //   3. Production Call (React/Node)
@@ -397,6 +413,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
           <div className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">Training Modules</h3>
+            
+            {/* ADD CONTRACT BUTTON */}
+            <button 
+              onClick={() => setIsPackageModalOpen(true)}
+              className="flex items-center gap-2 bg-primary text-black px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-white transition-all active:scale-95"
+            >
+              <Plus size={14} strokeWidth={4} />
+              <span>Додати контракт</span>
+            </button>
             {packages.length > 0 ? packages.map((pkg: any) => {
               const used = pkg.lessons?.filter((l: any) => l.is_counted).reduce((s: number, l: any) => s + Number(l.duration), 0) || 0;
               const percent = pkg.total_hours > 0 ? Math.round((used / pkg.total_hours) * 100) : 0;
@@ -437,6 +462,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         onClose={() => setIsDocModalOpen(false)} 
         onUpdate={refreshData}
       />
+
+      <PackageFormModal 
+        isOpen={isPackageModalOpen}
+        packageId ={null}
+        // Pass the account ID from your fetched data
+        accountId={account?.id} 
+        onClose={() => setIsPackageModalOpen(false)}
+        onSuccess={() => {
+          setIsPackageModalOpen(false)
+          router.refresh() // Refreshes server components/data
+          // If you want to refresh the local 'client' state immediately:
+          // loadClientData() 
+        }} 
+      />
+
     </div>
     
   )
