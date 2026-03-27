@@ -118,22 +118,95 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     }
   }
 
+  // async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  //   e.preventDefault()
+  //   if (uploading) return 
+  //   setLoading(true)
+    
+  //   try {
+  //     const profilePayload = {
+  //       first_name: formData.first_name, 
+  //       last_name: formData.last_name,
+  //       phone: formData.phone, 
+  //       email: formData.email, 
+  //       address: formData.address,
+  //       avatar_url: formData.avatar_url, 
+  //       social_link: formData.social_link,
+  //     }
+  
+  //     const clientPayload = {
+  //       gear_type: formData.gear_type, 
+  //       lead_source: formData.lead_source || null, 
+  //       notes: formData.notes, 
+  //       training_stage: formData.training_stage,
+  //       is_active: formData.is_active,
+  //     }
+  
+  //     if (id) {
+  //       // Direct update for existing records
+  //       const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
+  //       if (pError) throw pError
+  
+  //       const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
+  //       if (cError) throw cError
+  //     } else {
+  //       // Atomic creation via Edge Function
+  //       const { data: { session } } = await supabase.auth.getSession()
+        
+  //       if (!session?.access_token) {
+  //         throw new Error("No active session. Please log in.")
+  //       }
+  
+  //       const { error } = await supabase.functions.invoke('create-user', {
+  //         body: { 
+  //           profileData: profilePayload,
+  //           clientData: clientPayload,
+  //           role_to_create: 'rider' 
+  //         },
+  //         headers: {
+  //           // Force the exact format: "Bearer eyJ..."
+  //           'Authorization': `Bearer ${session.access_token}`
+  //         }
+  //       })
+        
+  //       if (error) {
+  //         // Log the specific error from the Edge Function
+  //         console.error("Function invocation error:", error)
+  //         throw error
+  //       }
+  //     }
+      
+  //     setIsSaved(true)
+  //     toast.success(id ? t("form.success_update") : t("form.success_create"))
+  //     router.push('/staff/clients')
+  //     router.refresh()
+  //   } catch (error: any) {
+  //     toast.error(error.message || "An unexpected error occurred")
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (uploading) return 
     setLoading(true)
     
     try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (!currentUser) throw new Error("Unauthorized")
+  
       const profilePayload = {
         first_name: formData.first_name, 
         last_name: formData.last_name,
-        phone: formData.phone, 
-        email: formData.email, 
+        phone: formData.phone || null, 
+        email: formData.email || null, 
         address: formData.address,
         avatar_url: formData.avatar_url, 
         social_link: formData.social_link,
+        role: 'rider'
       }
-  
+
       const clientPayload = {
         gear_type: formData.gear_type, 
         lead_source: formData.lead_source || null, 
@@ -141,44 +214,55 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         training_stage: formData.training_stage,
         is_active: formData.is_active,
       }
+
+      let targetClientId = id;
   
       if (id) {
-        // Direct update for existing records
+        // Update logic remains the same
         const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
         if (pError) throw pError
   
         const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
         if (cError) throw cError
       } else {
-        // Atomic creation via Edge Function
-        const { data: { session } } = await supabase.auth.getSession()
+        // NEW FLEXIBLE CREATION: No Edge Function needed for CRM-only riders
+        // 1. Create Profile (Postgres generates the UUID automatically)
+        const { data: newProfile, error: pError } = await supabase
+          .from('profiles')
+          .insert([profilePayload])
+          .select()
+          .single()
         
-        if (!session?.access_token) {
-          throw new Error("No active session. Please log in.")
-        }
+        if (pError) throw pError
   
-        const { error } = await supabase.functions.invoke('create-user', {
-          body: { 
-            profileData: profilePayload,
-            clientData: clientPayload,
-            role_to_create: 'rider' 
-          },
-          headers: {
-            // Force the exact format: "Bearer eyJ..."
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        })
-        
-        if (error) {
-          // Log the specific error from the Edge Function
-          console.error("Function invocation error:", error)
-          throw error
-        }
+        // 2. Create Client linked to that Profile
+        const { data: newClient, error: cError } = await supabase
+          .from('clients')
+          .insert([{
+              profile_id: newProfile.id,
+              created_by_profile_id: currentUser.id,
+              ...clientPayload
+          }])
+          .select()
+          .single()
+  
+        if (cError) throw cError
+
+        targetClientId = newClient.id; // Capture the new ID for redirect
+  
+        // 3. Create Account
+        const { error: aError } = await supabase.from('accounts').insert([{
+            client_id: newClient.id,
+            created_by_profile_id: currentUser.id,
+            account_status: 'active'
+        }])
+        if (aError) throw aError
       }
       
       setIsSaved(true)
       toast.success(id ? t("form.success_update") : t("form.success_create"))
-      router.push('/staff/clients')
+      //router.push('/staff/clients')
+      router.push(`/staff/clients/${targetClientId}`)
       router.refresh()
     } catch (error: any) {
       toast.error(error.message || "An unexpected error occurred")
@@ -186,6 +270,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       setLoading(false)
     }
   }
+
 
   // async function handleSubmit(e: React.FormEvent) {
   //   e.preventDefault()
@@ -315,7 +400,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t("form.first_name")}><input required value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} className={inputClass} /></Field>
-                <Field label={t("form.last_name")}><input required value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} className={inputClass} /></Field>
+                <Field label={t("form.last_name")}><input value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} className={inputClass} /></Field>
               </div>
               <Field label={t("form.phone")}><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="+380..." /></Field>
               <Field label={t("form.email")}><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClass} /></Field>
