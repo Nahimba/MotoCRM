@@ -135,38 +135,56 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.course_package_id || !formData.amount || !formData.payment_method_id || !formData.payment_plan_id) {
+  
+    // 1. Validation
+    if (!formData.course_package_id || !formData.amount || !formData.payment_method_id || !formData.payment_plan_id || !formData.account_id) {
       return toast.error(t('fillRequired'))
     }
-
+  
     setLoading(true)
     const amountNum = parseFloat(formData.amount)
     const paymentId = editPayment?.id
-
+  
     try {
-      // Подготовка payload согласно новой упрощенной схеме
-      const payload = {
+      // 2. Mutable fields only
+      const updatePayload = {
         account_id: formData.account_id,
-        course_package_id: formData.course_package_id, // Прямая связь
+        course_package_id: formData.course_package_id,
         amount: amountNum,
         payment_plan_id: formData.payment_plan_id,
         payment_method_id: formData.payment_method_id,
         status: formData.status,
-        notes: formData.notes,
-        created_by_profile_id: profile?.id
+        notes: formData.notes?.trim() || null,
       }
-
+  
       if (editPayment) {
-        const { error } = await supabase.from('payments').update(payload).eq('id', paymentId)
+        // PERFORM UPDATE: Only send mutable fields
+        const { error } = await supabase
+          .from('payments')
+          .update(updatePayload)
+          .eq('id', paymentId)
+        
         if (error) throw error
         toast.success(t('updateSuccess'))
       } else {
-        const { error } = await supabase.from('payments').insert([payload])
+        // PERFORM INSERT: Add the immutable creator ID
+        const insertPayload = {
+          ...updatePayload,
+          created_by_profile_id: profile?.id // If this is undefined, it won't send an empty string
+        }
+  
+        const { error } = await supabase
+          .from('payments')
+          .insert([insertPayload])
+        
         if (error) throw error
         toast.success(t('logSuccess'))
       }
-      onSuccess(); onClose();
+  
+      onSuccess()
+      onClose()
     } catch (error: any) {
+      console.error("Database Error:", error)
       toast.error(error.message)
     } finally {
       setLoading(false)

@@ -246,12 +246,24 @@ export default function PaymentsPage() {
       </div>
 
       {/* LEDGER MODAL */}
-      <PaymentModal 
+      {/* <PaymentModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={fetchPayments}
         editPayment={selectedPayment}
         instructorId={targetInstructorId}
+      /> */}
+      <PaymentModal 
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedPayment(null); // Clean up state on close
+        }}
+        onSuccess={() => {
+          fetchPayments(); // Refresh the ledger
+        }}
+        editPayment={selectedPayment}
+        instructorId={targetInstructorId} // null for admins, UUID for instructors
       />
     </div>
   )
