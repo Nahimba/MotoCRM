@@ -27,9 +27,10 @@ export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 const formSchema = z.object({
   account_id: z.string().min(1, "Required"),
   course_id: z.string().min(1, "Required"),
+  instructor_id: z.string().min(1, "Required"),
   total_hours: z.coerce.number().min(1),
   contract_price: z.coerce.number().min(0),
-  use_discount: z.boolean().default(false),
+  is_discounted: z.boolean().default(false),
   status: z.enum(PACKAGE_STATUSES).default("active"),
 })
 
@@ -68,7 +69,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
       course_id: "",
       total_hours: 10,
       contract_price: 0,
-      use_discount: false,
+      is_discounted: false,
       status: "active",
     },
   })
@@ -86,13 +87,38 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
     }
   }
 
+  const [instructors, setInstructors] = useState<any[]>([]) 
+
   useEffect(() => {
     async function fetchData() {
       if (!user?.id || !isOpen) return
       try {
         setFetching(true)
-        const { data: instData } = await supabase.from("instructors").select("id").eq("profile_id", user.id).maybeSingle()
-        setInstructorId(instData?.id || null)
+
+
+        // const { data: instData } = await supabase.from("instructors").select("id").eq("profile_id", user.id).maybeSingle()
+        // setInstructorId(instData?.id || null)
+
+        // Fetch all instructors for the dropdown
+        const { data: allInst } = await supabase
+          .from("instructors")
+          .select(`id, profiles (first_name, last_name)`)
+        if (allInst) setInstructors(allInst)
+
+        // Find current logged-in instructor
+        const { data: currentInst } = await supabase
+          .from("instructors")
+          .select("id")
+          .eq("profile_id", user.id)
+          .maybeSingle()
+
+        // If creating NEW package, set default instructor to current user
+        if (!packageId && currentInst) {
+          form.setValue("instructor_id", currentInst.id)
+        }
+
+        
+
 
         const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
         if (accData) {
@@ -124,7 +150,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
             course_id: "",
             total_hours: 10,
             contract_price: 0,
-            use_discount: false,
+            is_discounted: false,
             status: "active",
           })
         }
@@ -140,15 +166,20 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         ])
 
         const hasActivity = (payments.count ?? 0) > 0 || (lessons.count ?? 0) > 0
-        setIsLocked(hasActivity)
+
+        // Change this line:
+        // setIsLocked(hasActivity) 
+        // To this (Temporary override): !!!!!!!!!!!!!
+        setIsLocked(false)
 
         if (pkg) {
           form.reset({
             account_id: pkg.account_id,
+            instructor_id: pkg.instructor_id,
             course_id: pkg.course_id,
             total_hours: pkg.total_hours,
             contract_price: pkg.contract_price,
-            use_discount: false,
+            is_discounted: pkg.is_discounted || false,
             status: pkg.status as PackageStatus,
           })
         }
@@ -166,7 +197,8 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
     const selected = courses.find(c => c.id === courseId)
     if (selected) {
       form.setValue("total_hours", selected.total_hours)
-      form.setValue("use_discount", false)
+      //form.setValue("use_discount", false)
+      form.setValue("is_discounted", false)
       form.setValue("contract_price", selected.base_price)
     }
   }
@@ -178,10 +210,12 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
         const { error } = await supabase
           .from("course_packages")
           .update({
+            instructor_id: values.instructor_id,
             course_id: values.course_id,
             contract_price: values.contract_price,
             total_hours: values.total_hours,
             status: values.status,
+            is_discounted: values.is_discounted,
           })
           .eq("id", packageId)
         if (error) throw error
@@ -191,7 +225,7 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
           .insert({
             account_id: values.account_id,
             course_id: values.course_id,
-            instructor_id: instructorId,
+            instructor_id: values.instructor_id,
             contract_price: values.contract_price,
             total_hours: values.total_hours,
             status: "active",
@@ -232,6 +266,41 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
           ) : (
             <Form {...(form as any)}>
               <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-8">
+
+
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                  <FormField
+                    control={control}
+                    name="instructor_id"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                          Інструктор
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLocked}>
+                          <FormControl>
+                            <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
+                              <SelectValue placeholder="Оберіть інструктора" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                            {instructors.map((ins) => (
+                              <SelectItem 
+                                key={ins.id} 
+                                value={ins.id} 
+                                className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer"
+                              >
+                                {ins.profiles?.first_name} {ins.profiles?.last_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={control}
@@ -286,14 +355,18 @@ export default function PackageFormModal({ isOpen, packageId, onClose, onSuccess
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={control}
-                    name="use_discount"
+                    name="is_discounted"
                     render={({ field }) => {
-                      const selectedCourse = courses.find(c => c.id === form.watch("course_id"));
-                      const hasDiscount = !!selectedCourse?.discounted_price;
+                      
+                      //const selectedCourse = courses.find(c => c.id === form.watch("course_id"));
+                      //const hasDiscount = !!selectedCourse?.discounted_price;
+                      const hasDiscount = true; // !!!!!!!!!
+
                       return (
                         <FormItem className="space-y-3">
                           {/* <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Offers</FormLabel> */}
-                          <div className="flex items-center space-x-3 h-16 rounded-xl border border-white/5 px-4 bg-white/5">
+                          {/* <div className="flex items-center space-x-3 h-16 rounded-xl border border-white/5 px-4 bg-white/5"> */}
+                          <div className="flex items-center space-x-3 h-16 rounded-xl border border-white/5 px-4">
                             <FormControl>
                               <Checkbox
                                 checked={field.value}
