@@ -8,6 +8,13 @@ import { supabase } from "@/lib/supabase"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 
+import { Saira } from 'next/font/google'
+const saira = Saira({ 
+  subsets: ['latin'], 
+  weight: ['600', '700'],
+  style: ['italic']
+})
+
 const DEV_ACCOUNTS = {
   admin: { email: "admin@motocrm.local", password: "password123", role: 'admin' },
   instructor: { email: "coach@motocrm.local", password: "password123", role: 'instructor' },
@@ -117,8 +124,8 @@ export default function LandingPage() {
           <div className="inline-flex p-3 bg-white/5 border border-white/10 rounded-2xl mb-4">
             <Bike className="text-primary" size={32} />
           </div>
-          <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter">
-            MOTO<span className="text-primary">CRM</span>
+          <h1 className={`${saira.className} text-5xl font-black italic text-white tracking-tighter`}>
+            RaceWay<span className="text-primary">CRM</span>
           </h1>
           {/* <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em]">
             {t("precision_mgmt")}

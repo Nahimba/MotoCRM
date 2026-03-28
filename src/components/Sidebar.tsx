@@ -13,6 +13,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import { supabase } from "@/lib/supabase" // Ensure this is imported
 
+import { Saira } from 'next/font/google'
+const saira = Saira({ 
+  subsets: ['latin'], 
+  weight: ['600', '700'],
+  style: ['italic']
+})
+
 export default function Sidebar() {
   const t = useTranslations('Sidebar');
   const locale = useLocale();
@@ -85,8 +92,11 @@ export default function Sidebar() {
       <aside className="hidden lg:flex w-64 bg-[#0a0a0a] text-white h-screen p-6 fixed left-0 top-0 border-r border-white/5 flex-col z-[100]">
         <div className="mb-10 flex items-center gap-3 px-2">
           <Bike className="text-primary" size={24} />
-          <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
+          {/* <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
             MOTO<span className="text-primary">CRM</span>
+          </h1> */}
+          <h1 className={`${saira.className} text-3xl font-black italic text-white tracking-tighter`}>
+            RaceWay<span className="text-primary">CRM</span>
           </h1>
         </div>
 
