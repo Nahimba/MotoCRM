@@ -389,7 +389,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
             </div>
 
             <div className="text-center md:text-left">
-              <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Visual ID</p>
+              <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Фото</p>
             </div>
           </div>
 
@@ -428,7 +428,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                   </select>
                 </Field>
               </div>
-              <Field label="Social Link"><input value={formData.social_link} onChange={e => setFormData({...formData, social_link: e.target.value})} className={inputClass} placeholder="Instagram/Facebook URL" /></Field>
+              <Field label="Сторінка в соцмережах"><input value={formData.social_link} onChange={e => setFormData({...formData, social_link: e.target.value})} className={inputClass} placeholder="Instagram/Facebook URL" /></Field>
             </div>
           </div>
 

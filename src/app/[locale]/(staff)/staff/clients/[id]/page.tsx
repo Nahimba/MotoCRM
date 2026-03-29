@@ -309,10 +309,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 <h1 className="text-2xl md:text-3xl font-black italic uppercase text-primary tracking-tighter leading-none">{profile?.last_name}</h1>
               </div>
               <div className="flex items-center justify-center md:justify-start gap-3 mt-4 md:mt-6">
-                <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">UID: {id.slice(0, 8)}</span>
+                {/* <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">UID: {id.slice(0, 8)}</span> */}
                 <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${client?.is_active ? 'text-green-500' : 'text-red-500'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${client?.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                  {client?.is_active ? t("active_status") : "Inactive"}
+                  {client?.is_active ? t("active_status") : "Неактивний"}
                 </span>
               </div>
             </div>
@@ -397,14 +397,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard 
-              label="Account Balance" 
+              label="Баланс" 
               value={`${totalDebt > 0 ? `-${totalDebt}` : 'Settled'}`} 
               unit={totalDebt > 0 ? "₴" : ""}
               icon={<CreditCard size={18} className={totalDebt > 0 ? "text-red-500" : "text-green-400"} />} 
               variant={totalDebt > 0 ? "danger" : "success"}
             />
             <StatCard 
-              label="Total Remaining" 
+              label="Залишок часу" 
               value={`${totalRemainingHours}H`} 
               icon={<Clock size={18} className="text-primary" />} 
               variant="default"
@@ -412,7 +412,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">Training Modules</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">Контракти</h3>
             
             {/* ADD CONTRACT BUTTON */}
             <button 
@@ -435,7 +435,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       </div>
                       <div>
                         <p className="text-lg font-black text-white italic uppercase tracking-tighter">{pkg.courses?.name || 'Package'}</p>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} of {pkg.total_hours} Hours Complete</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} of {pkg.total_hours} г. виконано</p>
                       </div>
                     </div>
                     <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg">

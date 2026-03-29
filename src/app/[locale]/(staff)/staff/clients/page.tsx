@@ -90,7 +90,8 @@ export default function ClientsPage() {
             }`}
           >
             <User size={14} />
-            {showOnlyMine ? "My Pilots" : "All Pilots"}
+            {/* {showOnlyMine ? "My Pilots" : "All Pilots"} */}
+            {showOnlyMine ? "Мої учні" : "Всі учні"}
           </button>
 
           {/* TOGGLE: ACTIVE vs INACTIVE */}
