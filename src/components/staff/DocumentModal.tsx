@@ -30,8 +30,12 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    
+    // 1. Зберігаємо посилання на форму ВІДРАЗУ
+    const form = e.currentTarget
     setIsUploading(true)
-    const formData = new FormData(e.currentTarget)
+    
+    const formData = new FormData(form)
     
     const { error } = await supabase.from('client_documents').insert({
       client_id: clientId,
@@ -43,7 +47,8 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
     })
 
     if (!error) {
-      e.currentTarget.reset()
+      // 2. Використовуємо збережене посилання замість e.currentTarget
+      form.reset()
       fetchDocuments()
       onUpdate()
     }
@@ -70,41 +75,42 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
         <div className="flex items-center gap-4 mb-8">
           <div className="p-4 bg-primary/10 rounded-2xl text-primary"><FileText size={24}/></div>
           <div>
-            <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter leading-none">Document Vault</h3>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Manage licensing & certificates</p>
+            <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter leading-none">Документи</h3>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">Документи учня</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* ADD NEW FORM */}
           <form onSubmit={handleSubmit} className="space-y-4 bg-white/5 p-6 rounded-[2rem] border border-white/5">
-            <input name="title" placeholder="Document Title" required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
+            <input name="title" placeholder="Назва" required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
             
             <select name="status" className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none">
-              <option value="pending_collection">Pending Collection</option>
-              <option value="submitted">Submitted</option>
-              <option value="ready">Ready</option>
-              <option value="completed">Completed</option>
+              <option value="pending_collection">Очікуються</option>
+              <option value="submitted">Подані</option>
+              <option value="ready">Готові</option>
+              <option value="completed">Видані</option>
             </select>
 
             <div className="relative">
               <LinkIcon size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input name="url" type="url" placeholder="Doc Link (Google Drive/S3)" className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
+              <input name="url" type="url" placeholder="Посилання (Google Drive..)" className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Submitted</label>
+                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Дата подачі документів</label>
                 <input name="submission_date" type="date" className="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white" />
               </div>
               <div className="space-y-1">
-                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Est. Ready</label>
+                <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Приблизна дата готовності</label>
                 <input name="ready_date_est" type="date" className="w-full bg-black border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white" />
               </div>
             </div>
 
             <button disabled={isUploading} className="w-full bg-primary text-black font-black py-4 rounded-xl uppercase text-[10px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2">
-              <Plus size={14} /> {isUploading ? "Syncing..." : "Add to Vault"}
+              <Plus size={14} /> {isUploading ? "Syncing..." : "Підтвердити"}
+              {/* {isUploading ? "Syncing..." : "Підтвердити"} */}
             </button>
           </form>
 
@@ -113,7 +119,7 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
             {documents.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
                 <FileText size={40} />
-                <p className="text-[10px] font-black uppercase mt-2">Vault Empty</p>
+                <p className="text-[10px] font-black uppercase mt-2">Документи відсутні</p>
               </div>
             ) : (
               documents.map((doc) => (
