@@ -298,9 +298,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <span className="text-4xl md:text-5xl font-black italic text-zinc-700 tracking-tighter">{initials}</span>
                 )}
               </div>
-              <div className="absolute -bottom-2 -right-2 bg-green-500 p-2 rounded-xl border-4 border-[#0a0a0a]">
+              {/* <div className="absolute -bottom-2 -right-2 bg-green-500 p-2 rounded-xl border-4 border-[#0a0a0a]">
                 <ShieldCheck size={18} className="text-black" />
-              </div>
+              </div> */}
             </div>
 
             <div className="text-center md:text-left">
