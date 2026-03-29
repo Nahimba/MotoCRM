@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
-import { X, Save, Clock, Calendar } from "lucide-react"
+import { X, Save, Calendar } from "lucide-react"
 
 interface Props {
   isOpen: boolean
@@ -130,22 +130,24 @@ export function WorkHoursModal({ isOpen, onClose, instructorId, onSuccess }: Pro
               {day.is_active && (
                 <div className="flex items-center gap-2 ml-auto">
                   <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                    {/* <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} /> */}
                     <input 
-                      type="time" 
+                      type="time"
+                      step="600" // Крок 10 хв для зручності
                       value={day.start_time.substring(0,5)} 
                       onChange={(e) => updateTime(index, 'start_time', e.target.value)}
-                      className="bg-black border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-primary"
+                      className="bg-black border border-white/10 rounded-lg p-4 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
                     />
                   </div>
                   <span className="text-slate-600">—</span>
                   <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                    {/* <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} /> */}
                     <input 
-                      type="time" 
+                      type="time"
+                      step="600"
                       value={day.end_time.substring(0,5)} 
                       onChange={(e) => updateTime(index, 'end_time', e.target.value)}
-                      className="bg-black border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-primary"
+                      className="bg-black border border-white/10 rounded-lg p-4 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
                     />
                   </div>
                 </div>

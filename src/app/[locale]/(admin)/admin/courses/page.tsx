@@ -260,7 +260,7 @@ export default function CoursesPage() {
                   required 
                   defaultValue={courses.find(c => c.id === editingId)?.name}
                   className="w-full bg-white/5 border border-white/10 rounded-xl p-4 mt-1 outline-none focus:border-primary text-white" 
-                  placeholder="e.g. Pro Rider A2"
+                  placeholder="Назва"
                 />
               </div>
 

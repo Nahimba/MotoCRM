@@ -159,7 +159,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
           <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-none text-white">
             {editData ? t('edit_title') : t('new_title')}
           </h2>
-          <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mt-2">{t('subtitle')}</p>
+          {/* <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mt-2">{t('subtitle')}</p> */}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 relative z-10">

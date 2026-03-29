@@ -194,9 +194,9 @@ export default function AdminFinances() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">{t('title')}</h1>
-            {user?.role === 'instructor' && (
+            {/* {user?.role === 'instructor' && (
               <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Personal Dashboard</div>
-            )}
+            )} */}
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -331,7 +331,9 @@ export default function AdminFinances() {
                             transaction.bizType === 'Auto' ? 'border-blue-500/50 text-blue-500' : 
                             'border-zinc-700 text-zinc-500'
                           }`}>
-                            {transaction.bizType}
+                            {/* {transaction.bizType} */}
+                            {/* {BUSINESS_TYPES.map((type) => ( t(`tabs.types.${type}`) ))} */}
+                            {t(`tabs.types.${transaction.bizType}`)}
                           </span>
                           <span className="text-[10px] text-zinc-600 uppercase font-bold">
                             {tc(`expense_categories.${transaction.category}`)}

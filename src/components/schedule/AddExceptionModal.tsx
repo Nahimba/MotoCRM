@@ -124,6 +124,36 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
+
+
+          {/* Тип блокування */}
+          <div className="grid grid-cols-3 gap-2">
+            {TYPES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setType(t.id)}
+                className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
+                  type === t.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/5 bg-white/5 text-slate-500'
+                }`}
+              >
+                <t.icon size={20} />
+                <span className="text-[10px] font-black uppercase">{t.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Опис */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Опис</label>
+            <input 
+              value={title} 
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Подробиці, якщо потрібно"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary text-white transition-colors"
+            />
+          </div>
+
           {/* Діапазон дат */}
           <div className="flex items-end gap-2">
             <div className="flex-1 space-y-2">
@@ -162,34 +192,6 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
             </div>
           </div>
 
-          {/* Тип блокування */}
-          <div className="grid grid-cols-3 gap-2">
-            {TYPES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setType(t.id)}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${
-                  type === t.id ? 'border-primary bg-primary/10 text-primary' : 'border-white/5 bg-white/5 text-slate-500'
-                }`}
-              >
-                <t.icon size={20} />
-                <span className="text-[10px] font-black uppercase">{t.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Опис */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Опис</label>
-            <input 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Подробиці, якщо потрібно"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary text-white transition-colors"
-            />
-          </div>
-
           {/* Весь день */}
           <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
             <div className="flex items-center gap-2 text-slate-300">
@@ -210,11 +212,11 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Час початку</label>
-                <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors" />
+                <input type="time" step="600" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors [color-scheme:dark]" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 ml-1">Час кінця</label>
-                <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors" />
+                <input type="time" step="600" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-colors [color-scheme:dark]" />
               </div>
             </div>
           )}

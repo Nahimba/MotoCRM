@@ -193,7 +193,7 @@ export default function PackagesPage() {
                     <div className="flex flex-col items-end md:items-start md:border-l border-white/5 md:pl-8 min-w-[60px]">
                       <div className="flex items-center gap-1 text-slate-600 mb-0.5">
                         <Clock size={10} />
-                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Usage</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Прогрес</span>
                       </div>
                       <p className={`text-sm md:text-lg font-black tabular-nums ${isLow ? 'text-red-500' : 'text-white'}`}>
                         {pkg.hours_used}<span className="text-slate-600 text-[9px] md:text-[11px] ml-0.5">/{pkg.total_hours}</span>
@@ -204,7 +204,7 @@ export default function PackagesPage() {
                     <div className="flex flex-col items-end md:items-start md:border-l border-white/5 md:pl-8 min-w-[70px]">
                       <div className="flex items-center gap-1 text-slate-600 mb-0.5">
                         <Banknote size={10} />
-                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Paid</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest hidden md:inline">Оплата</span>
                       </div>
                       <div className="flex flex-col items-end md:items-start">
                         <p className={`text-sm md:text-lg font-black tabular-nums ${isFullyPaid ? 'text-emerald-500' : 'text-white'}`}>

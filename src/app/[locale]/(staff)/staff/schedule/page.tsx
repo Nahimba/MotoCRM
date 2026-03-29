@@ -341,7 +341,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
-      <header className="px-2 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
+      <header className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
         <div className="flex items-center w-full relative">
           <div className="flex items-center gap-1 z-10">
             <div className="flex bg-white/5 p-0.5 rounded-xl border border-white/10">
@@ -389,7 +389,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
             )} */}
 
             {instructors.length > 0 && (
-              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-3 group hover:bg-white/10 transition-all cursor-pointer">
+              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-2 group hover:bg-white/10 transition-all cursor-pointer ">
                 <Users size={14} className="text-slate-500 mr-2" />
                 <select
                   value={showAllInstructors && viewMode === 'day' ? 'all' : (targetInstructorId || '')}
@@ -402,7 +402,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                       setTargetInstructorId(val);
                     }
                   }}
-                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-4"
+                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-2"
                 >
                   {/* Опція "Усі" показується тільки в режимі дня */}
                   {viewMode === 'day' && profile?.role === 'admin' && (
@@ -427,18 +427,20 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
 
           </div>
 
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
+
+          {/* <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5"></div> */}
+          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
             <button onClick={() => navigate('prev')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
               <ChevronLeft size={18} strokeWidth={3} />
             </button>
             
-            <div className="flex flex-col items-center px-2 min-w-[65px] md:min-w-[120px]">
+            <div className="flex flex-col items-center px-0 min-w-[65px] md:min-w-[120px]">
               <span className="text-[12px] md:text-[14px] font-black uppercase text-white whitespace-nowrap">
                 {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
               </span>
               {viewMode === 'week' && (
                 <span className="text-[12px] md:text-[14px] font-black text-primary uppercase italic leading-none whitespace-nowrap">
-                  {format(weekDays[0], 'dd/MM')}—{format(weekDays[6], 'dd/MM')}
+                  {format(weekDays[0], 'dd.MM')}-{format(weekDays[6], 'dd.MM')}
                 </span>
               )}
             </div>
@@ -475,13 +477,15 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
             </button>
 
           </div>
+
+          
         </div>
       </header>
 
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
-            <div className="flex ml-16 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[60]">
+            <div className="flex ml-16 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70]">
               {viewMode === 'week' ? (
                 weekDays.map((day, i) => (
                   <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
@@ -507,7 +511,8 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
           )}
 
           <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
-            <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-50 bg-black sticky left-0">
+            {/* Часова шкала (Таймлайн) */}
+            <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
               {HOURS.map(h => (
                 <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                   {format(h, 'HH:mm')}
