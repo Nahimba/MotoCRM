@@ -6,7 +6,7 @@ import {
   FileDown, TrendingUp, Wallet, Users, 
   PlusCircle, Calendar, ArrowUpRight, 
   BarChart3, ShieldCheck, GraduationCap, Loader2,
-  Package, Database, Bike, Banknote, ClipboardList
+  Package, Database, Bike, Banknote, History
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -168,6 +168,12 @@ export default function UnifiedDashboard() {
           icon={<Users size={20}/>} 
           label={t('nav.instructors')} 
           sub={t('nav.instructors_sub')} 
+        />
+        <NavButton 
+          href="/admin/audit_logs" 
+          icon={<History size={20} className="text-amber-500" />} 
+          label="Журнал аудиту" 
+          sub="Журнал аудиту"
         />
       </div>
 
