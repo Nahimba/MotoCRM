@@ -12,6 +12,8 @@ import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { LEAD_SOURCES, STUDENT_STAGES, type LeadSource, type StudentStage } from "@/constants/constants"
 
+import { AvatarModal } from "@/components/avatar/AvatarModal"
+
 export default function RiderForm({ initialData, id }: { initialData?: any, id?: string }) {
   const t = useTranslations("Clients")
   const tConst = useTranslations("Constants")
@@ -23,6 +25,14 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   
   const [isSaved, setIsSaved] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
+
+
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
+
+  const handleAvatarUploaded = (newFileName: string) => {
+    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
+    toast.success("Identity image captured")
+  }
   
   const [formData, setFormData] = useState({
     first_name: initialData?.profiles?.first_name || "",
@@ -118,74 +128,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     }
   }
 
-  // async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-  //   e.preventDefault()
-  //   if (uploading) return 
-  //   setLoading(true)
-    
-  //   try {
-  //     const profilePayload = {
-  //       first_name: formData.first_name, 
-  //       last_name: formData.last_name,
-  //       phone: formData.phone, 
-  //       email: formData.email, 
-  //       address: formData.address,
-  //       avatar_url: formData.avatar_url, 
-  //       social_link: formData.social_link,
-  //     }
-  
-  //     const clientPayload = {
-  //       gear_type: formData.gear_type, 
-  //       lead_source: formData.lead_source || null, 
-  //       notes: formData.notes, 
-  //       training_stage: formData.training_stage,
-  //       is_active: formData.is_active,
-  //     }
-  
-  //     if (id) {
-  //       // Direct update for existing records
-  //       const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
-  //       if (pError) throw pError
-  
-  //       const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
-  //       if (cError) throw cError
-  //     } else {
-  //       // Atomic creation via Edge Function
-  //       const { data: { session } } = await supabase.auth.getSession()
-        
-  //       if (!session?.access_token) {
-  //         throw new Error("No active session. Please log in.")
-  //       }
-  
-  //       const { error } = await supabase.functions.invoke('create-user', {
-  //         body: { 
-  //           profileData: profilePayload,
-  //           clientData: clientPayload,
-  //           role_to_create: 'rider' 
-  //         },
-  //         headers: {
-  //           // Force the exact format: "Bearer eyJ..."
-  //           'Authorization': `Bearer ${session.access_token}`
-  //         }
-  //       })
-        
-  //       if (error) {
-  //         // Log the specific error from the Edge Function
-  //         console.error("Function invocation error:", error)
-  //         throw error
-  //       }
-  //     }
-      
-  //     setIsSaved(true)
-  //     toast.success(id ? t("form.success_update") : t("form.success_create"))
-  //     router.push('/staff/clients')
-  //     router.refresh()
-  //   } catch (error: any) {
-  //     toast.error(error.message || "An unexpected error occurred")
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -272,74 +214,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   }
 
 
-  // async function handleSubmit(e: React.FormEvent) {
-  //   e.preventDefault()
-  //   if (uploading) return 
-  //   setLoading(true)
-    
-  //   try {
-  //     const { data: { user } } = await supabase.auth.getUser()
-  //     if (!user) throw new Error("Unauthorized")
-
-  //     const profilePayload = {
-  //       first_name: formData.first_name, 
-  //       last_name: formData.last_name,
-  //       phone: formData.phone, 
-  //       email: formData.email, 
-  //       address: formData.address,
-  //       avatar_url: formData.avatar_url, 
-  //       social_link: formData.social_link,
-  //     }
-
-  //     const clientPayload = {
-  //       gear_type: formData.gear_type, 
-  //       lead_source: formData.lead_source || null, 
-  //       notes: formData.notes, 
-  //       training_stage: formData.training_stage,
-  //       is_active: formData.is_active,
-  //     }
-
-  //     if (id) {
-  //       const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
-  //       if (pError) throw pError
-
-  //       const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
-  //       if (cError) throw cError
-  //     } else {
-  //       const newProfileId = crypto.randomUUID()
-        
-  //       const { error: pError } = await supabase.from('profiles').insert([{
-  //           id: newProfileId, 
-  //           ...profilePayload,
-  //           role: 'rider'
-  //       }])
-  //       if (pError) throw pError
-
-  //       const { data: clientData, error: cError } = await supabase.from('clients').insert([{
-  //           profile_id: newProfileId,
-  //           created_by_profile_id: user.id,
-  //           ...clientPayload
-  //       }]).select().single()
-  //       if (cError) throw cError
-
-  //       const { error: aError } = await supabase.from('accounts').insert([{
-  //           client_id: clientData.id,
-  //           created_by_profile_id: user.id,
-  //           account_status: 'active'
-  //       }])
-  //       if (aError) throw aError
-  //     }
-      
-  //     setIsSaved(true)
-  //     toast.success(id ? t("form.success_update") : t("form.success_create"))
-  //     router.push('/staff/clients')
-  //     router.refresh()
-  //   } catch (error: any) {
-  //     toast.error(error.message)
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
 
   const inputClass = "w-full bg-black border border-zinc-700 rounded-xl px-4 py-3 text-white focus:border-primary outline-none transition-colors placeholder:text-zinc-600 text-sm font-medium"
 
@@ -360,7 +234,9 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
           
           <div className="flex flex-col md:flex-row items-center gap-2 mb-4 pb-2 border-b border-zinc-800/50">
             <div className="relative group shrink-0">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+
+
+              {/* <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                 {previewUrl ? (
                   <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
                 ) : (
@@ -372,6 +248,24 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                     <Loader2 className="animate-spin text-primary" />
                   </div>
                 )}
+              </div> */}
+
+              <div 
+                onClick={() => setIsAvatarModalOpen(true)} 
+                className="relative group shrink-0 cursor-pointer"
+              >
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all">
+                  {previewUrl ? (
+                    <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
+                  ) : (
+                    <Camera className="text-zinc-700 group-hover:text-primary transition-colors" size={40} />
+                  )}
+                </div>
+                
+                {/* Кнопка редагування поверх фото */}
+                <div className="absolute -bottom-2 -right-2 bg-primary p-3 rounded-2xl text-black shadow-xl group-hover:scale-110 transition-transform">
+                  <Upload size={18} />
+                </div>
               </div>
               
               <div className="absolute -bottom-2 -right-2 flex gap-2">
@@ -483,6 +377,13 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
           {id ? t("form.update_btn") : t("form.recruit_btn")}
         </button>
       </form>
+
+      <AvatarModal 
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        onUploadSuccess={handleAvatarUploaded}
+      />
+
     </div>
   )
 }
@@ -495,3 +396,154 @@ function Field({ label, children }: { label: string, children: React.ReactNode }
     </div>
   )
 }
+
+
+
+
+
+  // async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  //   e.preventDefault()
+  //   if (uploading) return 
+  //   setLoading(true)
+    
+  //   try {
+  //     const profilePayload = {
+  //       first_name: formData.first_name, 
+  //       last_name: formData.last_name,
+  //       phone: formData.phone, 
+  //       email: formData.email, 
+  //       address: formData.address,
+  //       avatar_url: formData.avatar_url, 
+  //       social_link: formData.social_link,
+  //     }
+  
+  //     const clientPayload = {
+  //       gear_type: formData.gear_type, 
+  //       lead_source: formData.lead_source || null, 
+  //       notes: formData.notes, 
+  //       training_stage: formData.training_stage,
+  //       is_active: formData.is_active,
+  //     }
+  
+  //     if (id) {
+  //       // Direct update for existing records
+  //       const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
+  //       if (pError) throw pError
+  
+  //       const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
+  //       if (cError) throw cError
+  //     } else {
+  //       // Atomic creation via Edge Function
+  //       const { data: { session } } = await supabase.auth.getSession()
+        
+  //       if (!session?.access_token) {
+  //         throw new Error("No active session. Please log in.")
+  //       }
+  
+  //       const { error } = await supabase.functions.invoke('create-user', {
+  //         body: { 
+  //           profileData: profilePayload,
+  //           clientData: clientPayload,
+  //           role_to_create: 'rider' 
+  //         },
+  //         headers: {
+  //           // Force the exact format: "Bearer eyJ..."
+  //           'Authorization': `Bearer ${session.access_token}`
+  //         }
+  //       })
+        
+  //       if (error) {
+  //         // Log the specific error from the Edge Function
+  //         console.error("Function invocation error:", error)
+  //         throw error
+  //       }
+  //     }
+      
+  //     setIsSaved(true)
+  //     toast.success(id ? t("form.success_update") : t("form.success_create"))
+  //     router.push('/staff/clients')
+  //     router.refresh()
+  //   } catch (error: any) {
+  //     toast.error(error.message || "An unexpected error occurred")
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
+
+
+
+
+
+
+
+
+
+  // async function handleSubmit(e: React.FormEvent) {
+  //   e.preventDefault()
+  //   if (uploading) return 
+  //   setLoading(true)
+    
+  //   try {
+  //     const { data: { user } } = await supabase.auth.getUser()
+  //     if (!user) throw new Error("Unauthorized")
+
+  //     const profilePayload = {
+  //       first_name: formData.first_name, 
+  //       last_name: formData.last_name,
+  //       phone: formData.phone, 
+  //       email: formData.email, 
+  //       address: formData.address,
+  //       avatar_url: formData.avatar_url, 
+  //       social_link: formData.social_link,
+  //     }
+
+  //     const clientPayload = {
+  //       gear_type: formData.gear_type, 
+  //       lead_source: formData.lead_source || null, 
+  //       notes: formData.notes, 
+  //       training_stage: formData.training_stage,
+  //       is_active: formData.is_active,
+  //     }
+
+  //     if (id) {
+  //       const { error: pError } = await supabase.from('profiles').update(profilePayload).eq('id', initialData.profile_id)
+  //       if (pError) throw pError
+
+  //       const { error: cError } = await supabase.from('clients').update(clientPayload).eq('id', id)
+  //       if (cError) throw cError
+  //     } else {
+  //       const newProfileId = crypto.randomUUID()
+        
+  //       const { error: pError } = await supabase.from('profiles').insert([{
+  //           id: newProfileId, 
+  //           ...profilePayload,
+  //           role: 'rider'
+  //       }])
+  //       if (pError) throw pError
+
+  //       const { data: clientData, error: cError } = await supabase.from('clients').insert([{
+  //           profile_id: newProfileId,
+  //           created_by_profile_id: user.id,
+  //           ...clientPayload
+  //       }]).select().single()
+  //       if (cError) throw cError
+
+  //       const { error: aError } = await supabase.from('accounts').insert([{
+  //           client_id: clientData.id,
+  //           created_by_profile_id: user.id,
+  //           account_status: 'active'
+  //       }])
+  //       if (aError) throw aError
+  //     }
+      
+  //     setIsSaved(true)
+  //     toast.success(id ? t("form.success_update") : t("form.success_create"))
+  //     router.push('/staff/clients')
+  //     router.refresh()
+  //   } catch (error: any) {
+  //     toast.error(error.message)
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
