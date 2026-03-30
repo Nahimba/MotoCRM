@@ -102,11 +102,22 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
         // Add this to ensure RLS compliance for non-admins
         .eq('created_by_profile_id', user?.id);
       error = updateError;
+
+      if (!error) await logAction('UPDATE', editData.id, editData, payload);
     } else {
-      const { error: insertError } = await supabase
-        .from('business_expenses')
-        .insert([payload]);
+      // const { error: insertError } = await supabase
+      //   .from('business_expenses')
+      //   .insert([payload]);
+
+      const { data: inserted, error: insertError } = await supabase
+      .from('business_expenses')
+      .insert([payload])
+      .select('id')
+      .single();
+
       error = insertError;
+
+      if (!error && inserted) await logAction('INSERT', inserted.id, null, payload);
     }
 
     if (!error) {
@@ -132,6 +143,9 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
       .eq('created_by_profile_id', user?.id); // Ensure user owns the record
   
     if (!error) {
+      
+      await logAction('DELETE', editData.id, editData, null);
+
       onSuccess();
       onClose();
     } else {
@@ -139,6 +153,53 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, editData }: E
     }
     setLoading(false);
   };
+
+  const logAction = async (action: 'INSERT' | 'UPDATE' | 'DELETE', recordId: string, oldData: any, newData: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('auth_user_id', user?.id)
+        .single();
+  
+      const userName = profile ? `${profile.first_name} ${profile.last_name}` : user?.email;
+  
+      let description = "";
+      // Беремо значення для зручності
+      const oldAmt = oldData?.amount;
+      const newAmt = newData?.amount;
+      const category = newData?.category || oldData?.category;
+  
+      if (action === 'INSERT') {
+        description = `Створено витрату: ${newAmt} (${category})`;
+      } 
+      else if (action === 'UPDATE') {
+        if (oldAmt !== newAmt) {
+          description = `Оновлено витрату: ${oldAmt} -> ${newAmt} (${category})`;
+        } else {
+          description = `Оновлено витрату: ${newAmt} (${category})`;
+        }
+      } 
+      else if (action === 'DELETE') {
+        description = `Видалено витрату: ${oldAmt} (${category})`;
+      }
+  
+      await supabase.from('audit_logs').insert([{
+        table_name: 'business_expenses',
+        record_id: recordId,
+        action,
+        description,
+        old_data: oldData,
+        new_data: newData,
+        profile_id: profile?.id,
+        user_display_name: userName
+      }]);
+    } catch (e) {
+      console.error("Audit log error:", e);
+    }
+  };
+
 
   if (!isOpen) return null;
 

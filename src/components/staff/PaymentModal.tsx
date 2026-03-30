@@ -165,6 +165,9 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
           .eq('id', paymentId)
         
         if (error) throw error
+
+        await logAction('UPDATE', paymentId, editPayment, updatePayload);
+
         toast.success(t('updateSuccess'))
       } else {
         // PERFORM INSERT: Add the immutable creator ID
@@ -173,11 +176,20 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
           created_by_profile_id: profile?.id // If this is undefined, it won't send an empty string
         }
   
-        const { error } = await supabase
+        // const { error } = await supabase
+        //   .from('payments')
+        //   .insert([insertPayload])
+
+        const { data: inserted, error } = await supabase
           .from('payments')
           .insert([insertPayload])
+          .select()
+          .single()
         
         if (error) throw error
+
+        if (inserted) await logAction('INSERT', inserted.id, null, insertPayload);
+        
         toast.success(t('logSuccess'))
       }
   
@@ -190,6 +202,51 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
       setLoading(false)
     }
   }
+
+  const logAction = async (action: 'INSERT' | 'UPDATE' | 'DELETE', recordId: string, oldData: any, newData: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .eq('auth_user_id', user?.id)
+        .single();
+
+      const userName = profileData ? `${profileData.first_name} ${profileData.last_name}` : user?.email;
+      
+      let description = "";
+      const oldAmt = oldData?.amount;
+      const newAmt = newData?.amount;
+      // Використовуємо searchTerm як ім'я студента/курсу для опису
+      const target = searchTerm || "Платіж";
+
+      if (action === 'INSERT') {
+        description = `Зараховано платіж: ${newAmt} UAH — ${target}`;
+      } else if (action === 'UPDATE') {
+        if (oldAmt !== newAmt) {
+          description = `Оновлено платіж: ${oldAmt} -> ${newAmt} UAH — ${target}`;
+        } else {
+          description = `Змінено деталі платежу: ${newAmt} UAH — ${target}`;
+        }
+      } else if (action === 'DELETE') {
+        description = `Видалено платіж: ${oldAmt} UAH — ${target}`;
+      }
+
+      await supabase.from('audit_logs').insert([{
+        table_name: 'payments',
+        record_id: recordId,
+        action,
+        description,
+        old_data: oldData,
+        new_data: newData,
+        profile_id: profileData?.id,
+        user_display_name: userName
+      }]);
+    } catch (e) {
+      console.error("Audit error:", e);
+    }
+  };
+
 
   if (!isOpen) return null
 
@@ -363,8 +420,19 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
                 onClick={async () => {
                    if (!window.confirm(t('confirmDelete'))) return;
                    setLoading(true);
-                   await supabase.from('payments').delete().eq('id', editPayment.id);
-                   onSuccess(); onClose();
+
+                   const { error } = await supabase.from('payments').delete().eq('id', editPayment.id);
+                  //  onSuccess(); onClose();
+
+                  if (!error) {
+                    await logAction('DELETE', editPayment.id, editPayment, null); // <--- LOG DELETE
+                    onSuccess(); 
+                    onClose();
+                  } else {
+                    toast.error("Error deleting");
+                    setLoading(false);
+                  }
+                  
                 }} 
                 className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shrink-0 active:scale-95"
               >
