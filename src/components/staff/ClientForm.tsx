@@ -36,6 +36,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   
   const [formData, setFormData] = useState({
     first_name: initialData?.profiles?.first_name || "",
+    middle_name: initialData?.profiles?.middle_name || "",
     last_name: initialData?.profiles?.last_name || "",
     phone: initialData?.profiles?.phone || "",
     email: initialData?.profiles?.email || "",
@@ -129,9 +130,54 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   }
 
 
+  const formatFlexiblePhone = (value: string) => {
+    if (!value) return "";
+    
+    // Preserve the plus if it's at the start
+    const hasPlus = value.startsWith("+");
+    const digits = value.replace(/\D/g, "");
+    
+    let formatted = digits;
+  
+    if (digits.length > 0) {
+      if (digits.length <= 2) {
+        formatted = digits;
+      } else if (digits.length <= 5) {
+        formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
+      } else if (digits.length <= 8) {
+        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
+      } else if (digits.length <= 10) {
+        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
+      } else {
+        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+      }
+    }
+  
+    return hasPlus ? `+${formatted}` : formatted;
+  };
+
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (uploading) return 
+
+    // --- VALIDATION BLOCK ---
+    const digitCount = formData.phone.replace(/\D/g, "").length;
+    if (formData.phone && (digitCount < 7 || digitCount > 15)) {
+      toast.error("Невірний номер телефону");
+      return; // Stop execution early
+    }
+
+    // 1. Define the Regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // 2. Validate inside handleSubmit
+    if (formData.email && !emailRegex.test(formData.email)) {
+      toast.error("Невірний email адреса (або залиште поле пустим)");
+      setLoading(false); // Only if you've already set loading to true
+      return;
+    }
+    // --- END VALIDATION BLOCK ---
+
     setLoading(true)
     
     try {
@@ -139,7 +185,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
       if (!currentUser) throw new Error("Unauthorized")
   
       const profilePayload = {
-        first_name: formData.first_name, 
+        first_name: formData.first_name,
+        middle_name: formData.middle_name,
         last_name: formData.last_name,
         phone: formData.phone || null, 
         email: formData.email || null, 
@@ -294,9 +341,32 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t("form.first_name")}><input required value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} className={inputClass} /></Field>
+                <Field label="По батькові"><input value={formData.middle_name} onChange={e => setFormData({...formData, middle_name: e.target.value})} className={inputClass} /></Field>
                 <Field label={t("form.last_name")}><input value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} className={inputClass} /></Field>
               </div>
-              <Field label={t("form.phone")}><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="+380..." /></Field>
+              
+              {/* <Field label={t("form.phone")}><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="+380..." /></Field> */}
+              <Field label={t("form.phone")}>
+                <input 
+                  type="tel"
+                  value={formatFlexiblePhone(formData.phone)} 
+                  onChange={e => {
+                    const input = e.target.value;
+                    // Allow only digits and a leading plus
+                    const rawValue = input.startsWith('+') 
+                      ? '+' + input.replace(/\D/g, "") 
+                      : input.replace(/\D/g, "");
+                    
+                    // Limit total digits to 15 (standard international max)
+                    if (rawValue.length <= 16) { 
+                      setFormData({...formData, phone: rawValue});
+                    }
+                  }} 
+                  className={inputClass} 
+                  placeholder="+38 (0XX) XXX XX XX" 
+                />
+              </Field>
+
               <Field label={t("form.email")}><input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={inputClass} /></Field>
               <Field label={t("form.address")}><input value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className={inputClass} /></Field>
               
