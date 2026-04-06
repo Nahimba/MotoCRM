@@ -277,6 +277,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
 
 
+  const formatDisplayPhone = (value: string) => {
+    if (!value) return "";
+    const hasPlus = value.startsWith("+");
+    const digits = value.replace(/\D/g, "");
+    
+    let formatted = digits;
+    if (digits.length > 0) {
+      if (digits.length <= 2) formatted = digits;
+      else if (digits.length <= 5) formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
+      else if (digits.length <= 8) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
+      else if (digits.length <= 10) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
+      else formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+    }
+    return hasPlus ? `+${formatted}` : formatted;
+  };
+
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-24 px-4 pt-6">
@@ -364,9 +381,26 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 space-y-8 relative overflow-hidden">
           <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
           <div className="space-y-6">
-            <div className="flex items-center justify-between group/row">
+
+            {/* <div className="flex items-center justify-between group/row">
               <InfoRow icon={<Phone size={14}/>} label={t("phone")} value={profile?.phone} fallback="N/A" />
               {profile?.phone && (
+                <a href={`tel:${profile.phone}`} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl">
+                  <Phone size={16} />
+                </a>
+              )}
+            </div> */}
+            <div className="flex items-center justify-between group/row">
+              <InfoRow 
+                icon={<Phone size={14}/>} 
+                label={t("phone")} 
+                /* Use the formatter for display */
+                value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
+                fallback="N/A" 
+              />
+              
+              {profile?.phone && (
+                /* Keep profile.phone raw here for the system dialer */
                 <a href={`tel:${profile.phone}`} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl">
                   <Phone size={16} />
                 </a>
