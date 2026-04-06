@@ -6,7 +6,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { 
-  Plus, Calendar
+  Plus, Calendar,
+  ChevronDown
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { uk, enUS } from 'date-fns/locale';
@@ -182,6 +183,19 @@ export default function AdminFinances() {
       }
     }
   };
+
+  
+  const handleMonthChange = (month: number, year: number) => {
+    const date = new Date(year, month);
+    setDateRange({
+      start: format(startOfMonth(date), 'yyyy-MM-dd'),
+      end: format(endOfMonth(date), 'yyyy-MM-dd')
+    });
+  };
+  
+  // Current selection state derived from dateRange.start
+  const currentMonth = new Date(dateRange.start).getMonth();
+  const currentYear = new Date(dateRange.start).getFullYear();
   
 
   if (loading && !transactions.length) return <div className="p-8 text-zinc-500 font-mono text-xs uppercase animate-pulse">Loading Finances...</div>;
@@ -192,11 +206,77 @@ export default function AdminFinances() {
         
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">{t('title')}</h1>
-            {/* {user?.role === 'instructor' && (
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest px-1">Personal Dashboard</div>
-            )} */}
+          {/* COMPACT HEADER: TITLE LEFT, PICKER RIGHT */}
+          <div className="space-y-2 w-full lg:w-auto">
+            <div className="flex items-center justify-between lg:justify-start gap-4">
+              <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">
+                {t('title')}
+              </h1>
+
+              {/* MONTH SELECTOR - Hidden on Desktop here, shown as a clean text button */}
+              <div className="relative group lg:hidden">
+                <select
+                  value={`${new Date(dateRange.start).getMonth()}-${new Date(dateRange.start).getFullYear()}`}
+                  onChange={(e) => {
+                    const [m, y] = e.target.value.split('-').map(Number);
+                    const date = new Date(y, m);
+                    setDateRange({
+                      start: format(startOfMonth(date), 'yyyy-MM-dd'),
+                      end: format(endOfMonth(date), 'yyyy-MM-dd')
+                    });
+                  }}
+                  className="appearance-none bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-[10px] font-black uppercase text-white outline-none pr-7"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() - i);
+                    return (
+                      <option key={i} value={`${d.getMonth()}-${d.getFullYear()}`} className="bg-black">
+                        {format(d, 'MMMM yyyy', { locale: dateLocale })}
+                      </option>
+                    );
+                  })}
+                </select>
+                <ChevronDown className="w-3 h-3 text-zinc-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* DESKTOP MONTH + DATE RANGE SUBTITLE */}
+            <div className="flex items-center gap-3 px-0.5">
+              <div className="relative group hidden lg:block">
+                <select
+                  value={`${new Date(dateRange.start).getMonth()}-${new Date(dateRange.start).getFullYear()}`}
+                  onChange={(e) => {
+                    const [m, y] = e.target.value.split('-').map(Number);
+                    const date = new Date(y, m);
+                    setDateRange({
+                      start: format(startOfMonth(date), 'yyyy-MM-dd'),
+                      end: format(endOfMonth(date), 'yyyy-MM-dd')
+                    });
+                  }}
+                  className="appearance-none bg-transparent text-[11px] font-black uppercase tracking-widest text-zinc-400 hover:text-white cursor-pointer outline-none transition-colors pr-4"
+                >
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const d = new Date();
+                    d.setMonth(d.getMonth() - i);
+                    return (
+                      <option key={i} value={`${d.getMonth()}-${d.getFullYear()}`} className="bg-black">
+                        {format(d, 'MMMM yyyy', { locale: dateLocale })}
+                      </option>
+                    );
+                  })}
+                </select>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className="border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[4px] border-t-zinc-700" />
+                </div>
+              </div>
+
+              <div className="hidden lg:block w-1 h-1 rounded-full bg-zinc-800" />
+
+              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-tight">
+                {format(new Date(dateRange.start), 'dd.MM')} — {format(new Date(dateRange.end), 'dd.MM.yyyy')}
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
