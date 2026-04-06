@@ -396,7 +396,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 label={t("phone")} 
                 /* Use the formatter for display */
                 value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
-                fallback="N/A" 
+                fallback="Немає номеру" 
               />
               
               {profile?.phone && (
