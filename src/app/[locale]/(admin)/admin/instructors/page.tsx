@@ -58,11 +58,19 @@ export default function HQStaffPage() {
       toast.error(error.message);
     } else {
       // Map 'instructor' role back to 'staff' for the UI logic
+      // const mappedData = (data as any[]).map(profile => ({
+      //   ...profile,
+      //   role: profile.role === 'instructor' ? 'staff' : profile.role
+      // }));
+      // setStaff(mappedData as StaffMember[]);
+      // FIX: Ensure the entire instructor object is kept while mapping the role
       const mappedData = (data as any[]).map(profile => ({
         ...profile,
-        role: profile.role === 'instructor' ? 'staff' : profile.role
+        role: profile.role === 'instructor' ? 'staff' : profile.role,
+        // Ensure instructors is an object, not an array (Supabase returns objects for 1-to-1)
+        instructors: Array.isArray(profile.instructors) ? profile.instructors[0] : profile.instructors
       }));
-      setStaff(mappedData as StaffMember[]);
+      setStaff(mappedData);
     }
     setLoading(false);
   }
@@ -97,6 +105,36 @@ export default function HQStaffPage() {
       fetchStaff();
     }
   }
+
+  // async function toggleAccess(member: StaffMember) {
+  //   // 1. Ensure the instructor ID exists
+  //   const instructorId = member.instructors?.id;
+  //   if (!instructorId) {
+  //     toast.error("Instructor record not found");
+  //     return;
+  //   }
+  
+  //   // 2. Logic check: if view is 'active', we want to set is_active to false (archive)
+  //   const newStatus = view !== 'active';
+  
+  //   const { error } = await supabase
+  //     .from('instructors')
+  //     .update({ is_active: newStatus })
+  //     .eq('id', instructorId);
+  
+  //   if (error) {
+  //     console.error("Update Error:", error);
+  //     toast.error(error.message);
+  //   } else {
+  //     toast.success(
+  //       view === 'active' 
+  //         ? t('notifications.archive_success') 
+  //         : t('notifications.restore_success')
+  //     );
+  //     // 3. Re-fetch to update UI
+  //     fetchStaff();
+  //   }
+  // }
 
   async function handleSaveStaff(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
