@@ -213,17 +213,13 @@ export default function AdminFinances() {
                 {t('title')}
               </h1>
 
-              {/* MONTH SELECTOR - Hidden on Desktop here, shown as a clean text button */}
-              <div className="relative group lg:hidden">
+              {/* MONTH SELECTOR */}
+              <div className="relative group">
                 <select
-                  value={`${new Date(dateRange.start).getMonth()}-${new Date(dateRange.start).getFullYear()}`}
+                  value={`${currentMonth}-${currentYear}`}
                   onChange={(e) => {
                     const [m, y] = e.target.value.split('-').map(Number);
-                    const date = new Date(y, m);
-                    setDateRange({
-                      start: format(startOfMonth(date), 'yyyy-MM-dd'),
-                      end: format(endOfMonth(date), 'yyyy-MM-dd')
-                    });
+                    handleMonthChange(m, y); // Much cleaner call
                   }}
                   className="appearance-none bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-[10px] font-black uppercase text-white outline-none pr-7"
                 >
@@ -239,43 +235,6 @@ export default function AdminFinances() {
                 </select>
                 <ChevronDown className="w-3 h-3 text-zinc-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-            </div>
-
-            {/* DESKTOP MONTH + DATE RANGE SUBTITLE */}
-            <div className="flex items-center gap-3 px-0.5">
-              <div className="relative group hidden lg:block">
-                <select
-                  value={`${new Date(dateRange.start).getMonth()}-${new Date(dateRange.start).getFullYear()}`}
-                  onChange={(e) => {
-                    const [m, y] = e.target.value.split('-').map(Number);
-                    const date = new Date(y, m);
-                    setDateRange({
-                      start: format(startOfMonth(date), 'yyyy-MM-dd'),
-                      end: format(endOfMonth(date), 'yyyy-MM-dd')
-                    });
-                  }}
-                  className="appearance-none bg-transparent text-[11px] font-black uppercase tracking-widest text-zinc-400 hover:text-white cursor-pointer outline-none transition-colors pr-4"
-                >
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() - i);
-                    return (
-                      <option key={i} value={`${d.getMonth()}-${d.getFullYear()}`} className="bg-black">
-                        {format(d, 'MMMM yyyy', { locale: dateLocale })}
-                      </option>
-                    );
-                  })}
-                </select>
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[4px] border-t-zinc-700" />
-                </div>
-              </div>
-
-              <div className="hidden lg:block w-1 h-1 rounded-full bg-zinc-800" />
-
-              <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-tight">
-                {format(new Date(dateRange.start), 'dd.MM')} — {format(new Date(dateRange.end), 'dd.MM.yyyy')}
-              </span>
             </div>
           </div>
 
@@ -331,18 +290,20 @@ export default function AdminFinances() {
             <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-3xl p-6 backdrop-blur-md">
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">{t('chart_title')}</h3>
-                <div className="flex gap-4 items-center">
-                   <Calendar className="w-3 h-3 text-zinc-700" />
-                   <input 
-                    type="date" value={dateRange.start}
+                <div className="flex gap-2 items-center opacity-40 hover:opacity-100 transition-opacity">
+                  <input 
+                    type="date" 
+                    value={dateRange.start}
                     onChange={e => setDateRange(p => ({...p, start: e.target.value}))}
-                    className="bg-transparent text-[10px] font-mono font-bold text-zinc-400 outline-none border-b border-zinc-800 pb-1"
-                   />
-                   <input 
-                    type="date" value={dateRange.end}
+                    className="bg-transparent text-[9px] font-mono font-bold text-zinc-500 outline-none [color-scheme:dark]"
+                  />
+                  <span className="text-zinc-800 text-[9px]">—</span>
+                  <input 
+                    type="date" 
+                    value={dateRange.end}
                     onChange={e => setDateRange(p => ({...p, end: e.target.value}))}
-                    className="bg-transparent text-[10px] font-mono font-bold text-zinc-400 outline-none border-b border-zinc-800 pb-1"
-                   />
+                    className="bg-transparent text-[9px] font-mono font-bold text-zinc-500 outline-none [color-scheme:dark]"
+                  />
                 </div>
               </div>
               <div className="h-[300px] w-full">

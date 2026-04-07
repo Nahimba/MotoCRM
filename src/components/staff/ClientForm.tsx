@@ -379,8 +379,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t("form.transmission")}>
                   <select value={formData.gear_type} onChange={e => setFormData({...formData, gear_type: e.target.value})} className={inputClass}>
-                    <option value="Manual">Manual</option>
-                    <option value="Auto">Auto</option>
+                    <option value="Manual">{tConst ("gear_type.Manual")}</option>
+                    <option value="Auto">{tConst ("gear_type.Auto")}</option>
                   </select>
                 </Field>
                 <Field label={t("form.lead_source")}>
@@ -409,7 +409,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
             onClick={() => setFormData({...formData, is_active: !formData.is_active})} 
             className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${formData.is_active ? 'border-primary bg-primary/10 text-primary' : 'border-zinc-800 text-zinc-500'}`}
           >
-            <span className="text-xs font-black uppercase tracking-widest">Active Status</span>
+            <span className="text-xs font-black uppercase tracking-widest">{formData.is_active ? "Активний"  : "Неактивний"} </span>
             <Power size={20} />
           </button>
 

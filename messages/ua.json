@@ -458,7 +458,7 @@
       "completion": "Завершено",
       "no_deployment": "Немає активних розгортань",
       "unspecified": "НЕ ВКАЗАНО",
-      "active_status": "Активний склад"
+      "active_status": "Активний"
     }
   },
   "Tags": {
@@ -547,6 +547,11 @@
         "fop": "ФОП",
         "cash": "Готівка"
       }
+    },
+    "gear_type": {
+      "transmission": "Трансмісія",
+      "Auto": "Автомат",
+      "Manual": "Механіка"
     }
   }
 }

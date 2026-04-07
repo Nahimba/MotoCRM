@@ -21,6 +21,7 @@ import { toast } from "sonner"
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
+  const tConst = useTranslations("Constants.gear_type")
   const { id } = use(params)
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -411,8 +412,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="pt-4 border-t border-white/5">
             <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
-            <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${client?.gear_type === 'Auto' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
-              {client?.gear_type || 'Manual'}
+            <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${ tConst(client?.gear_type) ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
+              { tConst(client?.gear_type)}
             </span>
           </div>
 
@@ -421,7 +422,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             className="w-full bg-primary/10 border border-primary/20 hover:bg-primary hover:text-black py-4 rounded-2xl flex items-center justify-center gap-3 group transition-all font-black uppercase text-[10px] tracking-widest text-primary"
           >
             <FileText size={16} />
-            Documents {docCount > 0 && <span className="bg-primary text-black px-2 py-0.5 rounded-md ml-1">{docCount}</span>}
+            Документи {docCount > 0 && <span className="bg-primary text-black px-2 py-0.5 rounded-md ml-1">{docCount}</span>}
           </button>
           
         </div>
@@ -469,7 +470,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       </div>
                       <div>
                         <p className="text-lg font-black text-white italic uppercase tracking-tighter">{pkg.courses?.name || 'Package'}</p>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} of {pkg.total_hours} г. виконано</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} з {pkg.total_hours} г. виконано</p>
                       </div>
                     </div>
                     <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg">
