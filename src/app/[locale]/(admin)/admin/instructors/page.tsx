@@ -106,36 +106,6 @@ export default function HQStaffPage() {
     }
   }
 
-  // async function toggleAccess(member: StaffMember) {
-  //   // 1. Ensure the instructor ID exists
-  //   const instructorId = member.instructors?.id;
-  //   if (!instructorId) {
-  //     toast.error("Instructor record not found");
-  //     return;
-  //   }
-  
-  //   // 2. Logic check: if view is 'active', we want to set is_active to false (archive)
-  //   const newStatus = view !== 'active';
-  
-  //   const { error } = await supabase
-  //     .from('instructors')
-  //     .update({ is_active: newStatus })
-  //     .eq('id', instructorId);
-  
-  //   if (error) {
-  //     console.error("Update Error:", error);
-  //     toast.error(error.message);
-  //   } else {
-  //     toast.success(
-  //       view === 'active' 
-  //         ? t('notifications.archive_success') 
-  //         : t('notifications.restore_success')
-  //     );
-  //     // 3. Re-fetch to update UI
-  //     fetchStaff();
-  //   }
-  // }
-
   async function handleSaveStaff(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsSubmitting(true);

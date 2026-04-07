@@ -76,34 +76,79 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const [isLinking, setIsLinking] = useState(false);
 
+  // const handleMakePublic = async () => {
+  //   if (!client?.profile_id) return;
+  //   setIsLinking(true);
+  //   try {
+  //     const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+  //     if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
+
+  //     const { data, error } = await supabase.functions.invoke('create-user-for-profile', {
+  //       body: { 
+  //         profileData: {
+  //           first_name: profile.first_name,
+  //           last_name: profile.last_name,
+  //           email: profile.email,
+  //         },
+  //         clientData: {}, 
+  //         role_to_create: 'rider',
+  //         existing_profile_id: client.profile_id 
+  //       },
+  //       headers: { Authorization: `Bearer ${session.access_token}` }
+  //     });
+
+  //     if (error) throw error;
+
+  //     toast.success("Створено публічний аккаунт");
+      
+  //     // Refresh the page data so the auth_user_id is updated in the local state
+  //     router.refresh(); 
+  //     // If using a manual fetcher: await loadClientData(); 
+  //   } catch (err: any) {
+  //     toast.error(err.message || "Помилка створення публічного аккаунта!");
+  //   } finally {
+  //     setIsLinking(false);
+  //   }
+  // };
+
   const handleMakePublic = async () => {
     if (!client?.profile_id) return;
     setIsLinking(true);
     try {
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
-
+  
       const { data, error } = await supabase.functions.invoke('create-user-for-profile', {
         body: { 
           profileData: {
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            email: profile.email,
+            // first_name: profile.first_name,
+            // last_name: profile.last_name,
+            // email: profile.email,
+            first_name: client.profiles.first_name,
+            last_name: client.profiles.last_name,
+            email: client.profiles.email,
           },
-          clientData: {}, 
           role_to_create: 'rider',
           existing_profile_id: client.profile_id 
         },
         headers: { Authorization: `Bearer ${session.access_token}` }
       });
-
+  
       if (error) throw error;
-
-      toast.success("Створено публічний аккаунт");
+  
+      // --- КЛЮЧОВИЙ МОМЕНТ: Оновлюємо локальний стан ---
+      setClient((prev: any) => ({
+        ...prev,
+        profiles: {
+          ...prev.profiles,
+          auth_user_id: data.id // беремо ID, який повернула функція
+        }
+      }));
+  
+      toast.success("Створено публічний акаунт");
       
-      // Refresh the page data so the auth_user_id is updated in the local state
+      // Опціонально залишаємо refresh для синхронізації з сервером у фоні
       router.refresh(); 
-      // If using a manual fetcher: await loadClientData(); 
     } catch (err: any) {
       toast.error(err.message || "Помилка створення публічного аккаунта!");
     } finally {
@@ -144,6 +189,46 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setIsSending(false);
     }
   };
+
+
+  // const [isSending, setIsSending] = useState(false);
+  // const [lastInviteSentAt, setLastInviteSentAt] = useState<number | null>(null);
+
+  // const handleSendInvite = async () => {
+  //   if (!client?.profile_id) return;
+  //   setIsSending(true);
+    
+  //   try {
+  //     const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+  //     if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
+
+  //     const { data, error } = await supabase.functions.invoke('send-invite', {
+  //       body: { 
+  //         profile_id: client.profile_id, 
+  //         template_slug: 'invitation_email_ua' 
+  //       },
+  //       headers: { Authorization: `Bearer ${session.access_token}` },
+  //     });
+
+  //     if (error) throw new Error(error.message);
+
+  //     if (data?.status === "already_confirmed") {
+  //       toast.info("Цей учень вже активував акаунт.");
+  //       // Якщо він уже підтверджений, оновимо локальний стан, щоб кнопка змінилася на "Скинути пароль"
+  //       setClient((prev: any) => ({
+  //         ...prev,
+  //         profiles: { ...prev.profiles, is_confirmed: true }
+  //       }));
+  //     } else {
+  //       toast.success("Запрошення надіслано!");
+  //       setLastInviteSentAt(Date.now()); // Фіксуємо час відправки
+  //     }
+  //   } catch (err: any) {
+  //     toast.error(`Помилка: ${err.message}`);
+  //   } finally {
+  //     setIsSending(false);
+  //   }
+  // };
 
   
   const [isResetting, setIsResetting] = useState(false);
@@ -404,7 +489,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     {isSending ? <Loader2 className="animate-spin" size={16} /> : "Надіслати Запрошення"}
                   </button>
                 ) : (
-                  /* CASE 3: Account exists and is confirmed */
+                  // CASE 3: Account exists and is confirmed 
                   <button 
                     onClick={() => handleResetRequest(client.profile_id)} 
                     disabled={isResetting} 
