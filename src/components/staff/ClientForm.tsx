@@ -374,7 +374,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
 
             <div className="space-y-6">
               <h2 className="text-primary text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                <Target size={14}/> {t("details.transmission")}
+                <Target size={14}/> {"Додаткові дані"}
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t("form.transmission")}>

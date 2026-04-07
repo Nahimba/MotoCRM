@@ -74,6 +74,45 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
 
 
+  const [isLinking, setIsLinking] = useState(false);
+
+  const handleMakePublic = async () => {
+    if (!client?.profile_id) return;
+    setIsLinking(true);
+    try {
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
+
+      const { data, error } = await supabase.functions.invoke('create-user-for-profile', {
+        body: { 
+          profileData: {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email,
+          },
+          clientData: {}, 
+          role_to_create: 'rider',
+          existing_profile_id: client.profile_id 
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      if (error) throw error;
+
+      toast.success("Створено публічний аккаунт");
+      
+      // Refresh the page data so the auth_user_id is updated in the local state
+      router.refresh(); 
+      // If using a manual fetcher: await loadClientData(); 
+    } catch (err: any) {
+      toast.error(err.message || "Помилка створення публічного аккаунта!");
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+
+
   const [isSending, setIsSending] = useState(false);
 
   const handleSendInvite = async () => {
@@ -96,11 +135,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       if (data?.status === "already_confirmed") {
         alert("This student has already activated their account.");
       } else {
-        alert("Invitation sent successfully!");
+        alert("Запрошення успішно надіслано!");
       }
     } catch (err: any) {
-      console.error("DEBUG:", err);
-      alert(`Failed: ${err.message || "An unexpected error occurred."}`);
+      console.error("DEBUG_INVITE:", err);
+      alert(`Помилка відправки: ${err.message || "Непередбачена помилка."}`);
     } finally {
       setIsSending(false);
     }
@@ -336,12 +375,56 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          <div className="flex gap-4">
+
+
+          <div className="flex flex-wrap gap-4">
+            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
+              {t("modify")}
+            </Link>
+
+            {/* CASE 1: Profile exists in CRM but has no Auth User yet */}
+            {!profile?.auth_user_id ? (
+              <button 
+                onClick={handleMakePublic} 
+                disabled={isLinking || !profile?.email} 
+                className="bg-blue-600 text-white py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+              >
+                {isLinking ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                {!profile?.email ? "Вкажіть Email" : "Надати публічний доступ"}
+              </button>
+            ) : (
+              <>
+                {/* CASE 2: Account exists but not confirmed */}
+                {!isConfirmed ? (
+                  <button 
+                    onClick={handleSendInvite} 
+                    disabled={isSending} 
+                    className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isSending ? <Loader2 className="animate-spin" size={16} /> : "Надіслати Запрошення"}
+                  </button>
+                ) : (
+                  /* CASE 3: Account exists and is confirmed */
+                  <button 
+                    onClick={() => handleResetRequest(client.profile_id)} 
+                    disabled={isResetting} 
+                    className="bg-zinc-800 text-zinc-400 border border-white/5 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isResetting ? <Loader2 className="animate-spin" size={16} /> : "Скинути Пароль"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+
+          {/* <div className="flex gap-4">
+
             <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all">
               {t("modify")}
             </Link>
             {!isConfirmed ? (
-              /* КНОПКА ЗАПРОШЕННЯ: показуємо, якщо НЕ підтверджено */
+              //  КНОПКА ЗАПРОШЕННЯ: показуємо, якщо НЕ підтверджено 
               <button 
                 onClick={handleSendInvite} 
                 disabled={isSending} 
@@ -350,7 +433,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 {isSending ? <Loader2 className="animate-spin" size={16} /> : "Надіслати Запрошення"}
               </button>
             ) : (
-              /* КНОПКА СКИНУТИ ПАРОЛЬ: показуємо, якщо вже підтверджено */
+              // КНОПКА СКИНУТИ ПАРОЛЬ: показуємо, якщо вже підтверджено 
               <button 
                 onClick={() => handleResetRequest(client.profile_id)} 
                 disabled={isResetting} 
@@ -359,6 +442,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 {isResetting ? <Loader2 className="animate-spin" size={16} /> : "Скинути Пароль"}
               </button>
             )}
+
+          </div> */}
+            
+
             {/* <button onClick={handleSendInvite} disabled={isSending} className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50">
               
               {isResetting ? <Loader2 className="animate-spin" /> : "Надіслати Запрошення"}
@@ -372,8 +459,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             {/* <button disabled={isResetting} onClick={() => handleResetRequest(client.profile_id)}>
               {isResetting ? <Loader2 className="animate-spin" /> : "Скинути пароль"}
             </button> */}
-            
-          </div>
+
         </div>
       </div>
 
