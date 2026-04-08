@@ -5,20 +5,15 @@ import { routing } from './i18n/routing'
 
 const intlMiddleware = createMiddleware(routing);
 
-// Експортуємо саме 'proxy', як того очікує Turbopack у версії 16+
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // 1. Початковий редирект для кореневого шляху (/)
   if (pathname === '/') {
     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
   }
 
-  // 2. Ініціалізація відповіді через i18n
-  // Це база, яка містить правильні локалі та заголовки
   let response = intlMiddleware(request);
 
-  // 3. Ініціалізація клієнта Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,12 +21,9 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
-          // Оновлюємо куки в запиті
           cookiesToSet.forEach(({ name, value, options }) =>
             request.cookies.set({ name, value, ...options })
           );
-          
-          // Модифікуємо існуючий response, щоб зберегти дані від intlMiddleware
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set({ name, value, ...options })
           );
@@ -40,56 +32,59 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Отримуємо користувача (getUser — найнадійніший метод)
+  // 1. Отримуємо юзера (валідація JWT на сервері)
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role;
   
-  // Логіка визначення локалі та чистого шляху
+  // 2. СУВОРА ПЕРЕВІРКА РОЛІ (Тільки системні дані)
+  let role = user?.app_metadata?.role;
+
+  // FALLBACK: Якщо в JWT ролі ще немає (кеш), запитуємо БД.
+  // Це спрацює лише якщо RLS дозволяє (auth.uid() = auth_user_id)
+  if (user && !role) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .single();
+    
+    role = profile?.role;
+  }
+  
   const segments = pathname.split('/');
   const isLocalePresent = routing.locales.includes(segments[1] as any);
   const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
   const purePathname = '/' + segments.slice(isLocalePresent ? 2 : 1).join('/');
-
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
 
-  // --- 4. Логіка Bypass (Абсолютний пріоритет) ---
-
-  const isAuthConfirm = purePathname.startsWith('/auth/confirm');
-  const isUpdatePassword = purePathname.startsWith('/auth/update-password');
-  
-  // Перевіряємо тип потоку або наявність коду підтвердження
+  // 3. AUTH BYPASS (Confirm, Password Update, etc.)
+  const isAuthRoute = purePathname.startsWith('/auth');
   const hasCode = searchParams.has('code');
-  const authType = searchParams.get('type');
-  const isRecoveryFlow = hasCode || authType === 'recovery' || authType === 'invite' || authType === 'signup';
+  if (isAuthRoute || hasCode) return response;
 
-  const isPublicRoute = 
-    purePathname === '/' || 
-    purePathname === '/register' || 
-    purePathname.startsWith('/auth');
+  const isPublicRoute = purePathname === '/' || purePathname === '/register';
 
-  // Якщо це системний процес авторизації — негайно повертаємо response
-  if (isAuthConfirm || isUpdatePassword || isRecoveryFlow) {
-    return response;
-  }
-
-  // --- 5. Редиректи ---
-
-  // Захист: Неавторизований на приватних сторінках
+  // 4. ЗАХИСТ ТА РЕДИРЕКТИ
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'));
   }
 
-  // Захист: Авторизований на сторінках входу
   if (user && isPublicRoute) {
-    const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
-    if (!purePathname.startsWith(dash)) {
-      return NextResponse.redirect(localize(dash));
-    }
+    let dash = '/account'; // Default для rider
+    if (role === 'admin') dash = '/admin';
+    else if (role === 'instructor') dash = '/staff';
+    
+    return NextResponse.redirect(localize(dash));
   }
 
-  // Рольовий доступ (RBAC)
+  // 5. СТРОГИЙ RBAC (Role-Based Access Control)
   if (purePathname.startsWith('/admin') && role !== 'admin') {
     return NextResponse.redirect(localize('/account'));
+  }
+
+  if (purePathname.startsWith('/staff')) {
+    if (role !== 'instructor' && role !== 'admin') {
+      return NextResponse.redirect(localize('/account'));
+    }
   }
 
   return response;
@@ -98,6 +93,110 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 };
+
+// import { createServerClient } from '@supabase/ssr'
+// import { NextResponse, type NextRequest } from 'next/server'
+// import createMiddleware from 'next-intl/middleware'
+// import { routing } from './i18n/routing'
+
+// const intlMiddleware = createMiddleware(routing);
+
+// // Експортуємо саме 'proxy', як того очікує Turbopack у версії 16+
+// export async function proxy(request: NextRequest) {
+//   const { pathname, searchParams } = request.nextUrl;
+
+//   // 1. Початковий редирект для кореневого шляху (/)
+//   if (pathname === '/') {
+//     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
+//   }
+
+//   // 2. Ініціалізація відповіді через i18n
+//   // Це база, яка містить правильні локалі та заголовки
+//   let response = intlMiddleware(request);
+
+//   // 3. Ініціалізація клієнта Supabase
+//   const supabase = createServerClient(
+//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+//     {
+//       cookies: {
+//         getAll: () => request.cookies.getAll(),
+//         setAll: (cookiesToSet) => {
+//           // Оновлюємо куки в запиті
+//           cookiesToSet.forEach(({ name, value, options }) =>
+//             request.cookies.set({ name, value, ...options })
+//           );
+          
+//           // Модифікуємо існуючий response, щоб зберегти дані від intlMiddleware
+//           cookiesToSet.forEach(({ name, value, options }) =>
+//             response.cookies.set({ name, value, ...options })
+//           );
+//         },
+//       },
+//     }
+//   );
+
+//   // Отримуємо користувача (getUser — найнадійніший метод)
+//   const { data: { user } } = await supabase.auth.getUser();
+//   const role = user?.user_metadata?.role;
+  
+//   // Логіка визначення локалі та чистого шляху
+//   const segments = pathname.split('/');
+//   const isLocalePresent = routing.locales.includes(segments[1] as any);
+//   const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
+//   const purePathname = '/' + segments.slice(isLocalePresent ? 2 : 1).join('/');
+
+//   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
+
+//   // --- 4. Логіка Bypass (Абсолютний пріоритет) ---
+
+//   const isAuthConfirm = purePathname.startsWith('/auth/confirm');
+//   const isUpdatePassword = purePathname.startsWith('/auth/update-password');
+  
+//   // Перевіряємо тип потоку або наявність коду підтвердження
+//   const hasCode = searchParams.has('code');
+//   const authType = searchParams.get('type');
+//   const isRecoveryFlow = hasCode || authType === 'recovery' || authType === 'invite' || authType === 'signup';
+
+//   const isPublicRoute = 
+//     purePathname === '/' || 
+//     purePathname === '/register' || 
+//     purePathname.startsWith('/auth');
+
+//   // Якщо це системний процес авторизації — негайно повертаємо response
+//   if (isAuthConfirm || isUpdatePassword || isRecoveryFlow) {
+//     return response;
+//   }
+
+//   // --- 5. Редиректи ---
+
+//   // Захист: Неавторизований на приватних сторінках
+//   if (!user && !isPublicRoute) {
+//     return NextResponse.redirect(localize('/'));
+//   }
+
+//   // Захист: Авторизований на сторінках входу
+//   if (user && isPublicRoute) {
+//     const dash = role === 'admin' ? '/admin' : role === 'instructor' ? '/staff' : '/account';
+//     if (!purePathname.startsWith(dash)) {
+//       return NextResponse.redirect(localize(dash));
+//     }
+//   }
+
+//   // Рольовий доступ (RBAC)
+//   if (purePathname.startsWith('/admin') && role !== 'admin') {
+//     return NextResponse.redirect(localize('/account'));
+//   }
+
+//   return response;
+// }
+
+// export const config = {
+//   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+// };
+
+
+
 
 
 

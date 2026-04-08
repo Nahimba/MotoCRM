@@ -9,6 +9,9 @@ import {
 import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 
+
+import UserAuthControl from "@/components/UserAuthControl"
+
 interface StaffMember {
   id: string; // profile_id
   first_name: string;
@@ -37,39 +40,46 @@ export default function HQStaffPage() {
   async function fetchStaff() {
     setLoading(true);
     
-    // Query 'instructor' from DB but filter for 'admin' and 'instructor'
+    // 1. Прибираємо !inner, щоб дозволити профілі без записів в instructors (Left Join)
     const { data, error } = await supabase
       .from('profiles')
       .select(`
-        id, 
+        id,
+        auth_user_id,
         first_name, 
         last_name, 
         email, 
         phone, 
         role, 
         created_at,
-        instructors!inner(id, is_active)
+        instructors(id, is_active)
       `)
       .in('role', ['admin', 'instructor']) 
-      .eq('instructors.is_active', view === 'active')
       .order('created_at', { ascending: false });
-
+  
     if (error) {
       toast.error(error.message);
     } else {
-      // Map 'instructor' role back to 'staff' for the UI logic
-      // const mappedData = (data as any[]).map(profile => ({
-      //   ...profile,
-      //   role: profile.role === 'instructor' ? 'staff' : profile.role
-      // }));
-      // setStaff(mappedData as StaffMember[]);
-      // FIX: Ensure the entire instructor object is kept while mapping the role
-      const mappedData = (data as any[]).map(profile => ({
+      // 2. Оскільки ми прибрали фільтр в самому SQL (.eq('instructors.is_active', ...)),
+      // ми маємо відфільтрувати архівних/активних локально або перевірити наявність об'єкта
+      const filteredData = (data as any[]).filter(profile => {
+        // Якщо це адмін і в нього немає запису в instructors — показуємо його як активного
+        if (!profile.instructors) return view === 'active'; 
+        
+        // Для інших перевіряємо статус
+        const isActive = Array.isArray(profile.instructors) 
+          ? profile.instructors[0]?.is_active 
+          : profile.instructors?.is_active;
+          
+        return view === 'active' ? isActive === true : isActive === false;
+      });
+  
+      const mappedData = filteredData.map(profile => ({
         ...profile,
         role: profile.role === 'instructor' ? 'staff' : profile.role,
-        // Ensure instructors is an object, not an array (Supabase returns objects for 1-to-1)
         instructors: Array.isArray(profile.instructors) ? profile.instructors[0] : profile.instructors
       }));
+  
       setStaff(mappedData);
     }
     setLoading(false);
@@ -265,8 +275,116 @@ export default function HQStaffPage() {
         </div>
       )}
 
+
       {/* MODAL */}
       {showModal && (
+        <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={closeModal} />
+          
+          <form onSubmit={handleSaveStaff} className="relative w-full max-w-xl bg-[#0D0D0D] border-t md:border border-white/10 rounded-t-[2.5rem] md:rounded-[3rem] p-6 md:p-10 shadow-2xl overflow-y-auto max-h-[95vh] custom-scrollbar animate-in slide-in-from-bottom md:zoom-in-95 duration-300">
+            
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="text-primary" size={24} />
+                <h2 className="text-xl md:text-2xl font-black italic uppercase text-white">
+                  {editingMember ? t('form.title_edit') : t('form.title_new')}
+                </h2>
+              </div>
+              <button type="button" onClick={closeModal} className="p-2 text-slate-500 bg-white/5 rounded-full hover:text-white transition-colors">
+                <X size={20}/>
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* ПЕРСОНАЛЬНІ ДАНІ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.first_name')}</label>
+                  <input name="firstName" required defaultValue={editingMember?.first_name} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-primary outline-none transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.last_name')}</label>
+                  <input name="lastName" required defaultValue={editingMember?.last_name} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-primary outline-none transition-all" />
+                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.email')}</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                    <input name="email" type="email" required defaultValue={editingMember?.email} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+                <div className="sm:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.phone')}</label>
+                  <div className="relative">
+                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                    <input name="phone" required defaultValue={editingMember?.phone} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.role_label')}</label>
+                <select name="role" defaultValue={editingMember?.role || "staff"} 
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white font-bold outline-none focus:border-primary appearance-none cursor-pointer transition-all">
+                  <option value="staff" className="bg-black">{t('form.roles.staff')}</option>
+                  <option value="admin" className="bg-black">{t('form.roles.admin')}</option>
+                </select>
+              </div>
+
+              {/* НОВИЙ РОЗДІЛ: КЕРУВАННЯ ДОСТУПОМ (тільки при редагуванні) */}
+              {editingMember && (
+                <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1 italic tracking-widest">
+                    Security & Access Management
+                  </label>
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5">
+                    <UserAuthControl 
+                      profileId={editingMember.id}
+                      email={editingMember.email}
+                      firstName={editingMember.first_name}
+                      lastName={editingMember.last_name}
+                      role={editingMember.role === 'staff' ? 'instructor' : 'admin'}
+                      authUserId={(editingMember as any).auth_user_id} 
+                      onStatusChange={(newAuthId) => {
+                        setStaff(prev => prev.map(s => 
+                          s.id === editingMember.id ? { ...s, auth_user_id: newAuthId } : s
+                        ));
+                        setEditingMember(prev => prev ? { ...prev, auth_user_id: newAuthId } : null);
+                      }}
+                    />
+                    <p className="mt-4 text-[9px] text-slate-500 leading-relaxed font-medium uppercase tracking-tighter">
+                      {editingMember.role === 'admin' 
+                        ? "Цей користувач має повний доступ до налаштувань системи." 
+                        : "Користувач отримає доступ до розкладу та керування учнями."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* КНОПКИ ДІЇ */}
+              <div className="flex flex-col md:flex-row gap-3 pt-4 pb-safe-bottom-mobile">
+                <button type="submit" disabled={isSubmitting} className="order-1 md:order-2 flex-[2] bg-white text-black font-black py-5 rounded-2xl uppercase text-[10px] italic hover:bg-primary transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center">
+                  {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : t('actions.confirm_deployment')}
+                </button>
+                <button type="button" onClick={closeModal} className="order-2 md:order-1 flex-1 py-5 text-[10px] font-black uppercase text-slate-500 hover:text-white transition-colors">
+                  {t('actions.abort')}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
+
+    </div>
+  )
+}
+
+
+
+
+
+      {/* MODAL */}
+      {/* {showModal && (
         <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={closeModal} />
           
@@ -327,7 +445,4 @@ export default function HQStaffPage() {
             </div>
           </form>
         </div>
-      )}
-    </div>
-  )
-}
+      )} */}
