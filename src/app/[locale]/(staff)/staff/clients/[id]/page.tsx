@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { useEffect, useState, use, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
@@ -18,6 +18,7 @@ import { DocumentModal } from "@/components/staff/DocumentModal"
 import PackageFormModal from "@/components/staff/packages/PackageFormModal"
 
 import { toast } from "sonner"
+
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
@@ -111,8 +112,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   //   }
   // };
 
-  const handleMakePublic = async () => {
-    if (!client?.profile_id) return;
+  const handleMakePublic = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    //e.stopPropagation(); // Зупиняє подію тут
+    if (!client?.profile_id || linkLock.current) return;
     setIsLinking(true);
     try {
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
@@ -156,19 +159,58 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
+  
 
+  // Всередині компонента:
+  const sendLock = useRef(false);
+  const resetLock = useRef(false);
+  const linkLock = useRef(false);
 
   const [isSending, setIsSending] = useState(false);
 
-  const handleSendInvite = async () => {
-    if (!client?.profile_id) return;
+  // const handleSendInvite = async () => {
+  //   if (!client?.profile_id) return;
+  //   setIsSending(true);
+  //   try {
+  //     // 1. Get the current session
+  //     const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+  //     if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
+  
+  //     // 2. Invoke with Authorization header
+  //     const { data, error } = await supabase.functions.invoke('send-invite', {
+  //       body: { profile_id: client.profile_id, template_slug: 'invitation_email_ua' },
+  //       headers: { Authorization: `Bearer ${session.access_token}` },
+  //     });
+  
+  //     if (error) throw new Error(error.message);
+      
+  //     // 3. Handle response status
+  //     if (data?.status === "already_confirmed") {
+  //       toast.error("This student has already activated their account.");
+  //     } else {
+  //       toast.success("Запрошення успішно надіслано!");
+  //     }
+  //   } catch (err: any) {
+  //     console.error("DEBUG_INVITE:", err);
+  //     toast.error(`Помилка відправки: ${err.message || "Непередбачена помилка."}`);
+  //   } finally {
+  //     setIsSending(false);
+  //   }
+  // };
+
+
+  const handleSendInvite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    //e.stopPropagation(); // Зупиняє подію тут
+    if (!client?.profile_id || linkLock.current) return;
+    
+    sendLock.current = true; // Миттєво ставимо замок
     setIsSending(true);
+    
     try {
-      // 1. Get the current session
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr || !session?.access_token) throw new Error("Unauthorized");
   
-      // 2. Invoke with Authorization header
       const { data, error } = await supabase.functions.invoke('send-invite', {
         body: { profile_id: client.profile_id, template_slug: 'invitation_email_ua' },
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -176,19 +218,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
       if (error) throw new Error(error.message);
       
-      // 3. Handle response status
       if (data?.status === "already_confirmed") {
-        alert("This student has already activated their account.");
+        toast.info("Цей учень вже активував акаунт.");
       } else {
-        alert("Запрошення успішно надіслано!");
+        toast.success("Запрошення успішно надіслано!");
       }
     } catch (err: any) {
-      console.error("DEBUG_INVITE:", err);
-      alert(`Помилка відправки: ${err.message || "Непередбачена помилка."}`);
+      toast.error(`Помилка: ${err.message}`);
     } finally {
       setIsSending(false);
+      sendLock.current = false; // Знімаємо замок
     }
   };
+
 
 
   // const [isSending, setIsSending] = useState(false);
@@ -233,9 +275,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
   const [isResetting, setIsResetting] = useState(false);
 
-  const handleResetRequest = async (studentId: string) => {
-    if (!studentId) return;
-    
+  const handleResetRequest = async (e: React.MouseEvent, studentId: string) => {
+    // 1. Зупиняємо будь-яку активність браузера та спливання
+    e.preventDefault();
+    //e.stopPropagation();
+    if (!studentId || isResetting) return;
     setIsResetting(true);
     
     try {
@@ -255,7 +299,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
       // 3. Handle specific response status or generic success
       if (data?.status === "already_confirmed") {
-        toast.info("Цей учень вже активував свій акаунт, але лист для скидання пароля все одно надіслано.");
+        //toast.info("Цей учень вже активував свій акаунт, але лист для скидання пароля все одно надіслано.");
+        toast.success("Лист для скидання пароля успішно надіслано!");
       } else {
         toast.success("Лист для скидання пароля надіслано успішно!");
       }
@@ -469,7 +514,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
             {/* CASE 1: Profile exists in CRM but has no Auth User yet */}
             {!profile?.auth_user_id ? (
-              <button 
+              <button
+                key="btn-make-public"
                 onClick={handleMakePublic} 
                 disabled={isLinking || !profile?.email} 
                 className="bg-blue-600 text-white py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)]"
@@ -481,17 +527,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <>
                 {/* CASE 2: Account exists but not confirmed */}
                 {!isConfirmed ? (
-                  <button 
+                  <button
+                    key="btn-send-invite"
                     onClick={handleSendInvite} 
                     disabled={isSending} 
-                    className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
+                    className="bg-primary/10 text-primary border border-primary/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2 "
                   >
                     {isSending ? <Loader2 className="animate-spin" size={16} /> : "Надіслати Запрошення"}
                   </button>
                 ) : (
                   // CASE 3: Account exists and is confirmed 
                   <button 
-                    onClick={() => handleResetRequest(client.profile_id)} 
+                    key="btn-reset-pw" // Обов'язково додайте key для запобігання Click-Through
+                    onClick={(e) => handleResetRequest(e, client.profile_id)} 
                     disabled={isResetting} 
                     className="bg-zinc-800 text-zinc-400 border border-white/5 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all disabled:opacity-50 flex items-center gap-2"
                   >
