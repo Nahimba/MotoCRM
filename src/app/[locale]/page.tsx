@@ -59,15 +59,28 @@ export default function LandingPage() {
     checkSession();
   }, []);
 
-  const handleRedirect = (role: string | undefined) => {
-    if (!role) {
-      console.error("No role found in metadata, defaulting to /account");
-    }
+  // const handleRedirect = (role: string | undefined) => {
+  //   if (!role) {
+  //     console.error("No role found in metadata, defaulting to /account");
+  //   }
   
-    switch (role) {
-      case 'admin': router.push('/admin'); break;
-      case 'instructor': router.push('/staff'); break;
-      default: router.push('/account'); break;
+  //   switch (role) {
+  //     case 'admin': router.push('/admin'); break;
+  //     case 'instructor': router.push('/staff'); break;
+  //     default: router.push('/account'); break;
+  //   }
+  // }
+
+  const handleRedirect = (role: string | undefined) => {
+    const normalizedRole = role?.toLowerCase();
+    console.log("Redirecting for role:", normalizedRole);
+  
+    if (normalizedRole === 'admin') {
+      router.push('/admin');
+    } else if (normalizedRole === 'instructor' || normalizedRole === 'staff') {
+      router.push('/staff');
+    } else {
+      router.push('/account');
     }
   }
 
