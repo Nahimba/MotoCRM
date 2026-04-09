@@ -36,19 +36,20 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   
   // 2. СУВОРА ПЕРЕВІРКА РОЛІ (Тільки системні дані)
-  let role = user?.app_metadata?.role;
+  //let role = user?.app_metadata?.role;
+  const role = user?.app_metadata?.role?.toLowerCase() || 'rider';
 
   // FALLBACK: Якщо в JWT ролі ще немає (кеш), запитуємо БД.
   // Це спрацює лише якщо RLS дозволяє (auth.uid() = auth_user_id)
-  if (user && !role) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('auth_user_id', user.id)
-      .single();
+  // if (user && !role) {
+  //   const { data: profile } = await supabase
+  //     .from('profiles')
+  //     .select('role')
+  //     .eq('auth_user_id', user.id)
+  //     .single();
     
-    role = profile?.role;
-  }
+  //   role = profile?.role;
+  // }
   
   const segments = pathname.split('/');
   const isLocalePresent = routing.locales.includes(segments[1] as any);
