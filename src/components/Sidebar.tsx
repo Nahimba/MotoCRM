@@ -25,7 +25,15 @@ export default function Sidebar() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, loading, signOut } = useAuth();
+  //const { profile, loading, signOut } = useAuth();
+  const { profile, user, loading, signOut } = useAuth(); // Added 'user' from context
+
+  // Priority: JWT Metadata > Profile Table > Default 'rider'
+  const role = (
+    user?.app_metadata?.role || 
+    profile?.role || 
+    'rider'
+  ).toLowerCase();
   
   const [showSettings, setShowSettings] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
@@ -84,7 +92,7 @@ export default function Sidebar() {
   }, [pathname])
 
   if (loading) return null;
-  const role = profile?.role || 'rider';
+  //const role = profile?.role || 'rider';
 
   return (
     <>

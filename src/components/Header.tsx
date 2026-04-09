@@ -4,8 +4,18 @@ import { useAuth } from '@/context/AuthContext'
 import { ThemeSwitcher } from '@/components/theme-toggle'
 
 export default function Header() {
-  const { profile } = useAuth()
-  const role = profile?.role?.toLowerCase() || 'unknown'
+  // const { profile } = useAuth()
+  
+  // const role = profile?.role?.toLowerCase() || 'unknown'
+
+  const { user, profile } = useAuth()
+  
+  // 1. Check JWT first (what the DB actually sees), then Profile table, then default
+  const role = (
+    user?.app_metadata?.role || 
+    profile?.role || 
+    'rider'
+  ).toLowerCase()
 
   // Added "hidden md:flex" to the className
   return (

@@ -91,7 +91,7 @@ export default function LandingPage() {
       }
 
       toast.success(t("auth_success"))
-      handleRedirect(data.user?.user_metadata.role || 'rider')
+      handleRedirect(data.user?.app_metadata.role || 'rider')
     } catch (err) {
       if (!devRole) toast.error(t("auth_error"))
     } finally {
