@@ -72,7 +72,7 @@ export default function ClientTrainingPage() {
       {/* HEADER & BACK BUTTON */}
       <div className="flex items-center justify-between pt-4">
         <Link 
-          href="/ru/account" 
+          href="/uk/account" 
           className="flex items-center gap-2 text-slate-500 hover:text-white transition-all group"
         >
           <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-all">
@@ -81,7 +81,7 @@ export default function ClientTrainingPage() {
           <span className="text-[10px] font-black uppercase tracking-widest">Назад</span>
         </Link>
         <h1 className="text-xl font-black italic uppercase tracking-tighter">
-          Журнал <span className="text-primary">миссий</span>
+          Журнал <span className="text-primary">навчання</span>
         </h1>
       </div>
 
@@ -89,13 +89,13 @@ export default function ClientTrainingPage() {
       <section className="bg-primary p-7 rounded-[2.5rem] text-black shadow-[0_20px_40px_rgba(var(--primary),0.25)] relative overflow-hidden">
         <Calendar className="absolute -right-4 -top-4 opacity-10" size={120} />
         <div className="relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Остаток обучения</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Залишок навчання</p>
           <div className="flex justify-between items-end mt-2">
             <h2 className="text-5xl font-black italic uppercase leading-none">
-              {details?.remaining_hours || 0} <span className="text-sm">ЧАС</span>
+              {details?.remaining_hours || 0} <span className="text-sm">ГОД</span>
             </h2>
             <p className="text-[10px] font-black uppercase italic max-w-[120px] text-right leading-tight opacity-80">
-              {details?.course_name || "Курс активен"}
+              {details?.course_name || "Курс активний"}
             </p>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function ClientTrainingPage() {
         <div className="flex items-center gap-3 ml-4">
           <History size={14} className="text-slate-500" />
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-            История выездов
+            Історія виїздів
           </h3>
         </div>
         
@@ -132,22 +132,22 @@ export default function ClientTrainingPage() {
                       </div>
                       <div>
                         <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1.5 ${isUpcoming ? "text-primary" : "text-slate-500"}`}>
-                          {lesson.course_name || "Тренировка"}
+                          {lesson.course_name || "Тренування"}
                         </p>
                         <p className="font-black text-lg text-white leading-none italic uppercase tracking-tighter">
-                          {lessonDate.toLocaleDateString('ru-RU', { 
+                          {lessonDate.toLocaleDateString('uk-UA', { 
                             day: 'numeric', 
                             month: 'short',
                           })}
                           <span className="ml-2 text-slate-500 not-italic font-bold text-xs uppercase">
-                            {lessonDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                            {lessonDate.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </p>
                       </div>
                     </div>
                     {isUpcoming && (
                       <span className="text-[8px] font-black bg-primary text-black px-2.5 py-1 rounded-full uppercase animate-pulse tracking-tighter">
-                        Ожидается
+                        Очікується
                       </span>
                     )}
                   </div>
@@ -155,7 +155,7 @@ export default function ClientTrainingPage() {
                   <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-5 mt-2">
                     <div className="flex items-center gap-2.5 text-slate-300">
                       <Clock size={14} className={isUpcoming ? "text-primary" : "text-slate-600"} />
-                      <span className="text-[11px] font-black uppercase italic tracking-wider">{lesson.hours_spent} ЧАС</span>
+                      <span className="text-[11px] font-black uppercase italic tracking-wider">{lesson.hours_spent} ГОД</span>
                     </div>
                     <div className="flex items-center gap-2.5 text-slate-300">
                       <MapPin size={14} className={isUpcoming ? "text-primary" : "text-slate-600"} />
@@ -171,10 +171,10 @@ export default function ClientTrainingPage() {
                         "{lesson.summary}"
                       </p>
                       <div className="mt-3 flex items-center gap-2">
-                         <div className="w-4 h-[1px] bg-primary/30"></div>
-                         <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">
-                           Инструктор: {lesson.instructor_name || "Staff"}
-                         </p>
+                        <div className="w-4 h-[1px] bg-primary/30"></div>
+                        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                          Інструктор: {lesson.instructor_name || ""}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -187,14 +187,14 @@ export default function ClientTrainingPage() {
             <div className="bg-white/5 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                <History size={24} className="text-slate-700" />
             </div>
-            <p className="text-[10px] font-black uppercase text-slate-600 tracking-[0.3em]">Журнал пуст</p>
+            <p className="text-[10px] font-black uppercase text-slate-600 tracking-[0.3em]">Журнал порожній</p>
           </div>
         )}
       </div>
 
-      <div className="text-center opacity-10 pb-4">
+      {/* <div className="text-center opacity-10 pb-4">
         <p className="text-[8px] font-black uppercase tracking-[0.5em]">System Log v3.0</p>
-      </div>
+      </div> */}
     </div>
   )
 }
