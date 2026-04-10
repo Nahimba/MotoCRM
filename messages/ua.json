@@ -494,7 +494,7 @@
     "email_label": "Email акаунта (підтверджено)",
     "no_email": "Email не вказано",
     "phone_label": "Номер телефону",
-    "role_specs": "Специфікації ролі",
+    "role_specs": "Додаткові дані",
     "default_gear": "Тип КПП за замовчуванням",
     "manual": "Механіка",
     "auto": "Автомат",
@@ -504,7 +504,7 @@
     "specialization_placeholder": "Місто / Мотокрос / Безпека",
     "primary_location": "Основна локація навчання",
     "unassigned": "Не призначено",
-    "update_button": "Оновити системні записи",
+    "update_button": "Зберегти зміни",
     "updating": "Оновлення..."
   },
   "Constants": {

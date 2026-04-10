@@ -14,7 +14,7 @@ export default function ProfileEditor() {
       <div className="space-y-4 bg-[#111] p-6 rounded-2xl border border-white/5">
         <div className="flex items-center gap-6">
           <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-black text-2xl font-black">
-            {profile?.full_name?.charAt(0)}
+            {profile?.first_name?.charAt(0)}
           </div>
           <button className="text-[10px] font-black uppercase tracking-widest bg-white/5 px-4 py-2 rounded-lg hover:bg-white/10 transition-all">
             Upload New Avatar

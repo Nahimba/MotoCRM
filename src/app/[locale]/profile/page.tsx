@@ -12,7 +12,8 @@ import { toast } from "sonner"
 
 export default function ProfilePage() {
   const t = useTranslations("Profile")
-  const { profile, user, loading: authLoading } = useAuth()
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth()
+  const role = user?.app_metadata?.role;
   
   const [updating, setUpdating] = useState(false)
   const [fetchingExtended, setFetchingExtended] = useState(true)
@@ -21,16 +22,20 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+
   const [formData, setFormData] = useState({
-    full_name: "",
-    last_name: "",
-    phone: "",
-    address: "",
-    social_link: "",
+    //full_name: profile?.full_name || "",
+    first_name: profile?.first_name || "",
+    middle_name: profile?.middle_name || "",
+    last_name: profile?.last_name || "",
+    phone: profile?.phone || "",
+    address: profile?.address || "",
+    social_link: profile?.social_link || "",
     gear_type: "Manual",
     specialization: "",
     default_location_id: ""
   })
+
 
   // --- 1. Avatar Resolution Logic ---
   useEffect(() => {
@@ -130,36 +135,35 @@ export default function ProfilePage() {
     setFetchingExtended(true)
     try {
       let initialData = {
-        full_name: profile.full_name || "",
+        //full_name: profile.full_name || "",
+        first_name: profile.first_name || "",
+        middle_name: profile.middle_name || "",
+        last_name: profile.last_name || "",
         phone: profile.phone || "",
-        last_name: "",
-        address: "",
-        social_link: "",
+        address: profile.address || "",
+        social_link: profile.social_link || "",
         gear_type: "Manual",
         specialization: "",
         default_location_id: ""
       }
 
-      if (profile.role === 'rider') {
+      if (role === 'rider') {
         const { data } = await supabase.from('clients').select('*').eq('profile_id', profile.id).maybeSingle()
         if (data) {
           initialData = { 
             ...initialData, 
-            full_name: data.name || profile.full_name || "",
-            last_name: data.last_name || "",
-            phone: data.phone || profile.phone || "",
-            address: data.address || "",
-            social_link: data.social_link || "",
+            // phone: data.phone || profile.phone || "",
+            // address: profile.address || "",
+            // social_link: profile.social_link || "",
             gear_type: data.gear_type || "Manual"
           }
         }
-      } 
-      else if (profile.role === 'instructor' || profile.role === 'admin') {
+      }
+      else if (role === 'instructor' || role === 'admin') {
         const { data } = await supabase.from('instructors').select('*').eq('profile_id', profile.id).maybeSingle()
         if (data) {
           initialData = { 
             ...initialData, 
-            full_name: data.full_name || profile.full_name || "",
             specialization: data.specialization || "",
             default_location_id: data.default_location_id || ""
           }
@@ -177,32 +181,38 @@ export default function ProfilePage() {
     try {
       const { error: pErr } = await supabase
         .from('profiles')
-        .update({ full_name: formData.full_name, phone: formData.phone })
+        .update({ first_name: formData.first_name,
+                  middle_name: formData.middle_name,
+                  last_name: formData.last_name,
+                  phone: formData.phone,
+                  address: formData.address,
+                  social_link: formData.social_link,
+                  })
         .eq('id', profile.id)
       if (pErr) throw pErr
 
-      if (profile.role === 'rider') {
+      if (role === 'rider') {
         const { error: cErr } = await supabase.from('clients').update({
-          name: formData.full_name,
-          last_name: formData.last_name,
-          phone: formData.phone,
-          address: formData.address,
-          social_link: formData.social_link,
+
           gear_type: formData.gear_type
+
         }).eq('profile_id', profile.id)
         if (cErr) throw cErr
       } 
-      else if (profile.role === 'instructor' || profile.role === 'admin') {
+      else if (role === 'instructor' || role === 'admin') {
         const { error: iErr } = await supabase.from('instructors').update({
-          full_name: formData.full_name,
+
           specialization: formData.specialization,
           default_location_id: formData.default_location_id || null
+
         }).eq('profile_id', profile.id)
         if (iErr) throw iErr
       }
 
       toast.success(t("sync_success"))
-      setTimeout(() => window.location.reload(), 600)
+      await refreshProfile();
+      //setTimeout(() => window.location.reload(), 400)
+
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -230,7 +240,7 @@ export default function ProfilePage() {
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-4xl font-black text-primary">{formData.full_name?.charAt(0)}</span>
+              <span className="text-4xl font-black text-primary">{formData.first_name?.charAt(0)}</span>
             )}
 
             {uploadingAvatar && (
@@ -259,20 +269,19 @@ export default function ProfilePage() {
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
         </div>
         
-        <div className="text-center md:text-left space-y-3 z-10">
+        {/* <div className="text-center md:text-left space-y-3 z-10">
           <h1 className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter text-white">
             {formData.full_name} <span className="text-primary">{formData.last_name}</span>
           </h1>
           <div className="flex flex-wrap justify-center md:justify-start gap-3">
              <span className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">
-               {/* {t("account_type", { role: profile.role })} */}
-               {t("account_type", { role: profile.role })}
+              {t("account_type", { role: profile.role })}
              </span>
              <span className="px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
                ID: {profile.id.slice(0, 8)}
              </span>
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -287,8 +296,8 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("first_name")}</label>
                 <input 
-                  value={formData.full_name || ""}
-                  onChange={e => setFormData({...formData, full_name: e.target.value})}
+                  value={formData.first_name || ""}
+                  onChange={e => setFormData({...formData, first_name: e.target.value})}
                   className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-primary outline-none transition-all font-bold"
                 />
               </div>
@@ -331,19 +340,19 @@ export default function ProfilePage() {
           </h3>
 
           <div className="space-y-6">
-            {profile.role === 'rider' ? (
+            {role === 'rider' ? (
               <>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("default_gear")}</label>
                   <select 
-                    value={formData.gear_type || "Manual"}
+                    value={formData.gear_type}
                     onChange={e => setFormData({...formData, gear_type: e.target.value})}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-primary outline-none appearance-none cursor-pointer"
                   >
                     <option value="Manual" className="bg-black">{t("manual")}</option>
                     <option value="Auto" className="bg-black">{t("auto")}</option>
                   </select>
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("social_link")}</label>
                   <div className="relative">

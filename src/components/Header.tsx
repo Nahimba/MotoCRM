@@ -4,16 +4,12 @@ import { useAuth } from '@/context/AuthContext'
 import { ThemeSwitcher } from '@/components/theme-toggle'
 
 export default function Header() {
-  // const { profile } = useAuth()
-  
-  // const role = profile?.role?.toLowerCase() || 'unknown'
 
-  const { user, profile } = useAuth()
+  const { user } = useAuth()
   
   // 1. Check JWT first (what the DB actually sees), then Profile table, then default
   const role = (
-    user?.app_metadata?.role || 
-    profile?.role || 
+    user?.app_metadata?.role ||
     'rider'
   ).toLowerCase()
 
@@ -38,14 +34,16 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end text-right">
             <span className="text-[10px] font-bold text-white uppercase tracking-tight leading-none">
-              {profile?.full_name || 'Pilot'}
+              {user?.user_metadata?.full_name || role}
             </span>
             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">
-              Verified Identity
+              {user?.user_metadata?.email || ' '}
             </span>
           </div>
           <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center font-black text-black text-xs border border-white/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
-            {profile?.full_name?.charAt(0) || 'P'}
+          { user?.user_metadata?.full_name?.charAt(0) || 
+            user?.email?.charAt(0) || 
+            role.charAt(0).toUpperCase()}
           </div>
         </div>
       </div>

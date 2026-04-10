@@ -31,7 +31,6 @@ export default function Sidebar() {
   // Priority: JWT Metadata > Profile Table > Default 'rider'
   const role = (
     user?.app_metadata?.role || 
-    profile?.role || 
     'rider'
   ).toLowerCase();
   
