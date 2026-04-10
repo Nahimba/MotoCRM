@@ -5,10 +5,14 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/context/AuthContext"
 import { 
   User as UserIcon, Mail, Phone, Shield, Save, Loader2, 
-  Globe, Info, MapPin, Camera, Trash2
+  Globe, Info, MapPin, Camera, Trash2, Upload
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
+
+
+import { AvatarModal } from "@/components/avatar/AvatarModal"
+
 
 export default function ProfilePage() {
   const t = useTranslations("Profile")
@@ -31,11 +35,35 @@ export default function ProfilePage() {
     phone: profile?.phone || "",
     address: profile?.address || "",
     social_link: profile?.social_link || "",
+    avatar_url: profile?.avatar_url || "", 
     gear_type: "Manual",
     specialization: "",
     default_location_id: ""
   })
 
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
+
+  const handleAvatarUploaded = (newFileName: string) => {
+    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
+    toast.success("Identity image captured")
+  }
+
+  const [previewUrl, setPreviewUrl] = useState("")
+
+  useEffect(() => {
+    if (formData.avatar_url) {
+      if (formData.avatar_url.startsWith('http')) {
+        setPreviewUrl(formData.avatar_url)
+      } else {
+        const { data } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(`avatars/${formData.avatar_url}`)
+        setPreviewUrl(data.publicUrl)
+      }
+    } else {
+      setPreviewUrl("")
+    }
+  }, [formData.avatar_url])
 
   // --- 1. Avatar Resolution Logic ---
   useEffect(() => {
@@ -57,6 +85,9 @@ export default function ProfilePage() {
     }
     resolveAvatar()
   }, [profile?.avatar_url])
+
+
+  
 
   useEffect(() => {
     if (!authLoading && profile) {
@@ -142,6 +173,7 @@ export default function ProfilePage() {
         phone: profile.phone || "",
         address: profile.address || "",
         social_link: profile.social_link || "",
+        avatar_url: profile?.avatar_url || "", 
         gear_type: "Manual",
         specialization: "",
         default_location_id: ""
@@ -236,7 +268,7 @@ export default function ProfilePage() {
       {/* --- HEADER --- */}
       <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-8 md:p-12 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden shadow-2xl">
         <div className="relative group shrink-0">
-          <div className="w-48 h-48 md:w-48 md:h-48 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
+          {/* <div className="w-48 h-48 md:w-48 md:h-48 rounded-[2.5rem] bg-white/5 border-2 border-white/10 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary/50">
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
@@ -248,7 +280,26 @@ export default function ProfilePage() {
                 <Loader2 className="animate-spin text-primary" />
               </div>
             )}
-          </div>
+          </div> */}
+
+              <div 
+                onClick={() => setIsAvatarModalOpen(true)} 
+                className="relative group shrink-0 cursor-pointer"
+              >
+                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all">
+                  {previewUrl ? (
+                    <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
+                  ) : (
+                    <Camera className="text-zinc-700 group-hover:text-primary transition-colors" size={40} />
+                  )}
+                </div>
+                
+                {/* Кнопка редагування поверх фото */}
+                <div className="absolute -bottom-2 -right-2 bg-primary p-3 rounded-2xl text-black shadow-xl group-hover:scale-110 transition-transform">
+                  <Upload size={18} />
+                </div>
+              </div>
+
 
           <div className="absolute -bottom-2 -right-2 flex gap-1">
             <button 
@@ -406,6 +457,13 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      
+      <AvatarModal 
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        onUploadSuccess={handleAvatarUploaded}
+      />
 
       {/* --- FOOTER ACTIONS --- */}
       <div className="flex justify-end pt-8 pb-safe-bottom-mobile">
