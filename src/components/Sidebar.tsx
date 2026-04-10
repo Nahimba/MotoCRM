@@ -154,7 +154,7 @@ export default function Sidebar() {
         <div className="pt-6 border-t border-white/5 mt-auto relative" ref={settingsRef}>
           {showSettings && (
             <div className="absolute bottom-full left-0 w-full mb-2 bg-[#111] border border-white/10 rounded-2xl p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2">
-              <button 
+              {/* <button 
                 onClick={toggleLanguage}
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-primary hover:bg-white/5 transition-all"
               >
@@ -162,7 +162,7 @@ export default function Sidebar() {
                 <span className="text-xs font-bold uppercase italic">
                   {locale === 'en' ? 'Русский' : 'English'}
                 </span>
-              </button>
+              </button> */}
 
               <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
                 <User size={16} />
@@ -233,7 +233,7 @@ export default function Sidebar() {
 
                 <MobileExtraLink href="/profile" icon={<User size={18}/>} label={t('profile')} />
 
-                <button 
+                {/* <button 
                   onClick={toggleLanguage}
                   className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-primary active:scale-95 transition-all border border-white/5"
                 >
@@ -241,7 +241,7 @@ export default function Sidebar() {
                   <span className="text-[9px] font-black uppercase tracking-tight">
                     {locale === 'en' ? 'UA' : 'EN'}
                   </span>
-                </button>
+                </button> */}
 
                 <button onClick={() => signOut()} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-red-500/10 text-red-500 active:scale-95 transition-all border border-red-500/10">
                   <LogOut size={18} />

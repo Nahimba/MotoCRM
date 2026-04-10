@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from '@/context/AuthContext'
-import { ThemeSwitcher } from '@/components/theme-toggle'
+// import { ThemeSwitcher } from '@/components/theme-toggle'
 
 export default function Header() {
 
@@ -27,7 +27,8 @@ export default function Header() {
       </div>
       
       <div className="flex items-center gap-6">
-        <ThemeSwitcher />
+
+        {/* <ThemeSwitcher /> */}
 
         <div className="h-8 w-[1px] bg-white/5 mx-1" />
 
