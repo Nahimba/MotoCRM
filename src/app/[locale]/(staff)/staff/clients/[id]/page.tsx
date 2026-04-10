@@ -386,7 +386,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard 
               label="Баланс" 
-              value={`${totalDebt > 0 ? `-${totalDebt}` : 'Settled'}`} 
+              value={
+                totalDebt > 0 
+                  ? `-${totalDebt}` 
+                  : <span className="text-sm text-[24px]">Без боргу</span>
+              }
               unit={totalDebt > 0 ? "₴" : ""}
               icon={<CreditCard size={18} className={totalDebt > 0 ? "text-red-500" : "text-green-400"} />} 
               variant={totalDebt > 0 ? "danger" : "success"}
@@ -438,7 +442,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               );
             }) : (
               <div className="bg-[#0a0a0a] border-2 border-dashed border-white/5 rounded-[2rem] py-12 text-center">
-                <p className="text-slate-600 font-black uppercase tracking-[0.2em] text-xs">No active packages</p>
+                <p className="text-slate-600 font-black uppercase tracking-[0.2em] text-xs">Активні контракти відсутні</p>
               </div>
             )}
           </div>
