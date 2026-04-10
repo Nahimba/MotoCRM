@@ -27,26 +27,50 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
 
+  // const [formData, setFormData] = useState({
+  //   //full_name: profile?.full_name || "",
+  //   first_name: profile?.first_name || "",
+  //   middle_name: profile?.middle_name || "",
+  //   last_name: profile?.last_name || "",
+  //   phone: profile?.phone || "",
+  //   address: profile?.address || "",
+  //   social_link: profile?.social_link || "",
+  //   avatar_url: profile?.avatar_url || "", 
+  //   gear_type: "Manual",
+  //   specialization: "",
+  //   default_location_id: ""
+  // })
+
   const [formData, setFormData] = useState({
-    //full_name: profile?.full_name || "",
-    first_name: profile?.first_name || "",
-    middle_name: profile?.middle_name || "",
-    last_name: profile?.last_name || "",
-    phone: profile?.phone || "",
-    address: profile?.address || "",
-    social_link: profile?.social_link || "",
-    avatar_url: profile?.avatar_url || "", 
+    first_name: "",
+    middle_name: "",
+    last_name: "",
+    phone: "",
+    address: "",
+    social_link: "",
+    avatar_url: "", 
     gear_type: "Manual",
     specialization: "",
     default_location_id: ""
   })
 
-  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
 
-  const handleAvatarUploaded = (newFileName: string) => {
-    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
-    toast.success("Identity image captured")
+
+  useEffect(() => {
+    if (!authLoading && profile) {
+      loadExtendedProfileData()
+      fetchLocations()
+    } else if (!authLoading && !profile) {
+      setFetchingExtended(false)
+    }
+  }, [profile, authLoading])
+
+  async function fetchLocations() {
+    const { data } = await supabase.from('locations').select('*').eq('is_active', true)
+    if (data) setLocations(data)
   }
+
+
 
   const [previewUrl, setPreviewUrl] = useState("")
 
@@ -64,6 +88,10 @@ export default function ProfilePage() {
       setPreviewUrl("")
     }
   }, [formData.avatar_url])
+
+
+
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
 
   // --- 1. Avatar Resolution Logic ---
   useEffect(() => {
@@ -87,79 +115,94 @@ export default function ProfilePage() {
   }, [profile?.avatar_url])
 
 
-  
+  // const handleAvatarUploaded = (newFileName: string) => {
+  //   setFormData(prev => ({ ...prev, avatar_url: newFileName }))
+  //   toast.success("Identity image captured")
+  // }
 
-  useEffect(() => {
-    if (!authLoading && profile) {
-      loadExtendedProfileData()
-      fetchLocations()
-    } else if (!authLoading && !profile) {
-      setFetchingExtended(false)
+  // 3. Avatar Actions
+  const handleAvatarUploaded = async (newFileName: string) => {
+    // Optional: Clean up storage if they upload multiple times before saving
+    if (formData.avatar_url && formData.avatar_url !== profile?.avatar_url && !formData.avatar_url.startsWith('http')) {
+      await supabase.storage.from('avatars').remove([`avatars/${formData.avatar_url}`])
     }
-  }, [profile, authLoading])
-
-  async function fetchLocations() {
-    const { data } = await supabase.from('locations').select('*').eq('is_active', true)
-    if (data) setLocations(data)
+    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
+    toast.success("Зображення оновлено")
   }
 
-  // --- 2. Avatar Upload & Delete Logic ---
-  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !profile) return
-
-    setUploadingAvatar(true)
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm(t("delete_confirm"))) return
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${profile.id}-${Math.random()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
-
-      if (profile.avatar_url && !profile.avatar_url.startsWith('http')) {
-        await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
+      // If the current avatar in formData is a NEWLY uploaded one, delete it from storage
+      if (formData.avatar_url && formData.avatar_url !== profile?.avatar_url && !formData.avatar_url.startsWith('http')) {
+        await supabase.storage.from('avatars').remove([`avatars/${formData.avatar_url}`])
       }
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: fileName })
-        .eq('id', profile.id)
-
-      if (updateError) throw updateError
-
-      toast.success(t("avatar_success"))
-      setTimeout(() => window.location.reload(), 500)
-    } catch (error: any) {
-      toast.error(error.message)
-    } finally {
-      setUploadingAvatar(false)
-    }
-  }
-
-  async function deleteAvatar() {
-    // Fixed confirm button text using translation
-    if (!profile?.avatar_url || !confirm(t("delete_confirm"))) return
-    
-    setUploadingAvatar(true)
-    try {
-      if (!profile.avatar_url.startsWith('http')) {
-        await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
-      }
-
-      await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
-      
+      setFormData(prev => ({ ...prev, avatar_url: "" }))
       toast.success(t("avatar_removed"))
-      setTimeout(() => window.location.reload(), 500)
     } catch (error: any) {
-      toast.error(error.message)
-    } finally {
-      setUploadingAvatar(false)
+      toast.error("Помилка при видаленні")
     }
   }
+
+
+  
+  // // --- 2. Avatar Upload & Delete Logic ---
+  // async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  //   const file = e.target.files?.[0]
+  //   if (!file || !profile) return
+
+  //   setUploadingAvatar(true)
+  //   try {
+  //     const fileExt = file.name.split('.').pop()
+  //     const fileName = `${profile.id}-${Math.random()}.${fileExt}`
+  //     const filePath = `avatars/${fileName}`
+
+  //     if (profile.avatar_url && !profile.avatar_url.startsWith('http')) {
+  //       await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
+  //     }
+
+  //     const { error: uploadError } = await supabase.storage
+  //       .from('avatars')
+  //       .upload(filePath, file)
+
+  //     if (uploadError) throw uploadError
+
+  //     const { error: updateError } = await supabase
+  //       .from('profiles')
+  //       .update({ avatar_url: fileName })
+  //       .eq('id', profile.id)
+
+  //     if (updateError) throw updateError
+
+  //     toast.success(t("avatar_success"))
+  //     setTimeout(() => window.location.reload(), 500)
+  //   } catch (error: any) {
+  //     toast.error(error.message)
+  //   } finally {
+  //     setUploadingAvatar(false)
+  //   }
+  // }
+
+  // async function deleteAvatar() {
+  //   // Fixed confirm button text using translation
+  //   if (!profile?.avatar_url || !confirm(t("delete_confirm"))) return
+    
+  //   setUploadingAvatar(true)
+  //   try {
+  //     if (!profile.avatar_url.startsWith('http')) {
+  //       await supabase.storage.from('avatars').remove([`avatars/${profile.avatar_url}`])
+  //     }
+
+  //     await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
+      
+  //     toast.success(t("avatar_removed"))
+  //     setTimeout(() => window.location.reload(), 500)
+  //   } catch (error: any) {
+  //     toast.error(error.message)
+  //   } finally {
+  //     setUploadingAvatar(false)
+  //   }
+  // }
 
   async function loadExtendedProfileData() {
     if (!profile) return
@@ -219,6 +262,7 @@ export default function ProfilePage() {
                   phone: formData.phone,
                   address: formData.address,
                   social_link: formData.social_link,
+                  avatar_url: formData.avatar_url,
                   })
         .eq('id', profile.id)
       if (pErr) throw pErr
@@ -282,7 +326,7 @@ export default function ProfilePage() {
             )}
           </div> */}
 
-              <div 
+              {/* <div 
                 onClick={() => setIsAvatarModalOpen(true)} 
                 className="relative group shrink-0 cursor-pointer"
               >
@@ -294,13 +338,56 @@ export default function ProfilePage() {
                   )}
                 </div>
                 
-                {/* Кнопка редагування поверх фото */}
                 <div className="absolute -bottom-2 -right-2 bg-primary p-3 rounded-2xl text-black shadow-xl group-hover:scale-110 transition-transform">
                   <Upload size={18} />
                 </div>
+              </div> */}
+
+              <div className="relative group shrink-0">
+                {/* IMAGE CONTAINER / MODAL TRIGGER */}
+                <div 
+                  onClick={() => setIsAvatarModalOpen(true)} 
+                  className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all cursor-pointer"
+                >
+                  {previewUrl ? (
+                    <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
+                  ) : (
+                    <Camera className="text-zinc-700 group-hover:text-primary" size={40} />
+                  )}
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Upload size={24} className="text-white" />
+                  </div>
+                </div>
+
+                {/* FLOATING ACTIONS */}
+                <div className="absolute -bottom-2 -right-2 flex gap-2">
+                  {/* DELETE BUTTON - Only shows if there is an image */}
+                  {formData.avatar_url && (
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent opening the modal
+                        handleDeleteAvatar();
+                      }} 
+                      className="bg-red-500 p-3 rounded-2xl text-white hover:bg-red-600 hover:scale-110 transition-all shadow-xl border-4 border-black"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                  
+                  {/* EDIT/UPLOAD INDICATOR */}
+                  {/* <div 
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    className="bg-primary p-3 rounded-2xl text-black shadow-xl cursor-pointer hover:scale-110 transition-transform border-4 border-black"
+                  >
+                    <Camera size={18} />
+                  </div> */}
+                </div>
               </div>
 
-
+{/* 
           <div className="absolute -bottom-2 -right-2 flex gap-1">
             <button 
               onClick={() => fileInputRef.current?.click()}
@@ -310,14 +397,16 @@ export default function ProfilePage() {
             </button>
             {avatarPreview && (
               <button 
-                onClick={deleteAvatar}
+                onClick={handleDeleteAvatar}
                 className="p-3 bg-red-500 text-white rounded-2xl shadow-xl hover:scale-110 active:scale-90 transition-all"
               >
                 <Trash2 size={18} />
               </button>
             )}
           </div>
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} /> */}
+
+
         </div>
         
         {/* <div className="text-center md:text-left space-y-3 z-10">

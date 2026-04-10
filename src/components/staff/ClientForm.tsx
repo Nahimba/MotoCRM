@@ -19,19 +19,22 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   const tConst = useTranslations("Constants")
   const router = useRouter()
   
+
+
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  
   const [isSaved, setIsSaved] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState("")
 
 
-  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
+  const cleanupOrphanImage = async (filename: string) => {
+    if (isSaved || !filename || filename === initialData?.profiles?.avatar_url) return
+    await supabase.storage.from('avatars').remove([`avatars/${filename}`])
+  }
 
-  const handleAvatarUploaded = (newFileName: string) => {
-    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
-    toast.success("Identity image captured")
+  const handleAbort = async () => {
+    if (formData.avatar_url !== initialData?.profiles?.avatar_url) {
+      await cleanupOrphanImage(formData.avatar_url)
+    }
+    router.back()
   }
   
   const [formData, setFormData] = useState({
@@ -54,78 +57,44 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     is_active: initialData?.is_active ?? true,
   })
 
+
+  
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState("")
+  
+  // 1. Sync preview when avatar_url changes
   useEffect(() => {
     if (formData.avatar_url) {
-      if (formData.avatar_url.startsWith('http')) {
-        setPreviewUrl(formData.avatar_url)
-      } else {
-        const { data } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(`avatars/${formData.avatar_url}`)
-        setPreviewUrl(data.publicUrl)
-      }
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(`avatars/${formData.avatar_url}`)
+      setPreviewUrl(data.publicUrl)
     } else {
       setPreviewUrl("")
     }
   }, [formData.avatar_url])
-
-  const cleanupOrphanImage = async (filename: string) => {
-    if (isSaved || !filename || filename === initialData?.profiles?.avatar_url) return
-    await supabase.storage.from('avatars').remove([`avatars/${filename}`])
-  }
-
-  const handleAbort = async () => {
-    if (formData.avatar_url !== initialData?.profiles?.avatar_url) {
-      await cleanupOrphanImage(formData.avatar_url)
+  
+  // 2. Обробка успішного завантаження з модального вікна
+  const handleAvatarUploaded = async (newFileName: string) => {
+    // Опціонально: видаляємо старе зображення зі сховища, якщо воно змінилося до збереження форми
+    if (formData.avatar_url && formData.avatar_url !== initialData?.profiles?.avatar_url) {
+      await supabase.storage.from('avatars').remove([`avatars/${formData.avatar_url}`])
     }
-    router.back()
-  }
-
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    try {
-      setUploading(true)
-      if (formData.avatar_url && formData.avatar_url !== initialData?.profiles?.avatar_url) {
-        await cleanupOrphanImage(formData.avatar_url)
-      }
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${crypto.randomUUID()}.${fileExt}`
-      const filePath = `avatars/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
-
-      if (uploadError) throw uploadError
-      setFormData(prev => ({ ...prev, avatar_url: fileName }))
-      toast.success("Identity image captured")
-    } catch (error: any) {
-      toast.error("Upload failed: " + error.message)
-    } finally {
-      setUploading(false)
-    }
+    
+    setFormData(prev => ({ ...prev, avatar_url: newFileName }))
+    toast.success("Фото профілю оновлено")
   }
 
   const handleDeleteAvatar = async () => {
-    if (!window.confirm("Are you sure you want to delete this Visual ID?")) return
+    if (!window.confirm("Видалити це фото?")) return
     try {
-      setUploading(true)
-      const fileName = formData.avatar_url
-      if (fileName) {
-        await supabase.storage.from('avatars').remove([`avatars/${fileName}`])
-      }
-      if (id) {
-        await supabase.from('profiles').update({ avatar_url: null }).eq('id', initialData.profile_id)
+      if (formData.avatar_url) {
+        await supabase.storage.from('avatars').remove([`avatars/${formData.avatar_url}`])
       }
       setFormData(prev => ({ ...prev, avatar_url: "" }))
-      toast.success("Visual ID wiped")
+      toast.success("Фото видалено")
     } catch (error: any) {
-      toast.error("Wipe failed: " + error.message)
-    } finally {
-      setUploading(false)
+      toast.error("Помилка при видаленні")
     }
   }
 
@@ -159,7 +128,6 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (uploading) return 
 
     // --- VALIDATION BLOCK ---
     const digitCount = formData.phone.replace(/\D/g, "").length;
@@ -280,9 +248,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 md:p-8">
           
           <div className="flex flex-col md:flex-row items-center gap-2 mb-4 pb-2 border-b border-zinc-800/50">
-            <div className="relative group shrink-0">
-
-
+            
               {/* <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)]">
                 {previewUrl ? (
                   <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
@@ -296,38 +262,50 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                   </div>
                 )}
               </div> */}
-
-              <div 
-                onClick={() => setIsAvatarModalOpen(true)} 
-                className="relative group shrink-0 cursor-pointer"
-              >
-                <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all">
+              
+              <div className="relative group shrink-0">
+                {/* IMAGE CONTAINER / MODAL TRIGGER */}
+                <div 
+                  onClick={() => setIsAvatarModalOpen(true)} 
+                  className="relative w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-black border-2 border-dashed border-zinc-700 flex items-center justify-center overflow-hidden group-hover:border-primary transition-all cursor-pointer"
+                >
                   {previewUrl ? (
                     <img src={previewUrl} className="w-full h-full object-cover" alt="Pilot" />
                   ) : (
-                    <Camera className="text-zinc-700 group-hover:text-primary transition-colors" size={40} />
+                    <Camera className="text-zinc-700 group-hover:text-primary" size={40} />
                   )}
+                  
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Upload size={24} className="text-white" />
+                  </div>
                 </div>
-                
-                {/* Кнопка редагування поверх фото */}
-                <div className="absolute -bottom-2 -right-2 bg-primary p-3 rounded-2xl text-black shadow-xl group-hover:scale-110 transition-transform">
-                  <Upload size={18} />
+
+                {/* FLOATING ACTIONS */}
+                <div className="absolute -bottom-2 -right-2 flex gap-2">
+                  {/* DELETE BUTTON - Only shows if there is an image */}
+                  {formData.avatar_url && (
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent opening the modal
+                        handleDeleteAvatar();
+                      }} 
+                      className="bg-red-500 p-3 rounded-2xl text-white hover:bg-red-600 hover:scale-110 transition-all shadow-xl border-4 border-black"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                  
+                  {/* EDIT/UPLOAD INDICATOR */}
+                  {/* <div 
+                    onClick={() => setIsAvatarModalOpen(true)}
+                    className="bg-primary p-3 rounded-2xl text-black shadow-xl cursor-pointer hover:scale-110 transition-transform border-4 border-black"
+                  >
+                    <Camera size={18} />
+                  </div> */}
                 </div>
               </div>
-              
-              <div className="absolute -bottom-2 -right-2 flex gap-2">
-                {formData.avatar_url ? (
-                  <button type="button" onClick={handleDeleteAvatar} className="bg-red-500 p-3 rounded-2xl text-white hover:bg-red-600 hover:scale-110 transition-all shadow-xl">
-                    <Trash2 size={18} />
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-primary p-3 rounded-2xl text-black hover:bg-white hover:scale-110 transition-all shadow-xl">
-                    <Upload size={18} />
-                  </button>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-            </div>
 
             <div className="text-center md:text-left">
               <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Фото</p>
@@ -440,7 +418,7 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         </div>
 
         <button 
-          disabled={loading || uploading} 
+          disabled={loading} 
           className="w-full bg-primary text-black font-black py-6 rounded-[2rem] uppercase tracking-[0.3em] text-xs hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-[0_20px_50px_rgba(var(--primary-rgb),0.2)]"
         >
           {loading ? <Loader2 className="animate-spin" /> : <Bike size={20} />}
