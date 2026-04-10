@@ -54,10 +54,11 @@ export default function ClientLandingPage() {
       <header className="flex justify-between items-start pt-4">
         <div>
           <h1 className="text-3xl font-black italic uppercase tracking-tighter">
-            {packages[0]?.name || "Rider"} <span className="text-primary">.</span>
+            {/* {packages[0]?.name || "Rider"} <span className="text-primary">.</span> */}
+            {profile?.first_name || "Rider"} <span className="text-primary">{profile?.last_name} </span>
           </h1>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">
-            Личный кабинет
+            Особистий кабінет
           </p>
         </div>
         <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-inner">
@@ -70,13 +71,13 @@ export default function ClientLandingPage() {
         <div className="flex items-center gap-3 ml-2">
           <Bike size={14} className="text-primary" />
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-            Ваши программы
+            Ваші програми
           </h3>
         </div>
 
         {packages.length === 0 ? (
           <div className="p-10 text-center border border-dashed border-white/10 rounded-[2rem] text-white italic opacity-50 text-sm">
-            У вас пока нет активных курсов.
+            У вас поки немає активних курсів.
           </div>
         ) : (
           packages.map((item) => {
@@ -92,7 +93,7 @@ export default function ClientLandingPage() {
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-4">
                     <span className="text-[9px] font-black bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-widest border border-primary/20">
-                      {item.package_status === 'active' ? 'В процессе' : 'Завершен'}
+                      {item.package_status === 'active' ? 'У процесі' : 'Завершено'}
                     </span>
                     <GraduationCap size={20} className="text-white/10 group-hover:text-primary/40 transition-colors" />
                   </div>
@@ -104,8 +105,8 @@ export default function ClientLandingPage() {
                   {/* PROGRESS SECTION */}
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-[10px] font-black uppercase italic tracking-tighter text-slate-400">
-                      <span>Прогресс</span>
-                      <span>{remainingHours} ч. осталось</span>
+                      <span>Прогрес</span>
+                      <span>залишилося {remainingHours} год.</span>
                     </div>
                     <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                       <div 
@@ -116,10 +117,10 @@ export default function ClientLandingPage() {
                   </div>
 
                   <Link 
-                    href="/ru/account/training" 
+                    href="/uk/account/training" 
                     className="flex items-center justify-between w-full p-4 bg-white/5 hover:bg-primary hover:text-black rounded-2xl transition-all duration-300 group/btn"
                   >
-                    <span className="font-black uppercase italic text-[10px] tracking-widest">Детали обучения</span>
+                    <span className="font-black uppercase italic text-[10px] tracking-widest">Деталі навчання</span>
                     <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                   </Link>
                 </div>
@@ -129,16 +130,16 @@ export default function ClientLandingPage() {
         )}
       </div>
 
-      {/* FOOTER INSTRUCTOR (Global or per course, keeping it here for quick access) */}
+      {/* FOOTER INSTRUCTOR */}
       <div className="p-6 bg-primary rounded-[2.5rem] text-black flex items-center justify-between shadow-[0_20px_40px_rgba(var(--primary),0.1)]">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-black/10 flex items-center justify-center font-black text-black border border-black/10 text-xl">
              {packages[0]?.lead_instructor_name?.charAt(0) || <ShieldCheck />}
           </div>
           <div>
-            <p className="text-[9px] font-black text-black/50 uppercase tracking-widest">Поддержка</p>
+            <p className="text-[9px] font-black text-black/50 uppercase tracking-widest">Підтримка</p>
             <p className="text-lg font-black italic uppercase tracking-tighter leading-none mt-1">
-              Написать нам
+              Написати нам
             </p>
           </div>
         </div>
