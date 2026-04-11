@@ -14,9 +14,11 @@ import UserAuthControl from "@/components/UserAuthControl"
 
 interface StaffMember {
   id: string; // profile_id
+  auth_user_id: string | null;
   first_name: string;
   last_name: string;
   email: string;
+  last_synced_email: string | null;
   phone: string;
   role: 'admin' | 'staff'; // UI Role
   created_at: string;
@@ -49,6 +51,7 @@ export default function HQStaffPage() {
         first_name, 
         last_name, 
         email, 
+        last_synced_email,
         phone, 
         role, 
         created_at,
@@ -341,6 +344,7 @@ export default function HQStaffPage() {
                     <UserAuthControl 
                       profileId={editingMember.id}
                       email={editingMember.email}
+                      lastSyncedEmail={editingMember.last_synced_email}
                       firstName={editingMember.first_name}
                       lastName={editingMember.last_name}
                       role={editingMember.role === 'staff' ? 'instructor' : 'admin'}
