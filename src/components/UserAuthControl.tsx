@@ -112,18 +112,18 @@ export default function UserAuthControl({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Сесія вичерпана.");
-  
+
       let endpoint = '';
       if (actionType === 'activate') endpoint = 'activate-user';
       else if (actionType === 'reset') endpoint = 'reset-password';
       else if (actionType === 'sync') endpoint = 'sync-and-reset-user';
-  
+
       const payload = actionType === 'sync' 
-      ? { auth_user_id: localAuthId, profile_id: profileId }
-      : actionType === 'activate'
-        ? { profileData: { first_name: firstName, last_name: lastName, email }, role_to_create: role, existing_profile_id: profileId }
-        : { profile_id: profileId };
-  
+        ? { auth_user_id: localAuthId, profile_id: profileId }
+        : actionType === 'activate'
+          ? { profileData: { first_name: firstName, last_name: lastName, email }, existing_profile_id: profileId }
+          : { profile_id: profileId };
+
       const { data, error } = await supabase.functions.invoke(endpoint, {
         body: payload,
         headers: { Authorization: `Bearer ${session.access_token}` }
@@ -133,6 +133,8 @@ export default function UserAuthControl({
 
       if (actionType === 'sync') {
         toast.success("Email оновлено та посилання надіслано!");
+        // We trigger status change to tell the parent to re-fetch the synced_email column
+        if (onStatusChange) onStatusChange(localAuthId || ''); 
       } else if (actionType === 'activate') {
         toast.success("Доступ активовано!");
         const newId = data?.id || data?.auth_user_id;
@@ -146,7 +148,6 @@ export default function UserAuthControl({
 
       router.refresh();
     } catch (err: any) {
-      //console.error(`Auth Action Error (${actionType}):`, err);
       toast.error(err.message || "Сталася помилка.");
     } finally {
       setIsLoading(false);

@@ -4,9 +4,9 @@ import { useEffect, useState, use, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
-  ChevronLeft, Edit3, Phone, Mail, 
+  ChevronLeft, Phone, Mail, 
   MapPin, CreditCard, Clock, Bike, ShieldCheck,
-  AlertCircle, CheckCircle2, BadgePercent, Activity, FileText,
+  CheckCircle2, Activity, FileText, RotateCcw, KeyRound,
   Loader2, Plus
 } from "lucide-react"
 import Link from "next/link"
@@ -61,7 +61,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const [showConfirmModal, setShowConfirmModal] = useState<{
     show: boolean;
-    type: 'create-user' | 'reset_password';
+    type: 'create-user' | 'reset_password' | 'sync_email';
   }>({ show: false, type: 'create-user' });
 
 
@@ -157,7 +157,39 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
+  
+  // 1. Add this state near your other loading states
+  const [isSyncing, setIsSyncing] = useState(false);
 
+  // 2. Add the handler function
+  const handleSyncEmail = async () => {
+    if (!client?.profile_id || !profile?.auth_user_id) return;
+
+    setIsSyncing(true);
+    setShowConfirmModal({ show: false, type: 'create-user' }); // Close modal
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Unauthorized");
+
+      const { error } = await supabase.functions.invoke('sync-and-reset-user', {
+        body: { 
+          auth_user_id: profile.auth_user_id, 
+          profile_id: client.profile_id 
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      if (error) throw error;
+
+      toast.success("Email оновлено та доступ надіслано!");
+      router.refresh(); // This will update the last_synced_email from the DB
+    } catch (err: any) {
+      toast.error(err.message || "Помилка синхронізації");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -298,13 +330,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-
+{/* 
           <div className="flex flex-wrap gap-4">
             <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
               {t("modify")}
             </Link>
 
-            {/* ЯКЩО АККАУНТ ЩЕ НЕ СТВОРЕНО АБО НЕ ПІДТВЕРДЖЕНО (об'єднуємо для простоти) */}
             {!profile?.auth_user_id ? (
               <button
                 onClick={() => setShowConfirmModal({ show: true, type: 'create-user' })}
@@ -315,7 +346,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 {!profile?.email ? "Вкажіть Email" : "Активувати доступ"}
               </button>
             ) : (
-              /* ЯКЩО АККАУНТ ВЖЕ СТВОРЕНИЙ - Тільки скидання */
               <button 
                 onClick={() => setShowConfirmModal({ show: true, type: 'reset_password' })}
                 disabled={isResetting} 
@@ -324,6 +354,48 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 {isResetting ? <Loader2 className="animate-spin" size={16} /> : <Loader2 className="opacity-0 w-0" size={0} />}
                 <span>Скинути Пароль (Через email)</span>
               </button>
+            )}
+          </div> */}
+
+          <div className="flex flex-wrap gap-4">
+            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
+              {t("modify")}
+            </Link>
+
+            {!profile?.auth_user_id ? (
+              /* 1. ACTIVATE BUTTON */
+              <button
+                onClick={() => setShowConfirmModal({ show: true, type: 'create-user' })}
+                disabled={isLinking || !profile?.email}
+                className="bg-blue-600 text-white py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLinking ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                {!profile?.email ? "Вкажіть Email" : "Активувати доступ"}
+              </button>
+            ) : (
+              <>
+                {/* 2. SYNC BUTTON (Shown if emails differ) */}
+                {profile?.email !== profile?.last_synced_email ? (
+                  <button
+                    onClick={() => setShowConfirmModal({ show: true, type: 'sync_email' })}
+                    disabled={isSyncing}
+                    className="bg-amber-600/10 text-amber-500 border border-amber-500/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    {isSyncing ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
+                    <span>Оновити пошту до {profile?.email}</span>
+                  </button>
+                ) : (
+                  /* 3. RESET PASSWORD BUTTON (Shown if emails match) */
+                  <button 
+                    onClick={() => setShowConfirmModal({ show: true, type: 'reset_password' })}
+                    disabled={isResetting} 
+                    className="bg-zinc-800 text-zinc-400 border border-white/5 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all flex items-center gap-2"
+                  >
+                    {isResetting ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />}
+                    <span>Скинути Пароль</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
 
