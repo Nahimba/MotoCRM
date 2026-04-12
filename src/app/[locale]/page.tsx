@@ -16,9 +16,7 @@ const saira = Saira({
 })
 
 const DEV_ACCOUNTS = {
-  admin: { email: "admin@motocrm.local", password: "password123", role: 'admin' },
-  instructor: { email: "coach@motocrm.local", password: "password123", role: 'instructor' },
-  rider: { email: "rider@motocrm.local", password: "password123", role: 'rider' },
+  rider: { email: "", password: "", role: 'rider' },
 }
 
 export default function LandingPage() {
@@ -189,7 +187,7 @@ export default function LandingPage() {
           </form>
 
           {/* Dev Shortcut Buttons */}
-          <div className="mt-8 pt-6 border-t border-white/5">
+          {/* <div className="mt-8 pt-6 border-t border-white/5">
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(DEV_ACCOUNTS) as Array<keyof typeof DEV_ACCOUNTS>).map((role) => (
                 <button
@@ -202,7 +200,7 @@ export default function LandingPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
