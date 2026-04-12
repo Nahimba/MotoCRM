@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Shield, ChevronRight, Bike, Loader2, Mail, KeyRound } from "lucide-react"
+import { ChevronRight, Loader2, Mail, KeyRound } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { useTranslations } from "next-intl"
@@ -125,16 +125,37 @@ export default function LandingPage() {
   // }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 font-sans">
+    // <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 font-sans">
+
+    <div 
+        className="min-h-screen flex flex-col items-center justify-center p-6 overflow-x-hidden"
+        style={{
+          fontFamily: "'Inter', sans-serif",
+          backgroundColor: "var(--bg-dark, #000)",
+          color: "var(--text-main, #fff)",
+          lineHeight: "1.6",
+          backgroundImage: `
+            /* Dot Pattern Layer */
+            /*radial-gradient(circle, rgba(255,0,0,0.01) 1px, transparent 10px),*/
+            linear-gradient(-50deg, rgba(255,255,255,0.006) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.006) 50%, rgba(255,255,255,0.006) 75%, transparent 75%, transparent),
+            radial-gradient(circle at 10% 20%, rgba(160, 180, 220, 0.20) 0%, transparent 50%),
+            radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.12) 0%, transparent 60%),
+            radial-gradient(circle at 40% 50%, rgba(196, 151, 140, 0.1) 0%, transparent 70%)
+          `,
+          backgroundSize: "8px 8px, auto, auto, auto", // First value controls dot spacing
+          backgroundAttachment: "fixed"
+        }}
+      >
+
       {/* Background Glow */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-primary/10 blur-[120px] rounded-full -z-10" />
 
       <div className="w-full max-w-md space-y-8">
         {/* Header / Logo */}
         <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-white/5 border border-white/10 rounded-2xl mb-4">
+          {/* <div className="inline-flex p-3 bg-white/5 border border-white/10 rounded-2xl mb-4">
             <Bike className="text-primary" size={32} />
-          </div>
+          </div> */}
           <h1 className={`${saira.className} text-5xl font-black italic text-white tracking-tighter`}>
             RaceWay<span className="text-primary">CRM</span>
           </h1>
