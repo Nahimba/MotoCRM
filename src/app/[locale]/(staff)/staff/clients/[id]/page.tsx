@@ -544,7 +544,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
 
 
-      {showConfirmModal.show && (
+      {/* {showConfirmModal.show && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#0a0a0a] border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full space-y-6 shadow-2xl">
             <div className="text-center space-y-2">
@@ -572,6 +572,57 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </button>
               <button
                 onClick={() => setShowConfirmModal({ show: false, type: 'create-user' })}
+                className="w-full bg-white/5 py-4 rounded-2xl text-white font-black uppercase text-xs hover:bg-white/10 transition-colors"
+              >
+                Скасувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )} */}
+
+      {showConfirmModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0a0a0a] border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full space-y-6 shadow-2xl">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-black italic uppercase text-white tracking-tighter">
+                {showConfirmModal.type === 'create-user' && "Створити акаунт?"}
+                {showConfirmModal.type === 'reset_password' && "Скинути пароль?"}
+                {showConfirmModal.type === 'sync_email' && "Оновити Email?"}
+              </h3>
+              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                {showConfirmModal.type === 'create-user' && "Учню буде створено профіль та надіслано лист для активації."}
+                {showConfirmModal.type === 'reset_password' && "Учню буде надіслано посилання для встановлення нового пароля."}
+                {showConfirmModal.type === 'sync_email' && (
+                  <>
+                    Змінити логін на <span className="text-primary">{client?.profiles?.email}</span> та надіслати новий доступ?
+                  </>
+                )}
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={(e) => {
+                  if (showConfirmModal.type === 'create-user') {
+                    handleCombinedMakePublicAndInvite();
+                  } else if (showConfirmModal.type === 'sync_email') {
+                    handleSyncEmail();
+                  } else {
+                    handleResetRequest(e, client.profile_id);
+                    setShowConfirmModal({ show: false, type: 'reset_password' });
+                  }
+                }}
+                className="w-full bg-primary py-4 rounded-2xl text-black font-black uppercase text-xs hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+              >
+                {isSyncing || isLinking || isResetting ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  "Підтвердити"
+                )}
+              </button>
+              <button
+                onClick={() => setShowConfirmModal({ ...showConfirmModal, show: false })}
                 className="w-full bg-white/5 py-4 rounded-2xl text-white font-black uppercase text-xs hover:bg-white/10 transition-colors"
               >
                 Скасувати
