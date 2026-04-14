@@ -16,9 +16,9 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
     // 1. DATA FETCHING (Parallel with Deep Joins)
     const [
       { data: studentsRaw , error: err1},
-      { data: clients, error: err2 },
+      //{ data: clients, error: err2 },
       // { data: packages, error: err3  },
-      // { data: payments, error: err4 },
+      { data: payments, error: err4 },
       // { data: lessons, error: err5  },
       { data: expenses, error: err6  }
     ] = await Promise.all([
@@ -39,7 +39,7 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
       // `),
       supabase.from('clients').select(`
         created_at, lead_source, document_status, gear_type, notes,
-        profiles:profiles!clients_profile_id_fkey(first_name, last_name, middle_name, phone),
+        profiles:profiles!clients_profile_id_fkey(first_name, last_name, middle_name, phone, address),
         accounts(
           course_packages(
             courses(name),
@@ -48,7 +48,8 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
         )
       `),
 
-      supabase.from('clients').select('*, profiles!clients_profile_id_fkey(*)'),
+      // supabase.from('clients').select('*, profiles!clients_profile_id_fkey(*)'),
+      
       //supabase.from('clients').select('*, profiles(*)'),
       
       // Sheet: CRM_Clients
@@ -75,6 +76,24 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
       //     )
       //   )
       // `),
+
+      supabase.from('payments').select(`
+        *, 
+        created_at,
+        amount,
+        status,
+        is_paid,
+        notes,
+        payment_methods(label_key),
+        accounts(
+          clients(
+            profiles:profiles!clients_profile_id_fkey(first_name, last_name, phone)
+          )
+        ),
+        course_packages(
+          courses(name)
+        )
+      `),
       
       // // Sheet: Operational_Lessons
       // supabase.from('lessons').select(`
@@ -88,15 +107,16 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
       
 
       // supabase.from('course_packages').select('*, accounts(clients(profiles(first_name, last_name))), courses(name)'),
-      // supabase.from('payments').select('*, payment_methods(label_key), accounts(clients(profiles(first_name, last_name)))'),
+      //supabase.from('payments').select('*, payment_methods(label_key), accounts(clients(profiles(first_name, last_name)))'),
       // supabase.from('lessons').select('*, instructors(profiles(first_name, last_name)), course_packages(courses(name)), locations(name)'),
 
+      
       
       supabase.from('business_expenses').select('*')
     ]);
 
     // Check for errors immediately
-    const errors = [err1, err2, err6].filter(Boolean);//  err3, err4, err5,
+    const errors = [err1, err4, err6].filter(Boolean);//  err3, err4, err5,
     if (errors.length > 0) {
       console.error("Supabase Query Errors:", errors);
       throw new Error("Failed to fetch database records");
@@ -135,7 +155,7 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
     // 3. MAPPING DATA
     // SHEET 1: Учні
     if (studentsRaw) {
-      addStyledSheet("Учні", studentsRaw.map(s => {
+      addStyledSheet("База клієнтів", studentsRaw.map(s => {
         const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
         const acc = Array.isArray(s.accounts) ? s.accounts[0] : s.accounts;
         const pkg = Array.isArray(acc?.course_packages) ? acc.course_packages[0] : acc?.course_packages;
@@ -147,6 +167,7 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
           date: s.created_at ? new Date(s.created_at).toLocaleDateString() : '',
           fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
           phone: p?.phone || '',
+          address: p?.address || '',
           course: crs?.name || '—',
           source: s.lead_source || '',
           instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
@@ -158,6 +179,7 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
         { header: "Дата", key: "date" },
         { header: "ПІБ", key: "fullName" },
         { header: "Номер телефону", key: "phone" },
+        { header: "Адреса", key: "address" },
         { header: "Курс", key: "course" },
         { header: "Звідки клієнт", key: "source" },
         { header: "Інструктор", key: "instructor" },
@@ -168,29 +190,29 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
     }
 
     // SHEET: CRM_Clients
-    if (clients) {
-      addStyledSheet("CRM_Clients", clients.map(c => ({
-        name: `${c.profiles?.first_name || ''} ${c.profiles?.last_name || ''}`,
-        email: c.profiles?.email,
-        phone: c.profiles?.phone,
-        gear: c.gear_type,
-        status: c.document_status,
-        tags: Array.isArray(c.tags) ? c.tags.join(', ') : '',
-        source: c.lead_source,
-        graduated: c.training_stage === 'graduated' ? "YES" : "NO",
-        joined: new Date(c.created_at).toLocaleDateString()
-      })), [
-        { header: "FULL NAME", key: "name" },
-        { header: "EMAIL", key: "email" },
-        { header: "PHONE", key: "phone" },
-        { header: "CATEGORY", key: "gear" },
-        { header: "DOC STATUS", key: "status" },
-        { header: "TAGS", key: "tags" },
-        { header: "SOURCE", key: "source" },
-        { header: "GRADUATED", key: "graduated" },
-        { header: "REGISTERED", key: "joined" }
-      ]);
-    }
+    // if (clients) {
+    //   addStyledSheet("CRM_Clients", clients.map(c => ({
+    //     name: `${c.profiles?.first_name || ''} ${c.profiles?.last_name || ''}`,
+    //     email: c.profiles?.email,
+    //     phone: c.profiles?.phone,
+    //     gear: c.gear_type,
+    //     status: c.document_status,
+    //     tags: Array.isArray(c.tags) ? c.tags.join(', ') : '',
+    //     source: c.lead_source,
+    //     graduated: c.training_stage === 'graduated' ? "YES" : "NO",
+    //     joined: new Date(c.created_at).toLocaleDateString()
+    //   })), [
+    //     { header: "FULL NAME", key: "name" },
+    //     { header: "EMAIL", key: "email" },
+    //     { header: "PHONE", key: "phone" },
+    //     { header: "CATEGORY", key: "gear" },
+    //     { header: "DOC STATUS", key: "status" },
+    //     { header: "TAGS", key: "tags" },
+    //     { header: "SOURCE", key: "source" },
+    //     { header: "GRADUATED", key: "graduated" },
+    //     { header: "REGISTERED", key: "joined" }
+    //   ]);
+    // }
 
     // // SHEET: Training_Packages
     // if (packages) {
@@ -211,24 +233,26 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
     //   ]);
     // }
 
-    // // SHEET: Revenue_Log
-    // if (payments) {
-    //   addStyledSheet("Revenue_Log", payments.map(p => ({
-    //     date: new Date(p.created_at).toLocaleDateString(),
-    //     client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
-    //     amount: Number(p.amount),
-    //     method: p.payment_methods?.label_key || 'Direct',
-    //     status: p.status,
-    //     notes: p.notes
-    //   })), [
-    //     { header: "DATE", key: "date" },
-    //     { header: "CLIENT", key: "client" },
-    //     { header: "AMOUNT", key: "amount" },
-    //     { header: "METHOD", key: "method" },
-    //     { header: "STATUS", key: "status" },
-    //     { header: "NOTES", key: "notes" }
-    //   ]);
-    // }
+    // SHEET: Revenue_Log
+    if (payments) {
+      addStyledSheet("Оплати", payments.map(p => ({
+        date: new Date(p.created_at).toLocaleDateString(),
+        client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
+        amount: Number(p.amount),
+        course: p.course_packages?.courses?.name || '—',
+        method: p.payment_methods?.label_key || 'Direct',
+        status: p.status,
+        notes: p.notes
+      })), [
+        { header: "Дата", key: "date" },
+        { header: "Учень", key: "client" },
+        { header: "Сума", key: "amount" },
+        { header: "Курс", key: "course" },
+        { header: "Метод", key: "method" },
+        // { header: "STATUS", key: "status" },
+        { header: "Коментарі", key: "notes" }
+      ]);
+    }
 
     // // SHEET: Operational_Lessons
     // if (lessons) {
@@ -253,7 +277,7 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
 
     // SHEET: Business_Expenses
     if (expenses) {
-      addStyledSheet("Business_Expenses", expenses.map(e => ({
+      addStyledSheet("Витрати", expenses.map(e => ({
         date: e.expense_date,
         amount: Number(e.amount),
         category: e.category,
