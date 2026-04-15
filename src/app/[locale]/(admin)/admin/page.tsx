@@ -51,10 +51,12 @@ export default function UnifiedDashboard() {
 
 
   const tt = useTranslations("Payments");
+  const tConst = useTranslations("Constants");
+  
 
   // 1. XLSX (Business)
   const handleExport = async () => {
-    await exportFullDatabase(setExporting, tt);
+    await exportFullDatabase(setExporting, tt, tConst);
   };
 
   // 2. SQL Data (Records)

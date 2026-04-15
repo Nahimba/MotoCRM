@@ -6,7 +6,9 @@ import { supabase } from '@/lib/supabase';
  * MOTO CRM BLACKBOX - EXECUTIVE XLSX EXPORT
  */
 export const exportFullDatabase = async (setLoading: (loading: boolean) => void, 
-t: (key: string) => string) => {
+t: (key: string) => string,
+tConst: (key: string) => string
+) => {
   setLoading(true);
   try {
     const workbook = new ExcelJS.Workbook();
@@ -165,16 +167,23 @@ t: (key: string) => string) => {
         const inst = Array.isArray(pkg?.instructors) ? pkg.instructors[0] : pkg?.instructors;
         const instP = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
 
+        const translatedGear = s.gear_type ? tConst(`gear_type.${s.gear_type}`) : '—';
+        const translatedSource = s.lead_source ? tConst(`lead_sources.${s.lead_source}`) : '—';
+        const translatedDocs = s.document_status ? tConst(`document_status.${s.document_status}`) : '—';
+
         return {
           date: s.created_at ? new Date(s.created_at).toLocaleDateString() : '',
           fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
           phone: p?.phone || '',
           address: p?.address || '',
           course: crs?.name || '—',
-          source: s.lead_source || '',
+          //source: s.lead_source || '',
+          source: translatedSource,
           instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
-          docs: s.document_status || '',
-          gear: s.gear_type || '',
+          //docs: s.document_status || '',
+          docs: translatedDocs,
+          //gear: s.gear_type || '',
+          gear: translatedGear,
           comment: s.notes || ''
         };
       }), [
@@ -190,6 +199,12 @@ t: (key: string) => string) => {
         { header: "Коментар", key: "comment" }
       ]);
     }
+
+    // const tConst = useTranslations("Constants")
+    // {tConst ("gear_type.Manual")}
+    // {tConst ("gear_type.Auto")}
+    // {tConst("lead_source.....")}
+
 
     // SHEET: CRM_Clients
     // if (clients) {

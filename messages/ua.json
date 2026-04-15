@@ -552,6 +552,15 @@
       "transmission": "Трансмісія",
       "Auto": "Автомат",
       "Manual": "Механіка"
+    },
+    "document_status": {
+      "not_required": "Не потрібні",
+      "unknown": "Невідомо",
+      "in_progress": "В процесі",
+      "pending": "В очікуванні",
+      "ready": "Готово",
+      "submitted": "Подано",
+      "has_license": "Вже має"
     }
   }
 }
