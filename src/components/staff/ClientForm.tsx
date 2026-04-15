@@ -319,8 +319,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <Field label={t("form.first_name")}><input required value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} className={inputClass} /></Field>
-                <Field label="По батькові"><input value={formData.middle_name} onChange={e => setFormData({...formData, middle_name: e.target.value})} className={inputClass} /></Field>
                 <Field label={t("form.last_name")}><input value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} className={inputClass} /></Field>
+                <Field label="По батькові"><input value={formData.middle_name} onChange={e => setFormData({...formData, middle_name: e.target.value})} className={inputClass} /></Field>
               </div>
               
               {/* <Field label={t("form.phone")}><input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={inputClass} placeholder="+380..." /></Field> */}
