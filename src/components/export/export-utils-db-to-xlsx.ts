@@ -180,56 +180,153 @@ tConst: (key: string) => string
       });
     };
 
-    // 3. MAPPING DATA
-    // SHEET 1: Учні
-    if (studentsRaw) {
-      addStyledSheet("База клієнтів", studentsRaw.map(s => {
-        const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
-        const acc = Array.isArray(s.accounts) ? s.accounts[0] : s.accounts;
-        const pkg = Array.isArray(acc?.course_packages) ? acc.course_packages[0] : acc?.course_packages;
-        const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
-        const inst = Array.isArray(pkg?.instructors) ? pkg.instructors[0] : pkg?.instructors;
-        const instP = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
 
+    // // 3. MAPPING DATA
+    // // SHEET 1: Учні
+    // if (studentsRaw) {
+    //   addStyledSheet("База клієнтів", studentsRaw.map(s => {
+    //     const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
+    //     const acc = Array.isArray(s.accounts) ? s.accounts[0] : s.accounts;
+    //     const pkg = Array.isArray(acc?.course_packages) ? acc.course_packages[0] : acc?.course_packages;
+    //     const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
+    //     const inst = Array.isArray(pkg?.instructors) ? pkg.instructors[0] : pkg?.instructors;
+    //     const instP = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
+
+    //     const translatedGear = s.gear_type ? tConst(`gear_type.${s.gear_type}`) : '—';
+    //     const translatedSource = s.lead_source ? tConst(`lead_sources.${s.lead_source}`) : '—';
+    //     const translatedDocs = s.document_status ? tConst(`document_status.${s.document_status}`) : '—';
+
+    //     const creator = Array.isArray(s.creator) ? s.creator[0] : s.creator;
+    //     const createdByInstructorName = creator 
+    //       ? `${creator.first_name || ''} ${creator.last_name || ''}`.trim() 
+    //       : '—';
+
+    //     return {
+    //       date: s.created_at ? new Date(s.created_at).toLocaleDateString() : '',
+    //       fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
+    //       phone: p?.phone || '',
+    //       address: p?.address || '',
+    //       course: crs?.name || '—',
+    //       //source: s.lead_source || '',
+    //       source: translatedSource,
+    //       // instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
+    //       instructor: instP 
+    //     ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() 
+    //     : createdByInstructorName,
+    //       //docs: s.document_status || '',
+    //       docs: translatedDocs,
+    //       //gear: s.gear_type || '',
+    //       gear: translatedGear,
+    //       comment: s.notes || ''
+    //     };
+    //   }), [
+    //     { header: "Дата", key: "date" },
+    //     { header: "ПІБ", key: "fullName" },
+    //     { header: "Номер телефону", key: "phone" },
+    //     { header: "Адреса", key: "address" },
+    //     { header: "Курс", key: "course" },
+    //     { header: "Звідки клієнт", key: "source" },
+    //     { header: "Інструктор", key: "instructor" },
+    //     { header: "Документи", key: "docs" },
+    //     { header: "Тип КПП", key: "gear" },
+    //     { header: "Коментар", key: "comment" }
+    //   ]);
+    // }
+
+    // SHEET 1: Учні
+    const UKRAINIAN_MONTHS: { [key: number]: string } = {
+      0: "Січень", 1: "Лютий", 2: "Березень", 3: "Квітень", 4: "Травень", 5: "Червень",
+      6: "Липень", 7: "Серпень", 8: "Вересень", 9: "Жовтень", 10: "Листопад", 11: "Грудень"
+    };
+
+    if (studentsRaw) {
+      const sheet = workbook.addWorksheet("База клієнтів");
+      sheet.columns = [
+        { header: "Дата", key: "date", width: 15 },
+        { header: "ПІБ", key: "fullName", width: 35 },
+        { header: "Номер телефону", key: "phone", width: 20 },
+        { header: "Курс", key: "course", width: 25 },
+        { header: "Звідки клієнт", key: "source", width: 20 },
+        { header: "Інструктор", key: "instructor", width: 25 },
+        { header: "Документи", key: "docs", width: 20 },
+        { header: "Тип КПП", key: "gear", width: 15 },
+        { header: "Коментар", key: "comment", width: 40 }
+      ];
+    
+      // Format Header
+      sheet.getRow(1).eachCell(cell => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      });
+    
+      let lastMonthYear = "";
+    
+      studentsRaw.forEach((s) => {
+        const dateObj = s.created_at ? new Date(s.created_at) : null;
+        const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
+    
+        // 1. INSERT MONTH SEPARATOR
+        if (currentMonthYear !== lastMonthYear && currentMonthYear !== "") {
+          const monthRow = sheet.addRow({ date: currentMonthYear });
+          sheet.mergeCells(monthRow.number, 1, monthRow.number, 9); // Merge across all columns
+          monthRow.getCell(1).font = { bold: true, size: 12 };
+          monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } }; // Slate-200
+          monthRow.getCell(1).alignment = { horizontal: 'center' };
+          lastMonthYear = currentMonthYear;
+        }
+    
+        // 2. PREPARE CLIENT DATA
+        const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
         const translatedGear = s.gear_type ? tConst(`gear_type.${s.gear_type}`) : '—';
         const translatedSource = s.lead_source ? tConst(`lead_sources.${s.lead_source}`) : '—';
         const translatedDocs = s.document_status ? tConst(`document_status.${s.document_status}`) : '—';
-
+        
         const creator = Array.isArray(s.creator) ? s.creator[0] : s.creator;
-        const createdByInstructorName = creator 
-          ? `${creator.first_name || ''} ${creator.last_name || ''}`.trim() 
-          : '—';
-
-        return {
-          date: s.created_at ? new Date(s.created_at).toLocaleDateString() : '',
-          fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
-          phone: p?.phone || '',
-          address: p?.address || '',
-          course: crs?.name || '—',
-          //source: s.lead_source || '',
-          source: translatedSource,
-          // instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
-          instructor: instP 
-        ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() 
-        : createdByInstructorName,
-          //docs: s.document_status || '',
-          docs: translatedDocs,
-          //gear: s.gear_type || '',
-          gear: translatedGear,
-          comment: s.notes || ''
-        };
-      }), [
-        { header: "Дата", key: "date" },
-        { header: "ПІБ", key: "fullName" },
-        { header: "Номер телефону", key: "phone" },
-        { header: "Адреса", key: "address" },
-        { header: "Курс", key: "course" },
-        { header: "Звідки клієнт", key: "source" },
-        { header: "Інструктор", key: "instructor" },
-        { header: "Документи", key: "docs" },
-        { header: "Тип КПП", key: "gear" },
-        { header: "Коментар", key: "comment" }
-      ]);
+        const createdByInstructorName = creator ? `${creator.first_name || ''} ${creator.last_name || ''}`.trim() : '—';
+    
+        // 3. HANDLE MULTIPLE PACKAGES
+        const accounts = Array.isArray(s.accounts) ? s.accounts : (s.accounts ? [s.accounts] : []);
+        let packages: any[] = [];
+        
+        accounts.forEach(acc => {
+          const pkgs = Array.isArray(acc.course_packages) ? acc.course_packages : (acc.course_packages ? [acc.course_packages] : []);
+          packages.push(...pkgs);
+        });
+    
+        if (packages.length === 0) {
+          // No packages, just add the client row
+          sheet.addRow({
+            date: dateObj ? dateObj.toLocaleDateString() : '',
+            fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
+            phone: p?.phone || '',
+            course: '—',
+            source: translatedSource,
+            instructor: createdByInstructorName,
+            docs: translatedDocs,
+            gear: translatedGear,
+            comment: s.notes || ''
+          });
+        } else {
+          // Add a row for EACH package
+          packages.forEach((pkg, index) => {
+            const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
+            const inst = Array.isArray(pkg?.instructors) ? pkg.instructors[0] : pkg?.instructors;
+            const instP = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
+    
+            sheet.addRow({
+              date: index === 0 ? (dateObj ? dateObj.toLocaleDateString() : '') : '', // Only show date on first row
+              fullName: index === 0 ? `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim() : '', // Only show name on first row
+              phone: index === 0 ? (p?.phone || '') : '', 
+              course: crs?.name || '—',
+              source: index === 0 ? translatedSource : '',
+              instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : createdByInstructorName,
+              docs: index === 0 ? translatedDocs : '',
+              gear: index === 0 ? translatedGear : '',
+              comment: index === 0 ? (s.notes || '') : ''
+            });
+          });
+        }
+      });
     }
 
 
@@ -327,45 +424,118 @@ tConst: (key: string) => string
     //   ]);
     // }
 
+
+
+    // // SHEET: Revenue_Log
+    // if (payments) {
+    //   addStyledSheet("Оплати", payments.map(p => {
+
+    //     const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
+    //     const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
+    //     const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
+
+    //     const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
+    //     const translatedMethod = method?.label_key ? t(method.label_key) : (method?.slug || '—');
+
+    //     const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
+    //     const translatedPlan = plan?.label_key ? t(plan.label_key) : (plan?.slug || '—');
+
+    //     return {
+    //     date: new Date(p.created_at).toLocaleDateString(),
+    //     //client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
+    //     fullName: prof 
+    //     ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+    //     : '—',
+    //     amount: Number(p.amount),
+    //     course: p.course_packages?.courses?.name || '—',
+    //     //method: p.payment_methods?.label_key || 'Direct',
+    //     method: translatedMethod,
+    //     plan: translatedPlan,
+    //     status: p.status,
+    //     notes: p.notes,
+    //     };
+    //   }), [
+    //     { header: "Дата", key: "date" },
+    //     { header: "Учень", key: "fullName" },
+    //     { header: "Сума", key: "amount" },
+    //     { header: "Курс", key: "course" },
+    //     { header: "Метод", key: "method" },
+    //     { header: "План оплати", key: "plan" },
+    //     // { header: "STATUS", key: "status" },
+    //     { header: "Коментарі", key: "notes" }
+    //   ]);
+    // }
+
     // SHEET: Revenue_Log
     if (payments) {
-      addStyledSheet("Оплати", payments.map(p => {
-
+      const paySheet = workbook.addWorksheet("Оплати");
+      paySheet.columns = [
+        { header: "Дата", key: "date", width: 15 },
+        { header: "Учень", key: "fullName", width: 35 },
+        { header: "Сума", key: "amount", width: 15 },
+        { header: "Курс", key: "course", width: 25 },
+        { header: "Метод", key: "method", width: 20 },
+        { header: "План оплати", key: "plan", width: 20 },
+        { header: "Коментарі", key: "notes", width: 30 }
+      ];
+    
+      // Format Header
+      paySheet.getRow(1).eachCell(cell => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+      });
+    
+      let lastPayMonth = "";
+    
+      payments.forEach((p) => {
+        const dateObj = p.created_at ? new Date(p.created_at) : null;
+        const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
+    
+        // 1. INSERT MONTH SEPARATOR
+        if (currentMonthYear !== lastPayMonth && currentMonthYear !== "") {
+          const monthRow = paySheet.addRow({ date: currentMonthYear });
+          paySheet.mergeCells(monthRow.number, 1, monthRow.number, 7);
+          monthRow.getCell(1).font = { bold: true, size: 12 };
+          monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+          monthRow.getCell(1).alignment = { horizontal: 'center' };
+          lastPayMonth = currentMonthYear;
+        }
+    
+        // 2. DATA EXTRACTION
         const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
         const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
         const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
-
+    
         const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
         const translatedMethod = method?.label_key ? t(method.label_key) : (method?.slug || '—');
-
+    
         const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
         const translatedPlan = plan?.label_key ? t(plan.label_key) : (plan?.slug || '—');
-
-        return {
-        date: new Date(p.created_at).toLocaleDateString(),
-        //client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
-        fullName: prof 
-        ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
-        : '—',
-        amount: Number(p.amount),
-        course: p.course_packages?.courses?.name || '—',
-        //method: p.payment_methods?.label_key || 'Direct',
-        method: translatedMethod,
-        plan: translatedPlan,
-        status: p.status,
-        notes: p.notes,
-        };
-      }), [
-        { header: "Дата", key: "date" },
-        { header: "Учень", key: "fullName" },
-        { header: "Сума", key: "amount" },
-        { header: "Курс", key: "course" },
-        { header: "Метод", key: "method" },
-        { header: "План оплати", key: "plan" },
-        // { header: "STATUS", key: "status" },
-        { header: "Коментарі", key: "notes" }
-      ]);
+        
+        // Course name from join
+        const pkg = Array.isArray(p.course_packages) ? p.course_packages[0] : p.course_packages;
+        const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
+    
+        // 3. ADD ROW
+        paySheet.addRow({
+          date: dateObj ? dateObj.toLocaleDateString() : '—',
+          fullName: prof 
+            ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+            : '—',
+          amount: Number(p.amount) || 0,
+          course: crs?.name || '—',
+          method: translatedMethod,
+          plan: translatedPlan,
+          notes: p.notes || ''
+        });
+      });
+    
+      // Optional: Add Number Formatting to Amount Column
+      paySheet.getColumn('amount').numFmt = '#,##0.00';
     }
+
+
+
 
     // // SHEET: Operational_Lessons
     // if (lessons) {
