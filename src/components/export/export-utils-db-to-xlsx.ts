@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
 /**
  * MOTO CRM BLACKBOX - EXECUTIVE XLSX EXPORT
  */
-export const exportFullDatabase = async (setLoading: (loading: boolean) => void) => {
+export const exportFullDatabase = async (setLoading: (loading: boolean) => void, 
+t: (key: string) => string) => {
   setLoading(true);
   try {
     const workbook = new ExcelJS.Workbook();
@@ -85,11 +86,12 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
         is_paid,
         notes,
         payment_methods(label_key),
+        payment_plans(label_key),
         accounts(
-          clients(
-            profiles:profiles!clients_profile_id_fkey(first_name, last_name, phone)
-          )
-        ),
+            clients(
+              profiles:profile_id(first_name, last_name, middle_name)
+            )
+          ),
         course_packages(
           courses(name)
         )
@@ -235,20 +237,39 @@ export const exportFullDatabase = async (setLoading: (loading: boolean) => void)
 
     // SHEET: Revenue_Log
     if (payments) {
-      addStyledSheet("Оплати", payments.map(p => ({
+      addStyledSheet("Оплати", payments.map(p => {
+
+        const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
+        const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
+        const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
+
+        const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
+        const translatedMethod = method?.label_key ? t(method.label_key) : (method?.slug || '—');
+
+        const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
+        const translatedPlan = plan?.label_key ? t(plan.label_key) : (plan?.slug || '—');
+
+        return {
         date: new Date(p.created_at).toLocaleDateString(),
-        client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
+        //client: `${p.accounts?.clients?.profiles?.first_name || ''} ${p.accounts?.clients?.profiles?.last_name || ''}`,
+        fullName: prof 
+        ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+        : '—',
         amount: Number(p.amount),
         course: p.course_packages?.courses?.name || '—',
-        method: p.payment_methods?.label_key || 'Direct',
+        //method: p.payment_methods?.label_key || 'Direct',
+        method: translatedMethod,
+        plan: translatedPlan,
         status: p.status,
-        notes: p.notes
-      })), [
+        notes: p.notes,
+        };
+      }), [
         { header: "Дата", key: "date" },
-        { header: "Учень", key: "client" },
+        { header: "Учень", key: "fullName" },
         { header: "Сума", key: "amount" },
         { header: "Курс", key: "course" },
         { header: "Метод", key: "method" },
+        { header: "План оплати", key: "plan" },
         // { header: "STATUS", key: "status" },
         { header: "Коментарі", key: "notes" }
       ]);

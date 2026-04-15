@@ -50,9 +50,11 @@ export default function UnifiedDashboard() {
   useEffect(() => { fetchData() }, [])
 
 
+  const tt = useTranslations("Payments");
+
   // 1. XLSX (Business)
   const handleExport = async () => {
-    await exportFullDatabase(setExporting);
+    await exportFullDatabase(setExporting, tt);
   };
 
   // 2. SQL Data (Records)
