@@ -21,6 +21,7 @@ tConst: (key: string) => string
       { data: studentsRaw , error: err1},
       //{ data: clients, error: err2 },
       // { data: packages, error: err3  },
+      { data: docRecords, error: err2 },
       { data: payments, error: err4 },
       // { data: lessons, error: err5  },
       { data: expenses, error: err6  }
@@ -41,8 +42,9 @@ tConst: (key: string) => string
       //   )
       // `),
       supabase.from('clients').select(`
-        created_at, lead_source, document_status, gear_type, notes,
+        created_at, lead_source, document_status, gear_type, notes, created_by_profile_id,
         profiles:profiles!clients_profile_id_fkey(first_name, last_name, middle_name, phone, address),
+        creator:profiles!clients_created_by_profile_id_fkey(first_name, last_name),
         accounts(
           course_packages(
             courses(name),
@@ -50,6 +52,23 @@ tConst: (key: string) => string
           )
         )
       `).order('created_at', { ascending: true }),
+
+
+      // New query for Documents Sheet
+      supabase.from('client_documents').select(`
+        status,
+        submission_date,
+        ready_date_est,
+        title,
+        url,
+        clients(
+          training_stage,
+          document_status,
+          profiles:profile_id(first_name, last_name, middle_name, phone)
+        )
+      `).order('submission_date', { ascending: false }),
+
+
 
       // supabase.from('clients').select('*, profiles!clients_profile_id_fkey(*)'),
       
@@ -120,7 +139,7 @@ tConst: (key: string) => string
     ]);
 
     // Check for errors immediately
-    const errors = [err1, err4, err6].filter(Boolean);//  err3, err4, err5,
+    const errors = [err1, err2, err4, err6].filter(Boolean);//  err3, err4, err5,
     if (errors.length > 0) {
       console.error("Supabase Query Errors:", errors);
       throw new Error("Failed to fetch database records");
@@ -171,6 +190,11 @@ tConst: (key: string) => string
         const translatedSource = s.lead_source ? tConst(`lead_sources.${s.lead_source}`) : '—';
         const translatedDocs = s.document_status ? tConst(`document_status.${s.document_status}`) : '—';
 
+        const creator = Array.isArray(s.creator) ? s.creator[0] : s.creator;
+        const createdByInstructorName = creator 
+          ? `${creator.first_name || ''} ${creator.last_name || ''}`.trim() 
+          : '—';
+
         return {
           date: s.created_at ? new Date(s.created_at).toLocaleDateString() : '',
           fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
@@ -179,7 +203,10 @@ tConst: (key: string) => string
           course: crs?.name || '—',
           //source: s.lead_source || '',
           source: translatedSource,
-          instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
+          // instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : '—',
+          instructor: instP 
+        ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() 
+        : createdByInstructorName,
           //docs: s.document_status || '',
           docs: translatedDocs,
           //gear: s.gear_type || '',
@@ -197,6 +224,51 @@ tConst: (key: string) => string
         { header: "Документи", key: "docs" },
         { header: "Тип КПП", key: "gear" },
         { header: "Коментар", key: "comment" }
+      ]);
+    }
+
+
+    // --- SHEET: Документи ---
+    if (docRecords) {
+      addStyledSheet("Документи", docRecords.map(d => {
+        // 1. Extract linked data
+        const cl = Array.isArray(d.clients) ? d.clients[0] : d.clients;
+        const prof = Array.isArray(cl?.profiles) ? cl.profiles[0] : cl?.profiles;
+    
+        // 2. Translation logic (Multiple layers)
+        
+        // Specific doc status (e.g. 'ready')
+        const translatedDocStatus = d.status ? tConst(`document_status.${d.status}`) : '—';
+        
+        // Overall client document status (from 'clients' table)
+        const translatedOverallStatus = cl?.document_status ? tConst(`document_status.${cl.document_status}`) : '—';
+        
+        // Training Stage translation
+        const translatedStage = cl?.training_stage ? tConst(`student_stages.${cl.training_stage}`) : '—';
+    
+        return {
+          fullName: prof 
+            ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+            : '—',
+          phone: prof?.phone || '',
+          stage: translatedStage,             // From student_stages JSON
+          overallStatus: translatedOverallStatus, // Client table
+          docTitle: d.title || '—',
+          docStatus: translatedDocStatus,      // Client_documents table
+          link: d.url || '—',
+          submissionDate: d.submission_date ? new Date(d.submission_date).toLocaleDateString() : '—',
+          estReadyDate: d.ready_date_est ? new Date(d.ready_date_est).toLocaleDateString() : '—'
+        };
+      }), [
+        { header: "ПІБ", key: "fullName" },
+        { header: "Номер телефону", key: "phone" },
+        { header: "Етап навчання", key: "stage" },
+        // { header: "Загальний статус док.", key: "overallStatus" },
+        { header: "Назва документа", key: "docTitle" },
+        { header: "Статус документа", key: "docStatus" },
+        { header: "Посилання (URL)", key: "link" },
+        { header: "Дата подачі", key: "submissionDate" },
+        { header: "Очікувана дата", key: "estReadyDate" }
       ]);
     }
 
@@ -327,11 +399,11 @@ tConst: (key: string) => string
         type: translatedType
         };
       }), [
-        { header: "DATE", key: "date" },
-        { header: "AMOUNT", key: "amount" },
-        { header: "CATEGORY", key: "category" },
-        { header: "DESCRIPTION", key: "desc" },
-        { header: "UNIT", key: "type" }
+        { header: "Дата", key: "date" },
+        { header: "Сума", key: "amount" },
+        { header: "Категорія", key: "category" },
+        { header: "Опис", key: "desc" },
+        { header: "Тип/Одиниця", key: "type" }
       ]);
     }
 

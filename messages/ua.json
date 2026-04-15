@@ -556,11 +556,14 @@
     "document_status": {
       "not_required": "Не потрібні",
       "unknown": "Невідомо",
-      "in_progress": "В процесі",
       "pending": "В очікуванні",
+      "has_license": "Вже має",
+
+      "in_progress": "В процесі",
       "ready": "Готово",
       "submitted": "Подано",
-      "has_license": "Вже має"
+      "pending_collection": "Очікується",
+      "completed": "Видано"
     },
     "expense_types": {
       "General": "Загальні",
