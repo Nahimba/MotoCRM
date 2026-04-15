@@ -561,6 +561,11 @@
       "ready": "Готово",
       "submitted": "Подано",
       "has_license": "Вже має"
+    },
+    "expense_types": {
+      "General": "Загальні",
+      "Auto": "Aвто",
+      "Moto": "Мото"
     }
   }
 }

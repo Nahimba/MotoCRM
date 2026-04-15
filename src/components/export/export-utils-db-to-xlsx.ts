@@ -313,13 +313,20 @@ tConst: (key: string) => string
 
     // SHEET: Business_Expenses
     if (expenses) {
-      addStyledSheet("Витрати", expenses.map(e => ({
+      addStyledSheet("Витрати", expenses.map(e => {
+        const translatedCategory = e.category ? tConst(`expense_categories.${e.category}`) : '—';
+        const translatedType = e.type ? tConst(`expense_types.${e.type}`) : (e.type || '—');
+
+        return {
         date: e.expense_date,
         amount: Number(e.amount),
-        category: e.category,
+        //category: e.category,
+        category: translatedCategory,
         desc: e.description,
-        type: e.type
-      })), [
+        //type: e.type
+        type: translatedType
+        };
+      }), [
         { header: "DATE", key: "date" },
         { header: "AMOUNT", key: "amount" },
         { header: "CATEGORY", key: "category" },
