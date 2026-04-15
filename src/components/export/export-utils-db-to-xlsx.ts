@@ -49,7 +49,7 @@ tConst: (key: string) => string
             instructors(profiles(first_name, last_name))
           )
         )
-      `),
+      `).order('created_at', { ascending: true }),
 
       // supabase.from('clients').select('*, profiles!clients_profile_id_fkey(*)'),
       
@@ -97,7 +97,7 @@ tConst: (key: string) => string
         course_packages(
           courses(name)
         )
-      `),
+      `).order('created_at', { ascending: true }),
       
       // // Sheet: Operational_Lessons
       // supabase.from('lessons').select(`
@@ -116,7 +116,7 @@ tConst: (key: string) => string
 
       
       
-      supabase.from('business_expenses').select('*')
+      supabase.from('business_expenses').select('*').order('expense_date', { ascending: true })
     ]);
 
     // Check for errors immediately
