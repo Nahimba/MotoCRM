@@ -266,9 +266,9 @@ tConst: (key: string) => string
         // { header: "Загальний статус док.", key: "overallStatus" },
         { header: "Назва документа", key: "docTitle" },
         { header: "Статус документа", key: "docStatus" },
-        { header: "Посилання (URL)", key: "link" },
         { header: "Дата подачі", key: "submissionDate" },
-        { header: "Очікувана дата", key: "estReadyDate" }
+        { header: "Очікувана дата", key: "estReadyDate" },
+        { header: "Посилання (URL)", key: "link" }
       ]);
     }
 
