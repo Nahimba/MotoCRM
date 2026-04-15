@@ -66,7 +66,7 @@ tConst: (key: string) => string
           document_status,
           profiles:profile_id(first_name, last_name, middle_name, phone)
         )
-      `).order('submission_date', { ascending: false }),
+      `).order('submission_date', { ascending: true }),
 
 
 
@@ -133,9 +133,14 @@ tConst: (key: string) => string
       //supabase.from('payments').select('*, payment_methods(label_key), accounts(clients(profiles(first_name, last_name)))'),
       // supabase.from('lessons').select('*, instructors(profiles(first_name, last_name)), course_packages(courses(name)), locations(name)'),
 
-      
-      
-      supabase.from('business_expenses').select('*').order('expense_date', { ascending: true })
+      supabase
+      .from('business_expenses')
+      .select(`
+        *,
+        profiles:created_by_profile_id(first_name, last_name, middle_name)
+      `)
+      .order('expense_date', { ascending: true })
+
     ]);
 
     // Check for errors immediately
@@ -386,24 +391,38 @@ tConst: (key: string) => string
     // SHEET: Business_Expenses
     if (expenses) {
       addStyledSheet("Витрати", expenses.map(e => {
+
+        // 1. Extract Profile Data
+        const prof = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
+        const creatorName = prof 
+          ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+          : '—';
+
         const translatedCategory = e.category ? tConst(`expense_categories.${e.category}`) : '—';
         const translatedType = e.type ? tConst(`expense_types.${e.type}`) : (e.type || '—');
 
+        // Corrected translation path for payment method
+        const localizedMethod = e.payment_method 
+        ? tConst(`payment.method.${e.payment_method}`) 
+        : (e.payment_method || '—');
+
         return {
-        date: e.expense_date,
-        amount: Number(e.amount),
-        //category: e.category,
-        category: translatedCategory,
-        desc: e.description,
-        //type: e.type
-        type: translatedType
+          date: e.expense_date ? new Date(e.expense_date).toLocaleDateString() : '—',
+          amount: Number(e.amount) || 0,
+          category: translatedCategory,
+          desc: e.description || '',
+          type: translatedType,
+          method: localizedMethod,
+          createdBy: creatorName
         };
       }), [
         { header: "Дата", key: "date" },
-        { header: "Сума", key: "amount" },
+        { header: "Хто створив", key: "createdBy" },
+        { header: "Тип", key: "type" },
         { header: "Категорія", key: "category" },
-        { header: "Опис", key: "desc" },
-        { header: "Тип/Одиниця", key: "type" }
+        { header: "Сума", key: "amount" },
+        { header: "Спосіб оплати", key: "method" },
+        { header: "Опис", key: "desc" }
       ]);
     }
 
