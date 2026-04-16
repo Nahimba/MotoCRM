@@ -18,9 +18,20 @@ interface PaymentModalProps {
   onSuccess: () => void
   editPayment?: any
   instructorId: string | null
+  initialClientId?: string
+  initialPackageId?: string
 }
 
-export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instructorId }: PaymentModalProps) {
+export function PaymentModal({
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  editPayment, 
+  instructorId,
+  initialClientId,
+  initialPackageId
+}: PaymentModalProps) {
+
   const t = useTranslations("Payments")
   const { profile } = useAuth()
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -62,6 +73,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
         .select(`id, account_id, account_label, course_name, contract_price, total_paid, total_hours, instructor_id, status`)
       
       if (instructorId) pkgQuery = pkgQuery.eq('instructor_id', instructorId)
+      if (initialClientId) pkgQuery = pkgQuery.eq('account_id', initialClientId)
 
       const [pkgs, plansData, methodsData] = await Promise.all([
         pkgQuery,
@@ -80,6 +92,32 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
       if (plansData.data) setPlans(plansData.data)
       if (methodsData.data) setMethods(methodsData.data)
 
+
+      // if (editPayment) {
+      //   setFormData({
+      //     course_package_id: editPayment.course_package_id || "",
+      //     account_id: editPayment.account_id || "",
+      //     amount: editPayment.amount?.toString() || "",
+      //     payment_plan_id: editPayment.payment_plan_id || "",
+      //     payment_method_id: editPayment.payment_method_id || "",
+      //     status: editPayment.status || "completed",
+      //     notes: editPayment.notes || ""
+      //   })
+
+      //   const current = processedPkgs.find(p => p.id === editPayment.course_package_id)
+      //   if (current) {
+      //     setSearchTerm(`${current.account_label} — ${current.course_name}`)
+      //   }
+      // } else {
+      //   setFormData({
+      //     course_package_id: "", account_id: "", amount: "",
+      //     payment_plan_id: "", payment_method_id: "",
+      //     status: "completed", notes: ""
+      //   })
+      //   setSearchTerm("")
+      // }
+
+      // --- LOGIC FOR PRE-FILLING FORM ---
       if (editPayment) {
         setFormData({
           course_package_id: editPayment.course_package_id || "",
@@ -92,10 +130,34 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
         })
 
         const current = processedPkgs.find(p => p.id === editPayment.course_package_id)
-        if (current) {
-          setSearchTerm(`${current.account_label} — ${current.course_name}`)
+        if (current) setSearchTerm(`${current.account_label} — ${current.course_name}`)
+      } 
+      else if (initialPackageId && processedPkgs.length > 0) {
+        // Context: Adding payment to a specific contract
+        const pkg = processedPkgs.find(p => p.id === initialPackageId)
+        if (pkg) {
+          setFormData(prev => ({
+            ...prev,
+            course_package_id: pkg.id,
+            account_id: pkg.account_id,
+            amount: pkg.balance_due.toString()
+          }))
+          setSearchTerm(`${pkg.account_label} — ${pkg.course_name}`)
         }
-      } else {
+      }
+      else if (initialClientId && processedPkgs.length === 1) {
+        // Context: Client profile and they only have 1 active package, auto-select it
+        const pkg = processedPkgs[0]
+        setFormData(prev => ({
+          ...prev,
+          course_package_id: pkg.id,
+          account_id: pkg.account_id,
+          amount: pkg.balance_due.toString()
+        }))
+        setSearchTerm(`${pkg.account_label} — ${pkg.course_name}`)
+      }
+      else {
+        // Reset for clean "Add"
         setFormData({
           course_package_id: "", account_id: "", amount: "",
           payment_plan_id: "", payment_method_id: "",
@@ -106,7 +168,7 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
     }
 
     fetchData()
-  }, [isOpen, editPayment, instructorId])
+  }, [isOpen, editPayment, instructorId, initialClientId, initialPackageId])
 
   const filteredPackages = useMemo(() => {
     return packages.filter(pkg => {
@@ -287,10 +349,14 @@ export function PaymentModal({ isOpen, onClose, onSuccess, editPayment, instruct
                 onFocus={() => setIsDropdownOpen(true)}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4.5 pl-12 pr-10 text-sm font-bold text-white outline-none focus:border-primary/50 transition-all"
+                disabled={!!initialPackageId} // Lock search if a specific package was passed
               />
-              <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} size={16} />
 
-              {isDropdownOpen && (
+              {!initialPackageId && (
+                <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} size={16} />
+              )}
+              
+              {isDropdownOpen && !initialPackageId && (
                 <div className="absolute top-full left-0 right-0 mt-3 max-h-[250px] overflow-y-auto bg-[#0A0A0A] border border-white/10 rounded-2xl z-[110] shadow-2xl no-scrollbar backdrop-blur-md">
                   {filteredPackages.length > 0 ? (
                     filteredPackages.map((pkg) => {

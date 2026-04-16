@@ -100,7 +100,8 @@ export default function UpdatePasswordPage() {
     }
 
     const { data: { user } } = await supabase.auth.getUser()
-    const role = user?.user_metadata?.role
+    //const role = user?.user_metadata?.role
+    const role = user?.app_metadata?.role
 
     toast.success("Доступ активовано")
     

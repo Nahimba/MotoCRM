@@ -18,18 +18,18 @@ export default function ProvisionPage() {
       { email: 'rider@motocrm.local', role: 'rider' }
     ]
 
-    for (const u of devUsers) {
-      // This official method handles the $2b$ hash, identities, 
-      // and provider_id automatically.
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
-        email: u.email,
-        password: 'password123',
-        email_confirm: true,
-        user_metadata: { role: u.role }
-      })
+    // for (const u of devUsers) {
+    //   // This official method handles the $2b$ hash, identities, 
+    //   // and provider_id automatically.
+    //   const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    //     email: u.email,
+    //     password: 'password123',
+    //     email_confirm: true,
+    //     user_metadata: { role: u.role }
+    //   })
 
-      setLog(prev => [...prev, error ? `❌ ${u.email}: ${error.message}` : `✅ ${u.email} created!`])
-    }
+    //   setLog(prev => [...prev, error ? `❌ ${u.email}: ${error.message}` : `✅ ${u.email} created!`])
+    // }
   }
 
   return (

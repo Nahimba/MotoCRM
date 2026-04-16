@@ -20,7 +20,7 @@ export default function ClientsPage() {
   // Состояния фильтров
   const [showOnlyActive, setShowOnlyActive] = useState(true)
   // Проверка на админа
-  const isAdmin = user?.user_metadata?.role === 'admin'
+  const isAdmin = user?.app_metadata?.role === 'admin'
   // Если админ — показываем всех (false), если нет — только своих (true)
   const [showOnlyMine, setShowOnlyMine] = useState(!isAdmin)
 
@@ -32,7 +32,7 @@ export default function ClientsPage() {
         .select('*')
         .eq('is_active', showOnlyActive)
 
-      // Фильтр "Мои пилоты": проверяем наличие ID пользователя в массиве инструкторов
+      // Фильтр "Мои ": проверяем наличие ID пользователя в массиве инструкторов
       if (showOnlyMine && user?.id) {
         query = query.contains('instructor_ids', [user.id])
       }

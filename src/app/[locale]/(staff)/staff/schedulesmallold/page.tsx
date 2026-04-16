@@ -27,7 +27,7 @@ export default function InstructorSchedulePage() {
       return
     }
 
-    const role = user.user_metadata?.role
+    const role = user.app_metadata?.role
     const isUserAdmin = role === 'admin'
     setIsAdmin(isUserAdmin)
 

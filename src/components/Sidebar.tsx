@@ -36,36 +36,38 @@ export default function Sidebar() {
   
   const [showSettings, setShowSettings] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   
   const settingsRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
 
-  // --- Avatar Resolution Logic ---
-  useEffect(() => {
-    async function resolveAvatar() {
-      const rawAvatar = profile?.avatar_url
-      if (!rawAvatar) {
-        setAvatarPreview(null)
-        return
-      }
 
-      if (rawAvatar.startsWith('http')) {
-        setAvatarPreview(rawAvatar)
-      } else {
-        // MATCHING THE MODAL LOGIC:
-        // Bucket: 'avatars'
-        // Path: 'avatars/filename'
-        const { data } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(`avatars/${rawAvatar}`) // Added the avatars/ prefix here
+  // const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  
+  // // --- Avatar Resolution Logic ---
+  // useEffect(() => {
+  //   async function resolveAvatar() {
+  //     const rawAvatar = profile?.avatar_url
+  //     if (!rawAvatar) {
+  //       setAvatarPreview(null)
+  //       return
+  //     }
+
+  //     if (rawAvatar.startsWith('http')) {
+  //       setAvatarPreview(rawAvatar)
+  //     } else {
+  //       // MATCHING THE MODAL LOGIC:
+  //       // Bucket: 'avatars'
+  //       // Path: 'avatars/filename'
+  //       const { data } = supabase.storage
+  //         .from('avatars')
+  //         .getPublicUrl(`avatars/${rawAvatar}`) // Added the avatars/ prefix here
         
-        setAvatarPreview(data.publicUrl)
-      }
-    }
+  //       setAvatarPreview(data.publicUrl)
+  //     }
+  //   }
 
-    resolveAvatar()
-  }, [profile?.avatar_url])
+  //   resolveAvatar()
+  // }, [profile?.avatar_url])
 
   const toggleLanguage = () => {
     const newLocale = locale === 'en' ? 'ua' : 'en';
@@ -286,10 +288,10 @@ export default function Sidebar() {
             >
               <MoreHorizontal size={22} />
             </button>
-            
-            <Link href="/profile" className="flex-1 flex items-center justify-center">
+
+            {/* --- Updated Avatar Rendering --- */}
+            {/* <Link href="/profile" className="flex-1 flex items-center justify-center">
               <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
-                {/* --- Updated Avatar Rendering --- */}
                 {avatarPreview ? (
                   <img src={avatarPreview} className="w-full h-full object-cover" alt="Profile" />
                 ) : (
@@ -298,7 +300,7 @@ export default function Sidebar() {
                   </div>
                 )}
               </div>
-            </Link>
+            </Link> */}
           </div>
         </div>
       </nav>
