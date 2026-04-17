@@ -5,15 +5,22 @@ import { routing } from './i18n/routing'
 
 const intlMiddleware = createMiddleware(routing);
 
+/**
+ * EXPORT NAME IS CRITICAL: Next.js expects 'proxy' or 'default' 
+ * when the file is named proxy.ts.
+ */
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
+  // 1. PERFORMANCE: Skip heavy logic for system files
+  if (pathname.includes('/_next') || pathname.includes('/favicon')) {
+    return intlMiddleware(request);
   }
 
+  // 2. INITIALIZE RESPONSE (Handling Locales)
   let response = intlMiddleware(request);
 
+  // 3. SUPABASE CLIENT
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,76 +28,67 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set({ name, value, ...options })
-          );
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set({ name, value, ...options })
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set({ name, value, ...options });
+            response.cookies.set({ name, value, ...options });
+          });
         },
       },
     }
   );
 
-  // 1. Отримуємо юзера (валідація JWT на сервері)
+  // 4. GET USER (Validated JWT)
   const { data: { user } } = await supabase.auth.getUser();
-  
-  // 2. СУВОРА ПЕРЕВІРКА РОЛІ (Тільки системні дані)
-  //let role = user?.app_metadata?.role;
   const role = user?.app_metadata?.role?.toLowerCase() || 'rider';
 
-  // FALLBACK: Якщо в JWT ролі ще немає (кеш), запитуємо БД.
-  // Це спрацює лише якщо RLS дозволяє (auth.uid() = auth_user_id)
-  // if (user && !role) {
-  //   const { data: profile } = await supabase
-  //     .from('profiles')
-  //     .select('role')
-  //     .eq('auth_user_id', user.id)
-  //     .single();
-    
-  //   role = profile?.role;
-  // }
-  
+  // 5. PARSE PATHS (Locale-aware)
   const segments = pathname.split('/');
   const isLocalePresent = routing.locales.includes(segments[1] as any);
   const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
   const purePathname = '/' + segments.slice(isLocalePresent ? 2 : 1).join('/');
+
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
 
-  // 3. AUTH BYPASS (Confirm, Password Update, etc.)
+  // 6. AUTH BYPASS
   const isAuthRoute = purePathname.startsWith('/auth');
   const hasCode = searchParams.has('code');
   if (isAuthRoute || hasCode) return response;
 
   const isPublicRoute = purePathname === '/' || purePathname === '/register';
 
-  // 4. ЗАХИСТ ТА РЕДИРЕКТИ
+  // 7. PREVENT ENDLESS LOADING (The Logic Fix)
+  // Check if we are already at the destination before redirecting
+  
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'));
   }
 
   if (user && isPublicRoute) {
-    let dash = '/account'; // Default для rider
+    let dash = '/account'; 
     if (role === 'admin') dash = '/admin';
     else if (role === 'instructor') dash = '/staff';
     
-    return NextResponse.redirect(localize(dash));
+    // CRITICAL: Only redirect if we aren't already there
+    if (purePathname !== dash) {
+        return NextResponse.redirect(localize(dash));
+    }
   }
 
-  // 5. СТРОГИЙ RBAC (Role-Based Access Control)
+  // 8. RBAC PROTECTION
   if (purePathname.startsWith('/admin') && role !== 'admin') {
-    return NextResponse.redirect(localize('/account'));
+    if (purePathname !== '/account') return NextResponse.redirect(localize('/account'));
   }
 
   if (purePathname.startsWith('/staff')) {
     if (role !== 'instructor' && role !== 'admin') {
-      return NextResponse.redirect(localize('/account'));
+       if (purePathname !== '/account') return NextResponse.redirect(localize('/account'));
     }
   }
 
   return response;
 }
 
+// Ensure the matcher covers all relevant localized routes
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 };
@@ -98,12 +96,102 @@ export const config = {
 
 
 
+// import { createServerClient } from '@supabase/ssr'
+// import { NextResponse, type NextRequest } from 'next/server'
+// import createMiddleware from 'next-intl/middleware'
+// import { routing } from './i18n/routing'
 
+// const intlMiddleware = createMiddleware(routing);
 
+// export async function proxy(request: NextRequest) {
+//   const { pathname, searchParams } = request.nextUrl;
 
+//   if (pathname === '/') {
+//     return NextResponse.redirect(new URL(`/${routing.defaultLocale}`, request.url));
+//   }
 
+//   let response = intlMiddleware(request);
 
+//   const supabase = createServerClient(
+//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+//     {
+//       cookies: {
+//         getAll: () => request.cookies.getAll(),
+//         setAll: (cookiesToSet) => {
+//           cookiesToSet.forEach(({ name, value, options }) =>
+//             request.cookies.set({ name, value, ...options })
+//           );
+//           cookiesToSet.forEach(({ name, value, options }) =>
+//             response.cookies.set({ name, value, ...options })
+//           );
+//         },
+//       },
+//     }
+//   );
 
+//   // 1. Отримуємо юзера (валідація JWT на сервері)
+//   const { data: { user } } = await supabase.auth.getUser();
+  
+//   // 2. СУВОРА ПЕРЕВІРКА РОЛІ (Тільки системні дані)
+//   //let role = user?.app_metadata?.role;
+//   const role = user?.app_metadata?.role?.toLowerCase() || 'rider';
+
+//   // FALLBACK: Якщо в JWT ролі ще немає (кеш), запитуємо БД.
+//   // Це спрацює лише якщо RLS дозволяє (auth.uid() = auth_user_id)
+//   // if (user && !role) {
+//   //   const { data: profile } = await supabase
+//   //     .from('profiles')
+//   //     .select('role')
+//   //     .eq('auth_user_id', user.id)
+//   //     .single();
+    
+//   //   role = profile?.role;
+//   // }
+  
+//   const segments = pathname.split('/');
+//   const isLocalePresent = routing.locales.includes(segments[1] as any);
+//   const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
+//   const purePathname = '/' + segments.slice(isLocalePresent ? 2 : 1).join('/');
+//   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
+
+//   // 3. AUTH BYPASS (Confirm, Password Update, etc.)
+//   const isAuthRoute = purePathname.startsWith('/auth');
+//   const hasCode = searchParams.has('code');
+//   if (isAuthRoute || hasCode) return response;
+
+//   const isPublicRoute = purePathname === '/' || purePathname === '/register';
+
+//   // 4. ЗАХИСТ ТА РЕДИРЕКТИ
+//   if (!user && !isPublicRoute) {
+//     return NextResponse.redirect(localize('/'));
+//   }
+
+//   if (user && isPublicRoute) {
+//     let dash = '/account'; // Default для rider
+//     if (role === 'admin') dash = '/admin';
+//     else if (role === 'instructor') dash = '/staff';
+    
+//     return NextResponse.redirect(localize(dash));
+//   }
+
+//   // 5. СТРОГИЙ RBAC (Role-Based Access Control)
+//   if (purePathname.startsWith('/admin') && role !== 'admin') {
+//     return NextResponse.redirect(localize('/account'));
+//   }
+
+//   if (purePathname.startsWith('/staff')) {
+//     if (role !== 'instructor' && role !== 'admin') {
+//       return NextResponse.redirect(localize('/account'));
+//     }
+//   }
+
+//   return response;
+// }
+
+// export const config = {
+//   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+// };
 
 
 
