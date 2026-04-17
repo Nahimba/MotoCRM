@@ -6,21 +6,26 @@ import { routing } from './i18n/routing'
 const intlMiddleware = createMiddleware(routing);
 
 /**
- * EXPORT NAME IS CRITICAL: Next.js expects 'proxy' or 'default' 
- * when the file is named proxy.ts.
+ * FINAL CORRECTED PROXY
+ * Fixes ts(2367) and prevents infinite loading loops.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // 1. PERFORMANCE: Skip heavy logic for system files
-  if (pathname.includes('/_next') || pathname.includes('/favicon')) {
+  // 1. FAST BYPASS: Skip for static files and internal Next.js requests
+  if (
+    pathname.startsWith('/_next') || 
+    pathname.includes('/api/') || 
+    pathname.includes('/favicon.ico') ||
+    pathname.includes('.')
+  ) {
     return intlMiddleware(request);
   }
 
-  // 2. INITIALIZE RESPONSE (Handling Locales)
+  // 2. LOCALE RESPONSE: Initialize next-intl
   let response = intlMiddleware(request);
 
-  // 3. SUPABASE CLIENT
+  // 3. SUPABASE CLIENT: Initialize with cookie sync
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -37,58 +42,60 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // 4. GET USER (Validated JWT)
+  // 4. AUTH & ROLE: Fetch validated user and role
   const { data: { user } } = await supabase.auth.getUser();
   const role = user?.app_metadata?.role?.toLowerCase() || 'rider';
 
-  // 5. PARSE PATHS (Locale-aware)
+  // 5. PATH NORMALIZATION
   const segments = pathname.split('/');
   const isLocalePresent = routing.locales.includes(segments[1] as any);
   const locale = isLocalePresent ? segments[1] : routing.defaultLocale;
   const purePathname = '/' + segments.slice(isLocalePresent ? 2 : 1).join('/');
-
+  
   const localize = (path: string) => new URL(`/${locale}${path}`, request.url);
 
-  // 6. AUTH BYPASS
-  const isAuthRoute = purePathname.startsWith('/auth');
-  const hasCode = searchParams.has('code');
-  if (isAuthRoute || hasCode) return response;
+  // 6. BYPASS AUTH ROUTES (Confirm, Recovery, etc)
+  const isAuthRoute = purePathname.startsWith('/auth') || searchParams.has('code');
+  if (isAuthRoute) return response;
 
   const isPublicRoute = purePathname === '/' || purePathname === '/register';
 
-  // 7. PREVENT ENDLESS LOADING (The Logic Fix)
-  // Check if we are already at the destination before redirecting
-  
+  // 7. SECURITY & REDIRECTS (Loop-Killer Guards)
+
+  // Redirect Guest to Home
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(localize('/'));
   }
 
+  // Redirect Logged-in User away from Public pages
   if (user && isPublicRoute) {
-    let dash = '/account'; 
-    if (role === 'admin') dash = '/admin';
-    else if (role === 'instructor') dash = '/staff';
+    const dash = role === 'admin' ? '/admin' : (role === 'instructor' ? '/staff' : '/account');
     
-    // CRITICAL: Only redirect if we aren't already there
-    if (purePathname !== dash) {
-        return NextResponse.redirect(localize(dash));
+    // The "as string" cast solves the ts(2367) error by widening the type
+    if ((purePathname as string) !== dash) {
+      return NextResponse.redirect(localize(dash));
     }
   }
 
-  // 8. RBAC PROTECTION
+  // RBAC: Admin Protection
   if (purePathname.startsWith('/admin') && role !== 'admin') {
-    if (purePathname !== '/account') return NextResponse.redirect(localize('/account'));
+    if ((purePathname as string) !== '/account') {
+      return NextResponse.redirect(localize('/account'));
+    }
   }
 
+  // RBAC: Staff Protection
   if (purePathname.startsWith('/staff')) {
     if (role !== 'instructor' && role !== 'admin') {
-       if (purePathname !== '/account') return NextResponse.redirect(localize('/account'));
+      if ((purePathname as string) !== '/account') {
+        return NextResponse.redirect(localize('/account'));
+      }
     }
   }
 
   return response;
 }
 
-// Ensure the matcher covers all relevant localized routes
 export const config = {
   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
 };
