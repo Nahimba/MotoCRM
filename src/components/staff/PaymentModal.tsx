@@ -81,7 +81,41 @@ export function PaymentModal({
       return;
     }
 
+    
+
     const fetchData = async () => {
+
+
+      console.log("🚀 STARTING ULTIMATE DEBUG");
+    
+      // TEST A: Can we find the package by ID ONLY (ignoring all other columns)?
+      const { data: testA } = await supabase
+        .from('staff_packages_view')
+        .select('*')
+        .eq('id', initialPackageId)
+        .single();
+    
+      if (testA) {
+        console.log("✅ TEST A SUCCESS: Found package by ID.");
+        console.log("🧐 Real DB Column values:", {
+          actual_account_id: testA.account_id, // CHECK THIS NAME
+          actual_instructor_id: testA.instructor_id,
+          actual_status: testA.status
+        });
+      } else {
+        console.log("❌ TEST A FAIL: Package ID not found in View. Likely RLS or Status filter.");
+      }
+    
+      // TEST B: Can we find ANY packages for this client?
+      const { data: testB } = await supabase
+        .from('staff_packages_view')
+        .select('*')
+        .eq('account_id', initialClientId); // Use whatever column name you think is right
+    
+      console.log(`📊 TEST B: Found ${testB?.length || 0} total packages for this client.`);
+      
+      
+      
       let pkgQuery = supabase
         .from('staff_packages_view')
         .select(`id, account_id, account_label, course_name, contract_price, total_paid, total_hours, instructor_id, status`)
@@ -150,6 +184,7 @@ export function PaymentModal({
         // Context: Adding payment to a specific contract
         const pkg = processedPkgs.find(p => p.id === initialPackageId)
         if (pkg) {
+          
           setFormData(prev => ({
             ...prev,
             course_package_id: pkg.id,
@@ -180,7 +215,7 @@ export function PaymentModal({
         setSearchTerm("")
       }
     }
-    
+
     //   else {
     //     // Find the specific package if we have an ID, or if the client only has one active
     //     const targetPkg = initialPackageId 

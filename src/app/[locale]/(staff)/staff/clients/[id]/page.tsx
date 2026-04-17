@@ -586,6 +586,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       {/* NEW PAYMENT BUTTON */}
                       <button 
                         onClick={() => {
+                          console.log("DEBUG: Opening modal for client:", client?.id); // Add this
                           setSelectedPackageForPayment(pkg.id);
                           setIsPaymentModalOpen(true);
                         }}
@@ -639,7 +640,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       />
 
 
-      <PaymentModal 
+      {/* <PaymentModal 
         isOpen={isPaymentModalOpen}
         onClose={() => {
           setIsPaymentModalOpen(false)
@@ -656,6 +657,25 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         // but usually for client payments, null is fine if the DB allows it.
         instructorId={null} 
         initialClientId={client?.id}
+        initialPackageId={selectedPackageForPayment}
+      /> */}
+
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false)
+          setSelectedPackageForPayment(undefined)
+        }}
+        onSuccess={() => {
+          setIsPaymentModalOpen(false)
+          setSelectedPackageForPayment(undefined)
+          toast.success("Платіж успішно додано")
+          loadClientData()
+          router.refresh()
+        }}
+        instructorId={null} 
+        // CHANGE THIS LINE: Pass the Account ID instead of Client ID
+        initialClientId={client?.accounts?.[0]?.id} 
         initialPackageId={selectedPackageForPayment}
       />
 
