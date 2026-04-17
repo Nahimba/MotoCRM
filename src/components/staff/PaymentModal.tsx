@@ -86,34 +86,34 @@ export function PaymentModal({
     const fetchData = async () => {
 
 
-      console.log("🚀 STARTING ULTIMATE DEBUG");
+      // console.log("🚀 STARTING ULTIMATE DEBUG");
     
-      // TEST A: Can we find the package by ID ONLY (ignoring all other columns)?
-      const { data: testA } = await supabase
-        .from('staff_packages_view')
-        .select('*')
-        .eq('id', initialPackageId)
-        .single();
+      // // TEST A: Can we find the package by ID ONLY (ignoring all other columns)?
+      // const { data: testA } = await supabase
+      //   .from('staff_packages_view')
+      //   .select('*')
+      //   .eq('id', initialPackageId)
+      //   .single();
     
-      if (testA) {
-        console.log("✅ TEST A SUCCESS: Found package by ID.");
-        console.log("🧐 Real DB Column values:", {
-          actual_account_id: testA.account_id, // CHECK THIS NAME
-          actual_instructor_id: testA.instructor_id,
-          actual_status: testA.status
-        });
-      } else {
-        console.log("❌ TEST A FAIL: Package ID not found in View. Likely RLS or Status filter.");
-      }
+      // if (testA) {
+      //   console.log("✅ TEST A SUCCESS: Found package by ID.");
+      //   console.log("🧐 Real DB Column values:", {
+      //     actual_account_id: testA.account_id, // CHECK THIS NAME
+      //     actual_instructor_id: testA.instructor_id,
+      //     actual_status: testA.status
+      //   });
+      // } else {
+      //   console.log("❌ TEST A FAIL: Package ID not found in View. Likely RLS or Status filter.");
+      // }
     
-      // TEST B: Can we find ANY packages for this client?
-      const { data: testB } = await supabase
-        .from('staff_packages_view')
-        .select('*')
-        .eq('account_id', initialClientId); // Use whatever column name you think is right
+      // // TEST B: Can we find ANY packages for this client?
+      // const { data: testB } = await supabase
+      //   .from('staff_packages_view')
+      //   .select('*')
+      //   .eq('account_id', initialClientId); // Use whatever column name you think is right
     
-      console.log(`📊 TEST B: Found ${testB?.length || 0} total packages for this client.`);
-      
+      // console.log(`📊 TEST B: Found ${testB?.length || 0} total packages for this client.`);
+
       
       
       let pkgQuery = supabase
