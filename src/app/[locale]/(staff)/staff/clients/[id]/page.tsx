@@ -12,7 +12,9 @@ import {
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
-import { DocumentModal } from "@/components/staff/DocumentModal"
+import { DocumentModal } from "@/components/staff/DocumentModal"// 1. Import the PaymentModal
+import { PaymentModal } from "@/components/staff/PaymentModal" // Adjust path as needed
+
 
 
 import PackageFormModal from "@/components/staff/packages/PackageFormModal"
@@ -34,6 +36,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
 
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false)
+
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [selectedPackageForPayment, setSelectedPackageForPayment] = useState<string | undefined>(undefined)
+
 
   const refreshData = async () => {
     const { count, error } = await supabase
@@ -192,49 +198,97 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   };
 
 
-  useEffect(() => {
-    async function loadClientData() {
-      if (!id) return
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          profiles:profile_id (*),
-          accounts (
-            id,
-            payments (*),
-            course_packages (
-              *,
-              courses (name),
-              lessons (duration, status, is_counted)
-            )
-          )
-        `)
-        .eq('id', id)
-        .single()
+  // useEffect(() => {
+  //   async function loadClientData() {
+  //     if (!id) return
+  //     const { data, error } = await supabase
+  //       .from('clients')
+  //       .select(`
+  //         *,
+  //         profiles:profile_id (*),
+  //         accounts (
+  //           id,
+  //           payments (*),
+  //           course_packages (
+  //             *,
+  //             courses (name),
+  //             lessons (duration, status, is_counted)
+  //           )
+  //         )
+  //       `)
+  //       .eq('id', id)
+  //       .single()
 
-      if (error) {
-        console.error("Fetch error:", error)
-        router.push('/staff/clients')
-      } else {
-        setClient(data)
-        const rawAvatar = data.profiles?.avatar_url
-        if (rawAvatar) {
-          if (rawAvatar.startsWith('http')) {
-            setAvatarPreview(rawAvatar)
-          } else {
-            const { data: urlData } = supabase.storage
-              .from('avatars')
-              .getPublicUrl(`avatars/${rawAvatar}`)
-            setAvatarPreview(urlData.publicUrl)
-          }
+  //     if (error) {
+  //       console.error("Fetch error:", error)
+  //       router.push('/staff/clients')
+  //     } else {
+  //       setClient(data)
+  //       const rawAvatar = data.profiles?.avatar_url
+  //       if (rawAvatar) {
+  //         if (rawAvatar.startsWith('http')) {
+  //           setAvatarPreview(rawAvatar)
+  //         } else {
+  //           const { data: urlData } = supabase.storage
+  //             .from('avatars')
+  //             .getPublicUrl(`avatars/${rawAvatar}`)
+  //           setAvatarPreview(urlData.publicUrl)
+  //         }
+  //       }
+  //     }
+  //     setLoading(false)
+  //   }
+  //   loadClientData()
+  //   refreshData()
+  // }, [id, router])
+
+  const loadClientData = async () => {
+    if (!id) return
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('clients')
+      .select(`
+        *,
+        profiles:profile_id (*),
+        accounts (
+          id,
+          payments (*),
+          course_packages (
+            *,
+            courses (name),
+            lessons (duration, status, is_counted)
+          )
+        )
+      `)
+      .eq('id', id)
+      .single()
+  
+    if (error) {
+      console.error("Fetch error:", error)
+      router.push('/staff/clients')
+    } else {
+      setClient(data)
+      const rawAvatar = data.profiles?.avatar_url
+      if (rawAvatar) {
+        if (rawAvatar.startsWith('http')) {
+          setAvatarPreview(rawAvatar)
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(`avatars/${rawAvatar}`)
+          setAvatarPreview(urlData.publicUrl)
         }
       }
-      setLoading(false)
     }
+    setLoading(false)
+  }
+  
+  // Update your initial mount useEffect
+  useEffect(() => {
     loadClientData()
     refreshData()
-  }, [id, router])
+  }, [id])
+
 
   if (loading) return (
     <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
@@ -486,29 +540,70 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <Plus size={14} strokeWidth={4} />
               <span>Додати контракт</span>
             </button>
+
             {packages.length > 0 ? packages.map((pkg: any) => {
               const used = pkg.lessons?.filter((l: any) => l.is_counted).reduce((s: number, l: any) => s + Number(l.duration), 0) || 0;
               const percent = pkg.total_hours > 0 ? Math.round((used / pkg.total_hours) * 100) : 0;
+
+              // Calculate paid amount for THIS specific package
+              // We look into the parent account's payments and filter by this package's ID
+              const pkgPaid = account?.payments
+                ?.filter((p: any) => p.course_package_id === pkg.id && p.status === 'completed')
+                .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
               
               return (
-                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-6 relative overflow-hidden group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-white/5 rounded-xl text-slate-500">
+                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-5 sm:p-6 relative overflow-hidden group">
+                  <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-4 min-w-[140px]">
+                      {/* <div className="p-3 bg-white/5 rounded-xl text-slate-500">
                         {percent === 100 ? <CheckCircle2 size={16} className="text-green-500" /> : <Activity size={16} className="text-primary" />}
-                      </div>
+                      </div> */}
                       <div>
-                        <p className="text-lg font-black text-white italic uppercase tracking-tighter">{pkg.courses?.name || 'Package'}</p>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{used} з {pkg.total_hours} г. виконано</p>
+                        <p className="text-base sm:text-lg font-black text-white italic uppercase tracking-tighter leading-tight">
+                          {pkg.courses?.name || 'Package'}
+                        </p>
+                        <p className="text-[12px] font-black text-slate-500 uppercase tracking-widest mt-0.5">
+                          {used} з {pkg.total_hours} г. виконано
+                        </p>
                       </div>
                     </div>
-                    <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg">
-                       <span className="text-[10px] font-black text-white uppercase">{pkg.contract_price} ₴</span>
+
+                    <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                      {/* UPDATED PRICE TAG */}
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">
+                          <span className="text-[12px] font-black text-white uppercase tabular-nums">
+                            {pkgPaid.toLocaleString()} / {pkg.contract_price.toLocaleString()} ₴
+                          </span>
+                        </div>
+                        {pkg.contract_price - pkgPaid > 0 && (
+                          <span className="text-[14px] font-bold text-red-400 uppercase italic px-1 tracking-tighter">
+                            Борг: {(pkg.contract_price - pkgPaid).toLocaleString()} ₴
+                          </span>
+                        )}
+                      </div>
+
+                      {/* NEW PAYMENT BUTTON */}
+                      <button 
+                        onClick={() => {
+                          setSelectedPackageForPayment(pkg.id);
+                          setIsPaymentModalOpen(true);
+                        }}
+                        className="p-3 bg-primary text-black rounded-xl transition-all active:scale-95 hover:bg-white"
+                      >
+                        <Plus size={16} strokeWidth={4} />
+                      </button>
+
+                      {/* <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg">
+                        <span className="text-[10px] font-black text-white uppercase">{pkg.contract_price} ₴</span>
+                      </div> */}
                     </div>
                   </div>
 
-                  <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${percent}%` }} />
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${percent}%` }} 
+                    />
                   </div>
                 </div>
               );
@@ -535,12 +630,34 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         onClose={() => setIsPackageModalOpen(false)}
         onSuccess={() => {
           setIsPackageModalOpen(false)
+          toast.success("Контракт успішно додано") // Feedback
+          loadClientData() // This updates the local state 'client'
           router.refresh() // Refreshes server components/data
           // If you want to refresh the local 'client' state immediately:
           // loadClientData() 
         }} 
       />
 
+
+      <PaymentModal 
+        isOpen={isPaymentModalOpen}
+        onClose={() => {
+          setIsPaymentModalOpen(false)
+          setSelectedPackageForPayment(undefined)
+        }}
+        onSuccess={() => {
+          setIsPaymentModalOpen(false)
+          setSelectedPackageForPayment(undefined)
+          toast.success("Платіж успішно додано") // Success feedback
+          loadClientData() // Updates the "Paid / Total" and "Debt" labels
+          router.refresh() // Syncs server-side state
+        }}
+        // If your modal requires an instructor, you could pass the current user's profile ID
+        // but usually for client payments, null is fine if the DB allows it.
+        instructorId={null} 
+        initialClientId={client?.id}
+        initialPackageId={selectedPackageForPayment}
+      />
 
 
 

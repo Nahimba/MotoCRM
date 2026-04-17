@@ -65,7 +65,21 @@ export function PaymentModal({
   }, [])
 
   useEffect(() => {
-    if (!isOpen) return;
+    // if (!isOpen) return;
+    // If closed, wipe local modal state immediately
+    if (!isOpen) {
+      setSearchTerm("");
+      setFormData({
+        course_package_id: "", 
+        account_id: "", 
+        amount: "",
+        payment_plan_id: "", 
+        payment_method_id: "",
+        status: "completed", 
+        notes: ""
+      });
+      return;
+    }
 
     const fetchData = async () => {
       let pkgQuery = supabase
@@ -166,6 +180,38 @@ export function PaymentModal({
         setSearchTerm("")
       }
     }
+    
+    //   else {
+    //     // Find the specific package if we have an ID, or if the client only has one active
+    //     const targetPkg = initialPackageId 
+    //       ? processedPkgs.find(p => p.id === initialPackageId)
+    //       : (initialClientId && processedPkgs.length === 1 ? processedPkgs[0] : null);
+
+    //     if (targetPkg) {
+    //       setFormData(prev => ({
+    //         ...prev,
+    //         course_package_id: targetPkg.id,
+    //         account_id: targetPkg.account_id,
+    //         // Suggest remaining balance, but never suggest a negative number
+    //         amount: Math.max(0, targetPkg.balance_due).toString(),
+    //         // Keep existing selections for plan/method if they were already picked
+    //         payment_plan_id: prev.payment_plan_id || "",
+    //         payment_method_id: prev.payment_method_id || "",
+    //         status: "completed",
+    //         notes: ""
+    //       }))
+    //       setSearchTerm(`${targetPkg.account_label} — ${targetPkg.course_name}`)
+    //     } else {
+    //       // Reset everything for a fresh manual entry
+    //       setFormData({
+    //         course_package_id: "", account_id: "", amount: "",
+    //         payment_plan_id: "", payment_method_id: "",
+    //         status: "completed", notes: ""
+    //       })
+    //       setSearchTerm("")
+    //     }
+    //   }
+    // }
 
     fetchData()
   }, [isOpen, editPayment, instructorId, initialClientId, initialPackageId])
@@ -423,7 +469,8 @@ export function PaymentModal({
               <select 
                 value={formData.status}
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white outline-none appearance-none cursor-pointer uppercase italic"
+                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-4 text-sm font-black text-white outline-none appearance-none cursor-pointer uppercase italic focus:border-primary/50 transition-all"
+                style={{ backgroundPosition: 'right 1rem center', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundSize: '1.2em' }}
               >
                 <option value="completed" className="bg-black text-emerald-500">{t('statusPaid')}</option>
                 <option value="pending" className="bg-black text-amber-500">{t('statusPending')}</option>
