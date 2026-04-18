@@ -413,6 +413,8 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
             </button>
           </div>
 
+
+
           {/* Action Buttons - Updated: ml-auto md:ml-auto ensures it sticks right on desktop */}
           <div className="ml-auto flex gap-2">
             <button 
