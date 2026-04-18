@@ -326,20 +326,42 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
 
 
+  // const formatDisplayPhone = (value: string) => {
+  //   if (!value) return "";
+  //   const hasPlus = value.startsWith("+");
+  //   const digits = value.replace(/\D/g, "");
+    
+  //   let formatted = digits;
+  //   if (digits.length > 0) {
+  //     if (digits.length <= 2) formatted = digits;
+  //     else if (digits.length <= 5) formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
+  //     else if (digits.length <= 8) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
+  //     else if (digits.length <= 10) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
+  //     else formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+  //   }
+  //   return hasPlus ? `+${formatted}` : formatted;
+  // };
+
   const formatDisplayPhone = (value: string) => {
     if (!value) return "";
+    // Видаляємо все, крім цифр та плюса на початку
     const hasPlus = value.startsWith("+");
     const digits = value.replace(/\D/g, "");
-    
-    let formatted = digits;
-    if (digits.length > 0) {
-      if (digits.length <= 2) formatted = digits;
-      else if (digits.length <= 5) formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
-      else if (digits.length <= 8) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
-      else if (digits.length <= 10) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
-      else formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+    if (digits.length === 0) return hasPlus ? "+" : "";
+    // Якщо номер дуже короткий (менше 6 цифр), не форматируємо
+    if (digits.length < 6) return hasPlus ? `+${digits}` : digits;
+    let formatted = "";
+    // Логіка: [Код країни] (Код міста/мережі) [Номер]
+    // Працює за схемою: +XX (XXX) XXX XX XX...
+    if (digits.length <= 10) {
+      // Короткі міжнародні або локальні формати
+      formatted = `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    } else {
+      // Повний міжнародний стандарт (напр. +380 або +1)
+      // Виділяємо перші 2 цифри як код країни для візуального комфорту
+      formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 14)}`;
     }
-    return hasPlus ? `+${formatted}` : formatted;
+    return hasPlus ? `+${formatted.trim()}` : formatted.trim();
   };
 
 
@@ -463,29 +485,41 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="space-y-6">
 
             {/* <div className="flex items-center justify-between group/row">
-              <InfoRow icon={<Phone size={14}/>} label={t("phone")} value={profile?.phone} fallback="N/A" />
+              <InfoRow 
+                icon={<Phone size={14}/>} 
+                label={t("phone")} 
+                value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
+                fallback="Немає номеру" 
+              />
+              
               {profile?.phone && (
                 <a href={`tel:${profile.phone}`} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl">
                   <Phone size={16} />
                 </a>
               )}
             </div> */}
+
             <div className="flex items-center justify-between group/row">
               <InfoRow 
-                icon={<Phone size={14}/>} 
+                icon={<Phone size={14} className="text-slate-500" />} 
                 label={t("phone")} 
-                /* Use the formatter for display */
+                /* Форматований текст для ока */
                 value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
                 fallback="Немає номеру" 
               />
               
               {profile?.phone && (
-                /* Keep profile.phone raw here for the system dialer */
-                <a href={`tel:${profile.phone}`} className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl">
-                  <Phone size={16} />
+                /* Чистий номер для виклику (видаляємо все крім + та цифр) */
+                <a 
+                  href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} 
+                  className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95"
+                  title="Зателефонувати"
+                >
+                  <Phone size={16} strokeWidth={2.5} />
                 </a>
               )}
             </div>
+            
             <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
             <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
           </div>

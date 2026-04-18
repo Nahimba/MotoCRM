@@ -39,6 +39,8 @@ export default function HQStaffPage() {
   const [view, setView] = useState<'active' | 'archived'>('active');
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
 
+  const [phoneValue, setPhoneValue] = useState("");
+
   async function fetchStaff() {
     setLoading(true);
     
@@ -92,12 +94,14 @@ export default function HQStaffPage() {
 
   const openEdit = (member: StaffMember) => {
     setEditingMember(member);
+    setPhoneValue(member.phone ? formatDisplayPhone(member.phone) : ""); // Форматуємо при відкритті
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingMember(null);
+    setPhoneValue("");
   };
 
   async function toggleAccess(member: StaffMember) {
@@ -119,32 +123,70 @@ export default function HQStaffPage() {
     }
   }
 
+
+  const formatDisplayPhone = (value: string) => {
+    if (!value) return "";
+    // Видаляємо все, крім цифр та плюса на початку
+    const hasPlus = value.startsWith("+");
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) return hasPlus ? "+" : "";
+    // Якщо номер дуже короткий (менше 6 цифр), не форматируємо
+    if (digits.length < 6) return hasPlus ? `+${digits}` : digits;
+    let formatted = "";
+    // Логіка: [Код країни] (Код міста/мережі) [Номер]
+    // Працює за схемою: +XX (XXX) XXX XX XX...
+    if (digits.length <= 10) {
+      // Короткі міжнародні або локальні формати
+      formatted = `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    } else {
+      // Повний міжнародний стандарт (напр. +380 або +1)
+      // Виділяємо перші 2 цифри як код країни для візуального комфорту
+      formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 14)}`;
+    }
+    return hasPlus ? `+${formatted.trim()}` : formatted.trim();
+  };
+
+
   async function handleSaveStaff(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsSubmitting(true);
     
     const formData = new FormData(e.currentTarget);
+
+    // 1. Очищення та валідація телефону
+    const rawPhone = phoneValue.replace(/[^\d+]/g, ""); 
+    if (rawPhone.length > 0) {
+      const digitCount = rawPhone.replace(/\D/g, "").length;
+      if (digitCount < 10) {
+        toast.error("Номер занадто короткий або невірний");
+        return;
+      }
+    }
+    const phoneToSave = rawPhone || null; // Це те, що ми кладемо в базу
+
+    // 2. Отримання інших полів
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
     
-    // Map UI 'staff' role back to DB 'instructor' role
+    setIsSubmitting(true);
+
     const uiRole = formData.get('role') as string;
     const dbRole = uiRole === 'staff' ? 'instructor' : 'admin';
 
     try {
+      // Створюємо об'єкт даних, щоб не дублювати його для insert/update
+      const profileData = { 
+        first_name: firstName, 
+        last_name: lastName, 
+        email, 
+        phone: phoneToSave, // ВИКОРИСТОВУЄМО ОЧИЩЕНИЙ НОМЕР
+        role: dbRole 
+      };
+
       if (editingMember) {
-        // Update Profile
         const { error: pErr } = await supabase
           .from('profiles')
-          .update({ 
-            first_name: firstName, 
-            last_name: lastName, 
-            email, 
-            phone, 
-            role: dbRole 
-          })
+          .update(profileData)
           .eq('id', editingMember.id);
         
         if (pErr) throw pErr;
@@ -152,20 +194,11 @@ export default function HQStaffPage() {
       } else {
         const newProfileId = crypto.randomUUID();
         
-        // 1. Create Profile
         const { error: pErr } = await supabase
           .from('profiles')
-          .insert([{ 
-            id: newProfileId,
-            first_name: firstName, 
-            last_name: lastName, 
-            email, 
-            phone, 
-            role: dbRole 
-          }]);
+          .insert([{ id: newProfileId, ...profileData }]);
         if (pErr) throw pErr;
 
-        // 2. Create Instructor record
         const { error: iErr } = await supabase
           .from('instructors')
           .insert([{ 
@@ -186,6 +219,9 @@ export default function HQStaffPage() {
       setIsSubmitting(false);
     }
   }
+
+
+  
 
   return (
     <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto mb-20">
@@ -266,7 +302,9 @@ export default function HQStaffPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <PhoneIcon size={14} className="text-slate-600" />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">{member.phone}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">
+                    {member.phone ? formatDisplayPhone(member.phone) : "—"}
+                  </span>
                 </div>
               </div>
 
@@ -316,11 +354,26 @@ export default function HQStaffPage() {
                     <input name="email" type="email" required defaultValue={editingMember?.email} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all" />
                   </div>
                 </div>
+                {/* <div className="sm:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.phone')}</label>
+                  <div className="relative">
+                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                    <input name="phone" defaultValue={editingMember?.phone} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all font-bold" />
+                  </div>
+                </div> */}
                 <div className="sm:col-span-2 space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 px-1">{t('form.phone')}</label>
                   <div className="relative">
                     <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
-                    <input name="phone" required defaultValue={editingMember?.phone} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all" />
+                    <input 
+                      name="phone" 
+                      type="tel"
+                      placeholder="+38 (0__) ___ __ __"
+                      required={false}
+                      value={phoneValue} // Використовуємо value замість defaultValue
+                      onChange={(e) => setPhoneValue(formatDisplayPhone(e.target.value))} // Форматуємо миттєво
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white focus:border-primary outline-none transition-all font-bold" 
+                    />
                   </div>
                 </div>
               </div>

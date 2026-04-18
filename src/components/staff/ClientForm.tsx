@@ -130,11 +130,16 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
     e.preventDefault()
 
     // --- VALIDATION BLOCK ---
-    const digitCount = formData.phone.replace(/\D/g, "").length;
-    if (formData.phone && (digitCount < 7 || digitCount > 15)) {
+    // Отримуємо чисті цифри для валідації та збереження
+    const rawPhone = formData.phone ? formData.phone.replace(/[^\d+]/g, "") : "";
+    const digitCount = rawPhone.replace(/\D/g, "").length;
+    // Валідуємо тільки якщо користувач щось ввів
+    if (rawPhone && (digitCount < 7 || digitCount > 15)) {
       toast.error("Невірний номер телефону");
-      return; // Stop execution early
+      return;
     }
+    // Вирішуємо, що саме відправити в базу
+    const phoneToSave = rawPhone || null;
 
     // 1. Define the Regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -156,7 +161,8 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
         first_name: formData.first_name,
         middle_name: formData.middle_name,
         last_name: formData.last_name,
-        phone: formData.phone || null, 
+        // phone: formData.phone || null, 
+        phone: phoneToSave,
         email: formData.email || null, 
         address: formData.address,
         avatar_url: formData.avatar_url, 
