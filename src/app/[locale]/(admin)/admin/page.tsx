@@ -6,7 +6,8 @@ import {
   FileDown, TrendingUp, Wallet, Users, 
   PlusCircle, Calendar, ArrowUpRight, 
   BarChart3, ShieldCheck, GraduationCap, Loader2,
-  Package, Database, Bike, Banknote, History
+  Package, Database, Bike, Banknote, History,
+  MapPin
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -166,6 +167,12 @@ export default function UnifiedDashboard() {
           icon={<Package size={20}/>} 
           label={t('nav.courses')} 
           sub={t('nav.courses_sub')} 
+        />
+        <NavButton 
+          href="/admin/locations" 
+          icon={<MapPin size={20} className="text-primary" />} 
+          label="Локації" 
+          sub="Управління майданчиками" 
         />
         <NavButton 
           href="/admin/instructors" 

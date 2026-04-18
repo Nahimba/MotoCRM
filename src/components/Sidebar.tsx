@@ -7,7 +7,7 @@ import {
   User, Settings, Bike, 
   GraduationCap, Calendar, MoreHorizontal,
   LayoutDashboard, ClipboardList, ChevronUp, Languages,
-  Package, Banknote, History
+  Package, Banknote, History, MapPin
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
@@ -118,6 +118,7 @@ export default function Sidebar() {
               <SidebarLink href="/admin" icon={<ShieldCheck size={16}/>} label={t('overview')} active={pathname === '/admin'} />
               <SidebarLink href="/staff/finances" icon={<BarChart3 size={16}/>} label={t('finances')} active={pathname.startsWith('/staff/finances')} />
               <SidebarLink href="/admin/courses" icon={<Package size={16}/>} label={t('courses')} active={pathname.startsWith('/admin/courses')} />
+              <SidebarLink href="/admin/locations" icon={<MapPin size={16}/>} label={t('locations')} active={pathname.startsWith('/admin/locations')} />
               <SidebarLink href="/admin/instructors" icon={<Users size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
               
               <SidebarLink href="/admin/audit_logs" icon={<History size={16}/>} label="Журнал аудиту" active={pathname.startsWith('/admin/audit_logs')} />
@@ -205,6 +206,7 @@ export default function Sidebar() {
                     <MobileExtraLink href="/admin" icon={<ShieldCheck size={18}/>} label={t('overview')} />
                     <MobileExtraLink href="/staff/finances" icon={<BarChart3 size={18}/>} label={t('finances')} />
                     <MobileExtraLink href="/admin/courses" icon={<Package size={18}/>} label={t('courses')} />
+                    <MobileExtraLink href="/admin/locations" icon={<MapPin size={18}/>} label={t('locations')} />
                     <MobileExtraLink href="/admin/instructors" icon={<GraduationCap size={18}/>} label={t('staff')} />
 
                     <MobileExtraLink href="/admin/audit_logs" icon={<History size={18}/>} label="Журнал аудиту"/>
