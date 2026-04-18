@@ -135,7 +135,7 @@ export default function AuditLogsPage() {
 
       {/* MODAL DETAILED VIEW */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="pb-safe-bottom-mobile fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-2xl bg-[#0d0d0d] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 relative max-h-[90vh] overflow-hidden flex flex-col scale-in-center animate-in zoom-in-95 duration-200">
             
             <div className="flex justify-between items-start mb-8">
