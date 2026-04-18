@@ -3,8 +3,12 @@
 import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
+import { usePathname } from "next/navigation" // Import this
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+
+  const pathname = usePathname(); // Get current path
+  
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
       {/* SIDEBAR: Handles its own fixed positioning.
@@ -24,7 +28,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                of the scroll so the last form elements can be seen ABOVE the dock.
             3. Added [env(safe-area-inset-bottom)] for notched iPhones.
         */}
-        <main className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        <main
+        key={pathname}
+        className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
