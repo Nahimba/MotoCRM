@@ -61,7 +61,7 @@
         "finances": "Фінанси",
         "finances_sub": "Доходи / Витрати",
         "courses": "Ціни на Курси",
-        "courses_sub": "Налаштування програм",
+        "courses_sub": "Налаштування Курсів",
         "instructors": "Персонал",
         "instructors_sub": "Інструктори",
         "packages": "Контракти",
@@ -162,7 +162,7 @@
       }
     },
     "courses": {
-      "title": "Навчальний план",
+      "title": "Курси",
       "tabs": {
         "active": "Активні курси",
         "archived": "Архів"
