@@ -403,7 +403,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                 {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
               </span>
               {viewMode === 'week' && (
-                <span className="text-[10px] md:text-[14px] font-black text-primary uppercase italic leading-none">
+                <span className="text-[12px] md:text-[14px] font-black text-primary uppercase italic leading-none">
                   {format(weekDays[0], 'dd.MM')}-{format(weekDays[6], 'dd.MM')}
                 </span>
               )}
