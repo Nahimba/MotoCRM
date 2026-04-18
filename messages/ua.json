@@ -6,7 +6,7 @@
   "Sidebar": {
     "admin": "Адміністратор",
     "staffHome": "Інструктор",
-    "packages": "Курси",
+    "packages": "Контракти",
     "payments": "Платежі",
     "expences": "Витрати",
     "clientHome": "Центр учнів",
@@ -17,7 +17,7 @@
     "lessons": "Заняття",
     "schedule": "Розклад",
     "roster": "Учні",
-    "dashboard": "Курси",
+    "dashboard": "Контракти",
     "trainingLog": "Журнал тренувань",
     "settings": "Налаштування",
     "profile": "Мій профіль",
@@ -63,8 +63,8 @@
         "courses_sub": "Налаштування програм",
         "instructors": "Персонал",
         "instructors_sub": "Інструктори",
-        "packages": "Курси",
-        "packages_sub": "Курси учнів",
+        "packages": "Контракти",
+        "packages_sub": "Контракти з учнями",
         "payments": "Платежі",
         "payments_sub": "Платежі",
         "expences": "Витрати",
@@ -282,7 +282,7 @@
     "viewAll": "Дивитися всіх"
   },
   "Packages": {
-    "title": "Курси",
+    "title": "Контракти",
     "subtitle": "",
     "description": "Активні контракти та облік годин",
     "newPackage": "Новий Контракт",
@@ -296,7 +296,7 @@
       "cancelled": "Скасований"
     },
     "filters": {
-      "all": "Всі пакети",
+      "all": "Всі",
       "mine": "Мої учні",
       "instructor": "Інструктор",
       "active": "Активний",
