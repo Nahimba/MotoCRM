@@ -3,8 +3,12 @@
 import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
+import { usePathname } from "next/navigation"
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
+  
+  const pathname = usePathname();
+
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
       {/* Sidebar handles desktop left-side and mobile bottom-dock via its internal classes */}
@@ -20,7 +24,7 @@ export default function CustomerLayout({ children }: { children: ReactNode }) {
             - Removed overflow-y-auto to allow the main window to handle scrolling, 
               which prevents "stuck" scrolling issues on mobile Safari/Chrome.
         */}
-        <main className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        <main key={pathname} className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
           <div className="max-w-6xl mx-auto h-full">
             {children}
           </div>

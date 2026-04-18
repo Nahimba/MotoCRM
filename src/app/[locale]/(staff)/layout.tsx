@@ -3,8 +3,12 @@
 import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
+import { usePathname } from "next/navigation"
 
 export default function StaffLayout({ children }: { children: ReactNode }) {
+  
+  const pathname = usePathname();
+
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
       {/* Universal Sidebar (Desktop Left / Mobile Bottom) */}
@@ -19,7 +23,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
             3. Removed overflow-y-auto to prevent "double scrollbars" and allow 
                the mobile browser to hide its own UI bars naturally.
         */}
-        <main className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        <main key={pathname} className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

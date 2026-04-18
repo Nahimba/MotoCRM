@@ -3,12 +3,12 @@
 import { ReactNode } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
-import { usePathname } from "next/navigation" // Import this
+import { usePathname } from "next/navigation"
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
 
-  const pathname = usePathname(); // Get current path
-  
+  const pathname = usePathname();
+
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
       {/* SIDEBAR: Handles its own fixed positioning.
