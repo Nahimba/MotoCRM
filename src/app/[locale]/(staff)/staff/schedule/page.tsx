@@ -437,7 +437,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
-            <div className="flex ml-16 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70]">
+            <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70]">
               {viewMode === 'week' ? (
                 weekDays.map((day, i) => (
                   <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
@@ -464,7 +464,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
 
           <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
             {/* Часова шкала (Таймлайн) */}
-            <div className="absolute left-0 top-0 w-16 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
+            <div className="absolute left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
               {HOURS.map(h => (
                 <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                   {format(h, 'HH:mm')}
@@ -472,7 +472,7 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
               ))}
             </div>
 
-            <div className="absolute left-16 top-0 right-0 h-full">
+            <div className="absolute left-10 top-0 right-0 h-full">
               <div 
                 className="absolute inset-0 grid pointer-events-none z-10" 
                 style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
