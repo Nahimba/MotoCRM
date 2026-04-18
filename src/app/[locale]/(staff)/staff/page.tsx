@@ -91,7 +91,7 @@ export default function UnifiedDashboard() {
 
 function NavButton({ href, icon, label, sub }: any) {
   return (
-    <Link href={href} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group text-center">
+    <Link href={href} prefetch={false} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group text-center">
       <div className="text-slate-500 group-hover:text-primary transition-colors">{icon}</div>
       <p className="text-[10px] font-black text-white uppercase tracking-widest mt-2">{label}</p>
       <p className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">{sub}</p>

@@ -290,7 +290,7 @@ export default function Sidebar() {
             </button>
 
             {/* --- Updated Avatar Rendering --- */}
-            {/* <Link href="/profile" className="flex-1 flex items-center justify-center">
+            {/* <Link href="/profile" prefetch={false} className="flex-1 flex items-center justify-center">
               <div className={`w-10 h-10 rounded-full border-2 overflow-hidden transition-all ${pathname.startsWith('/profile') ? 'border-primary' : 'border-white/10'}`}>
                 {avatarPreview ? (
                   <img src={avatarPreview} className="w-full h-full object-cover" alt="Profile" />
