@@ -342,7 +342,10 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
       <header className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
-        <div className="flex items-center w-full relative">
+        {/* Updated: Added flex-wrap and gap-2 for mobile, kept md:flex-nowrap to stay 1-line on desktop */}
+        <div className="flex flex-wrap md:flex-nowrap items-center w-full relative px-2 md:px-0 gap-2">
+          
+          {/* View Mode Switcher */}
           <div className="flex items-center gap-1 z-10">
             <div className="flex bg-white/5 p-0.5 rounded-xl border border-white/10">
               <button 
@@ -361,124 +364,73 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
               </button>
             </div>
 
-            {/* {profile?.role === 'admin' && (
-              <button 
-                onClick={() => setShowAllInstructors(!showAllInstructors)}
-                className={`p-2 md:px-4 md:py-2 rounded-xl border transition-all flex items-center justify-center ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
-              >
-                {showAllInstructors ? <Users size={16}/> : <UserIcon size={16}/>}
-                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">
-                  {showAllInstructors ? t('allLessons') : t('myLessons')}
-                </span>
-              </button>
-            )}
-
-
-            {(!showAllInstructors || viewMode === 'week') && instructors.length > 0 && (
-              <select
-                value={targetInstructorId || ''}
-                onChange={(e) => setTargetInstructorId(e.target.value)}
-                className="bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase rounded-xl px-3 py-2 outline-none hover:bg-white/10 transition-all cursor-pointer appearance-none"
-              >
-                {instructors.map((ins) => (
-                  <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
-                    {ins.profiles?.first_name} {ins.profiles?.last_name}
-                  </option>
-                ))}
-              </select>
-            )} */}
-
+            {/* Instructor Selector */}
             {instructors.length > 0 && (
-              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-2 group hover:bg-white/10 transition-all cursor-pointer ">
+              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-2 group hover:bg-white/10 transition-all cursor-pointer">
                 <Users size={14} className="text-slate-500 mr-2" />
                 <select
                   value={showAllInstructors && viewMode === 'day' ? 'all' : (targetInstructorId || '')}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val === 'all') {
-                      setShowAllInstructors(true);
-                    } else {
-                      setShowAllInstructors(false);
-                      setTargetInstructorId(val);
-                    }
+                    if (val === 'all') { setShowAllInstructors(true); } 
+                    else { setShowAllInstructors(false); setTargetInstructorId(val); }
                   }}
-                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-2"
+                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-4"
                 >
-                  {/* Опція "Усі" показується тільки в режимі дня */}
                   {viewMode === 'day' && profile?.role === 'admin' && (
-                    <option value="all" className="bg-[#0A0A0A] font-black text-primary">
-                      {t('allLessons')} (TEAM)
-                    </option>
+                    <option value="all" className="bg-[#0A0A0A] font-black text-primary">{t('allLessons')} (TEAM)</option>
                   )}
-                  
-                  {/* Список конкретних інструкторів */}
                   {instructors.map((ins) => (
                     <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
                       {ins.profiles?.first_name} {ins.profiles?.last_name}
                     </option>
                   ))}
                 </select>
-                {/* Кастомна стрілочка вниз, бо ми приховали стандартну через appearance-none */}
                 <div className="absolute right-2 pointer-events-none text-slate-500">
                   <ChevronLeft size={10} className="-rotate-90" />
                 </div>
               </div>
             )}
-
           </div>
 
-
-          {/* <div className="absolute left-1/2 -translate-x-1/2 flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5"></div> */}
-          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5">
+          {/* Date Navigation - Updated: order-last or flex-1 to push around on mobile */}
+          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5 mx-auto md:mx-0">
             <button onClick={() => navigate('prev')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
               <ChevronLeft size={18} strokeWidth={3} />
             </button>
-            
             <div className="flex flex-col items-center px-0 min-w-[65px] md:min-w-[120px]">
-              <span className="text-[12px] md:text-[14px] font-black uppercase text-white whitespace-nowrap">
+              <span className="text-[12px] md:text-[14px] font-black uppercase text-white">
                 {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
               </span>
               {viewMode === 'week' && (
-                <span className="text-[12px] md:text-[14px] font-black text-primary uppercase italic leading-none whitespace-nowrap">
+                <span className="text-[10px] md:text-[14px] font-black text-primary uppercase italic leading-none">
                   {format(weekDays[0], 'dd.MM')}-{format(weekDays[6], 'dd.MM')}
                 </span>
               )}
             </div>
-
             <button onClick={() => navigate('next')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
               <ChevronRight size={18} strokeWidth={3} />
             </button>
           </div>
 
-          {/* <div className="ml-auto z-10"> */}
-          <div className="ml-auto z-10 flex gap-3">
+          {/* Action Buttons - Updated: ml-auto md:ml-auto ensures it sticks right on desktop */}
+          <div className="ml-auto flex gap-2">
             <button 
               onClick={() => { setEditingLesson(null); setIsModalOpen(true); }} 
-              className="bg-primary text-black h-9 w-9 md:h-11 md:w-auto md:px-6 rounded-xl font-black flex items-center justify-center shadow-lg shadow-primary/10 hover:bg-white transition-all"
+              className="bg-primary text-black h-9 px-3 md:h-11 md:px-6 rounded-xl font-black flex items-center justify-center shadow-lg hover:bg-white transition-all"
             >
-              <Plus size={20} strokeWidth={4} />
-              <span className="hidden md:inline ml-2 text-xs uppercase">{t('addLesson')}</span>
+              <Plus size={18} strokeWidth={4} />
+              <span className="hidden sm:inline ml-2 text-[10px] md:text-xs uppercase">{t('addLesson')}</span>
             </button>
 
-            <button 
-              onClick={() => setIsExceptionModalOpen(true)}
-              className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10 hover:text-white transition-all"
-              title="Блокировка времени"
-            >
+            <button onClick={() => setIsExceptionModalOpen(true)} className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10">
               <ShieldAlert size={18} />
             </button>
 
-            <button 
-              onClick={() => setIsWorkHoursModalOpen(true)}
-              className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10 hover:text-white transition-all"
-              title="Налаштувати графік"
-            >
+            <button onClick={() => setIsWorkHoursModalOpen(true)} className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10">
               <Calendar size={18} />
             </button>
-
           </div>
-
-          
         </div>
       </header>
 
@@ -918,3 +870,45 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
   //     width: `${finalWidthPct}%`,
   //   }
   // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+            {/* {profile?.role === 'admin' && (
+              <button 
+                onClick={() => setShowAllInstructors(!showAllInstructors)}
+                className={`p-2 md:px-4 md:py-2 rounded-xl border transition-all flex items-center justify-center ${showAllInstructors ? 'bg-amber-500 border-amber-500 text-black' : 'bg-white/5 border-white/10 text-slate-500'}`}
+              >
+                {showAllInstructors ? <Users size={16}/> : <UserIcon size={16}/>}
+                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">
+                  {showAllInstructors ? t('allLessons') : t('myLessons')}
+                </span>
+              </button>
+            )}
+
+
+            {(!showAllInstructors || viewMode === 'week') && instructors.length > 0 && (
+              <select
+                value={targetInstructorId || ''}
+                onChange={(e) => setTargetInstructorId(e.target.value)}
+                className="bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase rounded-xl px-3 py-2 outline-none hover:bg-white/10 transition-all cursor-pointer appearance-none"
+              >
+                {instructors.map((ins) => (
+                  <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
+                    {ins.profiles?.first_name} {ins.profiles?.last_name}
+                  </option>
+                ))}
+              </select>
+            )} */}
