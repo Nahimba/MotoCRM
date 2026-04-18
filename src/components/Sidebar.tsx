@@ -166,7 +166,7 @@ export default function Sidebar() {
                 </span>
               </button> */}
 
-              <Link href="/profile" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
+              <Link href="/profile" prefetch={false} className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
                 <User size={16} />
                 <span className="text-xs font-bold uppercase italic">{t('profile')}</span>
               </Link>
@@ -321,7 +321,7 @@ export default function Sidebar() {
 
 function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
   return (
-    <Link href={href} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+    <Link href={href} prefetch={false} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
       {icon}
       <span className="text-[13px] font-bold uppercase tracking-tight">{label}</span>
     </Link>
@@ -330,7 +330,7 @@ function SidebarLink({ href, icon, label, active }: { href: any; icon: React.Rea
 
 function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, active: boolean }) {
   return (
-    <Link href={href} className={`flex-1 flex items-center justify-center py-4 transition-all ${active ? 'text-primary' : 'text-slate-500'}`}>
+    <Link href={href} prefetch={false} className={`flex-1 flex items-center justify-center py-4 transition-all ${active ? 'text-primary' : 'text-slate-500'}`}>
       {icon}
     </Link>
   )
@@ -338,7 +338,7 @@ function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, a
 
 function MobileExtraLink({ href, icon, label }: { href: any, icon: React.ReactNode, label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5">
+    <Link href={href} prefetch={false} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5">
       {icon}
       <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">{label}</span>
     </Link>
