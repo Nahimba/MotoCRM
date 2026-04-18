@@ -83,23 +83,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
+    // 2. Comprehensive Event Listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth Event:", event); // Keep this for debugging the AFK issue
+
       if (session?.user) {
-        const isNewUser = activeAuthId.current !== session.user.id;
         setUser(session.user);
-        
-        // Refresh profile on sign in or if the user changed
-        if (event === 'SIGNED_IN' || isNewUser) {
+        activeAuthId.current = session.user.id;
+
+        // TOKEN_REFRESHED is the key to fixing the "Dead Page" after AFK
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           await fetchProfile(session.user.id);
         }
-      } else {
-        // Handle Logout
+      } else if (event === 'SIGNED_OUT') {
         activeAuthId.current = null;
         setUser(null);
         setProfile(null);
         setLoading(false);
+        
+        // If session is lost while AFK, force a hard redirect to login
+        if (!sessionStorage.getItem('manualLogout')) {
+          window.location.href = '/';
+        }
       }
     });
+
+    // const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+
+    //   console.log("Auth Event:", event); // Keep this for debugging the AFK issue
+
+    //   if (session?.user) {
+    //     const isNewUser = activeAuthId.current !== session.user.id;
+    //     setUser(session.user);
+        
+    //     // Refresh profile on sign in or if the user changed
+    //     if (event === 'SIGNED_IN' || isNewUser) {
+    //       await fetchProfile(session.user.id);
+    //     }
+    //   } else {
+    //     // Handle Logout
+    //     activeAuthId.current = null;
+    //     setUser(null);
+    //     setProfile(null);
+    //     setLoading(false);
+
+    //     // If session is lost while AFK, force a hard redirect to login
+    //     if (!sessionStorage.getItem('manualLogout')) {
+    //       window.location.href = '/';
+    //     }
+    //   }
+    // });
 
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
