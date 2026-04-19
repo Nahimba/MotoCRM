@@ -142,7 +142,7 @@ export function StudentSelector({
                 <div className="flex flex-col items-end">
                   <span className="text-[10px] font-black text-primary italic">{p.remaining}h</span>
                   {showAllStudents && p.instructor_id !== currentInstructorId && (
-                    <span className="text-[7px] text-orange-500 font-bold uppercase">Substitute</span>
+                    <span className="text-[7px] text-orange-500 font-bold uppercase">Заміна</span>
                   )}
                 </div>
               </button>
