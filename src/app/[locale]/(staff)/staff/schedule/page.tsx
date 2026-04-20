@@ -25,6 +25,8 @@ import { AddExceptionModal } from "@/components/schedule/AddExceptionModal"
 import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 
+import { toZonedTime } from 'date-fns-tz'
+
 
 const HOURS = eachHourOfInterval({
   start: setHours(startOfDay(new Date()), 7),
@@ -193,58 +195,63 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
   }
   
 
+  const branchTimeZone = 'Europe/Kyiv' // This would come from your settings/database
 
+  const getExceptionStyles = (ex: any, targetDate: Date) => {
 
-const getExceptionStyles = (ex: any, targetDate: Date) => {
-  const start = new Date(ex.start_at)
-  const end = new Date(ex.end_at)
-  
-  // Визначаємо початок і кінець блоку для конкретного дня
-  // Якщо виняток почався раніше цього дня, малюємо з 7:00 (top: 0)
-  const isStartedBefore = isBefore(start, startOfDay(targetDate))
-  const isEndingAfter = isAfter(end, endOfDay(targetDate))
+    // const start = new Date(ex.start_at)
+    // const end = new Date(ex.end_at)
 
-  const top = (ex.is_all_day || isStartedBefore) 
-    ? 0 
-    : Math.max(0, (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight)
+    // Convert the UTC database time specifically to the Branch Time
+    const start = toZonedTime(new Date(ex.start_at), branchTimeZone)
+    const end = toZonedTime(new Date(ex.end_at), branchTimeZone)
+    
+    // Визначаємо початок і кінець блоку для конкретного дня
+    // Якщо виняток почався раніше цього дня, малюємо з 7:00 (top: 0)
+    const isStartedBefore = isBefore(start, startOfDay(targetDate))
+    const isEndingAfter = isAfter(end, endOfDay(targetDate))
 
-  let height = hourHeight // дефолт
-  if (ex.is_all_day || (isStartedBefore && isEndingAfter)) {
-    height = HOURS.length * hourHeight
-  } else {
-    // Розрахунок для часткового блокування (наприклад, тільки ранок або тільки вечір)
-    const displayStart = isStartedBefore ? setHours(startOfDay(targetDate), 7) : start
-    const displayEnd = isEndingAfter ? setHours(startOfDay(targetDate), 22) : end
-    const durationHours = (displayEnd.getTime() - displayStart.getTime()) / 3600000
-    height = durationHours * hourHeight
+    const top = (ex.is_all_day || isStartedBefore) 
+      ? 0 
+      : Math.max(0, (start.getHours() - 7) * hourHeight + (start.getMinutes() / 60) * hourHeight)
+
+    let height = hourHeight // дефолт
+    if (ex.is_all_day || (isStartedBefore && isEndingAfter)) {
+      height = HOURS.length * hourHeight
+    } else {
+      // Розрахунок для часткового блокування (наприклад, тільки ранок або тільки вечір)
+      const displayStart = isStartedBefore ? setHours(startOfDay(targetDate), 7) : start
+      const displayEnd = isEndingAfter ? setHours(startOfDay(targetDate), 22) : end
+      const durationHours = (displayEnd.getTime() - displayStart.getTime()) / 3600000
+      height = durationHours * hourHeight
+    }
+
+    // Розрахунок Left/Width залежно від режиму
+    let left = '4px'
+    let width = 'calc(100% - 8px)'
+
+    if (viewMode === 'week') {
+      const dayIdx = (getDay(targetDate) + 6) % 7
+      const colWidthPct = 100 / 7
+      left = `calc(${dayIdx * colWidthPct}% + 4px)`
+      width = `calc(${colWidthPct}% - 8px)`
+    } else if (isTeamView) {
+      // Для режиму команди (якщо винятки фільтруються по інструктору)
+      const insIdx = instructors.findIndex(i => i.id === ex.instructor_id)
+      const colWidthPct = 100 / Math.max(1, instructors.length)
+      left = `calc(${insIdx * colWidthPct}% + 4px)`
+      width = `calc(${colWidthPct}% - 8px)`
+    }
+
+    return {
+      position: 'absolute' as const,
+      top: `${top}px`,
+      left,
+      width,
+      height: `${height}px`,
+      zIndex: 40,
+    }
   }
-
-  // Розрахунок Left/Width залежно від режиму
-  let left = '4px'
-  let width = 'calc(100% - 8px)'
-
-  if (viewMode === 'week') {
-    const dayIdx = (getDay(targetDate) + 6) % 7
-    const colWidthPct = 100 / 7
-    left = `calc(${dayIdx * colWidthPct}% + 4px)`
-    width = `calc(${colWidthPct}% - 8px)`
-  } else if (isTeamView) {
-    // Для режиму команди (якщо винятки фільтруються по інструктору)
-    const insIdx = instructors.findIndex(i => i.id === ex.instructor_id)
-    const colWidthPct = 100 / Math.max(1, instructors.length)
-    left = `calc(${insIdx * colWidthPct}% + 4px)`
-    width = `calc(${colWidthPct}% - 8px)`
-  }
-
-  return {
-    position: 'absolute' as const,
-    top: `${top}px`,
-    left,
-    width,
-    height: `${height}px`,
-    zIndex: 40,
-  }
-}
 
 
 
@@ -545,11 +552,23 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                 {/* Exceptions / Blocked Slots */}
                 {(viewMode === 'week' ? weekDays : [selectedDate]).map((currentDay) => (
                   <div key={currentDay.toString()}>
-                    {exceptions
+                    {/* {exceptions
                       .filter(ex => {
                         const start = new Date(ex.start_at)
                         const end = new Date(ex.end_at)
                         // Перевіряємо, чи поточний день потрапляє в інтервал відпустки
+                        return isWithinInterval(currentDay, { 
+                          start: startOfDay(start), 
+                          end: endOfDay(end) 
+                        })
+                      }) */}
+                    {exceptions
+                      .filter(ex => {
+                        // BUG FIX: Don't use new Date(ex.start_at). Use toZonedTime!
+                        const start = toZonedTime(new Date(ex.start_at), branchTimeZone)
+                        const end = toZonedTime(new Date(ex.end_at), branchTimeZone)
+                        
+                        // Now 'start' correctly reflects the date in Kyiv
                         return isWithinInterval(currentDay, { 
                           start: startOfDay(start), 
                           end: endOfDay(end) 
@@ -575,9 +594,19 @@ const getExceptionStyles = (ex: any, targetDate: Date) => {
                           </div>
                           
                           {/* Показуємо мітку "Весь день", якщо це all_day або триває довше 24 годин */}
-                          {(ex.is_all_day || differenceInDays(new Date(ex.end_at), new Date(ex.start_at)) > 0) && (
+                          {/* {(ex.is_all_day || differenceInDays(new Date(ex.end_at), new Date(ex.start_at)) > 0) && (
                             <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>
-                          )}
+                          )} */}
+                          {/* Use zoned dates for the label check too */}
+                          {(() => {
+                            const zStart = toZonedTime(new Date(ex.start_at), branchTimeZone);
+                            const zEnd = toZonedTime(new Date(ex.end_at), branchTimeZone);
+                            
+                            if (ex.is_all_day || differenceInDays(zEnd, zStart) > 0) {
+                              return <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>;
+                            }
+                            return null;
+                          })()}
                         </div>
                       ))}
                   </div>

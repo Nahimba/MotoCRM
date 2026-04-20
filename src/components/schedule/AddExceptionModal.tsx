@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase"
 import { X, Coffee, Palmtree, ShieldAlert, Clock, Calendar, Trash2, ArrowRight } from "lucide-react"
 import { format, isBefore, parseISO } from "date-fns"
 
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
+
 interface Props {
   isOpen: boolean
   onClose: () => void
@@ -34,15 +36,31 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
 
   useEffect(() => {
     if (editException) {
+      // setTitle(editException.title || "")
+      // setType(editException.type || "busy")
+      // setIsAllDay(editException.is_all_day || false)
+      // setStartDate(format(new Date(editException.start_at), 'yyyy-MM-dd'))
+      // setEndDate(format(new Date(editException.end_at), 'yyyy-MM-dd'))
+      
+      // if (!editException.is_all_day) {
+      //   setStartTime(format(new Date(editException.start_at), 'HH:mm'))
+      //   setEndTime(format(new Date(editException.end_at), 'HH:mm'))
+      // }
+      const TZ = 'Europe/Kyiv'
+      // Convert the UTC string from DB to Kyiv time for the form inputs
+      const startZoned = toZonedTime(new Date(editException.start_at), TZ)
+      const endZoned = toZonedTime(new Date(editException.end_at), TZ)
+
       setTitle(editException.title || "")
       setType(editException.type || "busy")
       setIsAllDay(editException.is_all_day || false)
-      setStartDate(format(new Date(editException.start_at), 'yyyy-MM-dd'))
-      setEndDate(format(new Date(editException.end_at), 'yyyy-MM-dd'))
+      
+      setStartDate(format(startZoned, 'yyyy-MM-dd'))
+      setEndDate(format(endZoned, 'yyyy-MM-dd'))
       
       if (!editException.is_all_day) {
-        setStartTime(format(new Date(editException.start_at), 'HH:mm'))
-        setEndTime(format(new Date(editException.end_at), 'HH:mm'))
+        setStartTime(format(startZoned, 'HH:mm'))
+        setEndTime(format(endZoned, 'HH:mm'))
       }
     } else {
       setTitle("")
@@ -63,15 +81,50 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
     if (!instructorId) return
     setLoading(true)
 
-    // Формуємо ISO рядки. Для All Day беремо повну добу від стартової до кінцевої дати
-    const start_at = isAllDay ? `${startDate}T00:00:00Z` : `${startDate}T${startTime}:00Z`
-    const end_at = isAllDay ? `${endDate}T23:59:59Z` : `${endDate}T${endTime}:00Z`
+    // // Формуємо ISO рядки. Для All Day беремо повну добу від стартової до кінцевої дати
+    // const start_at = isAllDay ? `${startDate}T00:00:00Z` : `${startDate}T${startTime}:00Z`
+    // const end_at = isAllDay ? `${endDate}T23:59:59Z` : `${endDate}T${endTime}:00Z`
 
+    // const payload = {
+    //   instructor_id: instructorId,
+    //   title: title || TYPES.find(t => t.id === type)?.label,
+    //   type,
+    //   is_all_day: isAllDay,
+    //   start_at,
+    //   end_at
+    // }
+
+    const TZ = 'Europe/Kyiv'
+
+    let startStr: string
+    let endStr: string
+  
+    if (isAllDay) {
+      startStr = `${startDate}T00:00:00`
+      // Set to the very end of the day or midnight of the next day
+      endStr = `${endDate}T23:59:59` 
+    } else {
+      startStr = `${startDate}T${startTime}:00`
+      endStr = `${endDate}T${endTime}:00`
+    }
+  
+    // FIX: Explicitly tell the system these strings ARE Kyiv time.
+    // This generates a UTC string (with the correct offset) that Supabase loves.
+    const start_at = formatInTimeZone(startStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX")
+    const end_at = formatInTimeZone(endStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX")
+
+
+    // 2. Convert to a real JS Date object. 
+    // IMPORTANT: This uses the browser's current timezone.
     const payload = {
       instructor_id: instructorId,
       title: title || TYPES.find(t => t.id === type)?.label,
       type,
       is_all_day: isAllDay,
+      // // Sending the Date object to Supabase will automatically convert it 
+      // // to the correct UTC string based on the user's location.
+      // start_at: new Date(startStr).toISOString(), 
+      // end_at: new Date(endStr).toISOString()
       start_at,
       end_at
     }
