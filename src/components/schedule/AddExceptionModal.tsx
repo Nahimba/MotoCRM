@@ -142,8 +142,14 @@ export function AddExceptionModal({ isOpen, onClose, instructorId, onSuccess, in
       if (error) throw error
       onSuccess()
       onClose()
-    } catch (err) {
-      console.error("Save Exception Error:", err)
+    } catch (err: any) {
+      // This will show you if it's "Permission Denied" (RLS) or "Invalid Input" (Schema)
+      console.error("Save Exception Error Details:", {
+        message: err.message,
+        details: err.details,
+        hint: err.hint,
+        code: err.code
+      })
     } finally {
       setLoading(false)
     }

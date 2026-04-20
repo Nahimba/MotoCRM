@@ -11,7 +11,9 @@ import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
 import { LessonStatus } from "@/constants/constants"
-import { StudentSelector } from "./StudentSelector" // Импорт созданного компонента
+import { StudentSelector } from "./StudentSelector"
+
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
 
 interface AddLessonModalProps {
   isOpen: boolean
@@ -30,6 +32,8 @@ export function AddLessonModal({
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
   const tStatus = useTranslations("Constants.lesson_statuses")
+
+  const TZ = 'Europe/Kyiv'
   
   const { profile: authProfile } = useAuth()
 
@@ -113,12 +117,21 @@ export function AddLessonModal({
       fetchData()
 
       if (editLesson) {
-        const dateObj = parseISO(editLesson.session_date)
-        setSelectedPackageId(editLesson.course_package_id)
-        setSelectedInstructorId(editLesson.instructor_id)
+
+        // const dateObj = parseISO(editLesson.session_date)
+        // setLessonDate(format(dateObj, "yyyy-MM-dd"))
+        // setSelectedHour(format(dateObj, "HH"))
+        // setSelectedMinute(format(dateObj, "mm"))
+
+        // Convert the UTC database string specifically to Kyiv time for the form
+        const dateObj = toZonedTime(new Date(editLesson.session_date), TZ)
+        // Now these will always show the "Kyiv Clock" time
         setLessonDate(format(dateObj, "yyyy-MM-dd"))
         setSelectedHour(format(dateObj, "HH"))
         setSelectedMinute(format(dateObj, "mm"))
+
+        setSelectedPackageId(editLesson.course_package_id)
+        setSelectedInstructorId(editLesson.instructor_id)
         setDuration(editLesson.duration?.toString() || "2")
         
         if (editLesson.location_id) {
@@ -156,10 +169,17 @@ export function AddLessonModal({
     e.preventDefault()
     if (!selectedPackageId) return toast.error(t("selectStudentError"))
     if (!selectedInstructorId) return toast.error("Оберіть інструктора")
-    
+
     setLoading(true)
-    const [year, month, day] = lessonDate.split('-').map(Number)
-    const finalDate = new Date(year, month - 1, day, parseInt(selectedHour), parseInt(selectedMinute))
+
+    // 1. Construct a clean string from your state inputs
+    const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`
+    // 2. Explicitly tell the system: "This string represents Kyiv time"
+    // This creates the correct UTC string with the offset (e.g., +03:00)
+    const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX")
+
+    // const [year, month, day] = lessonDate.split('-').map(Number)
+    // const finalDate = new Date(year, month - 1, day, parseInt(selectedHour), parseInt(selectedMinute))
 
     const isCustom = locationId === "custom"
 
@@ -167,7 +187,8 @@ export function AddLessonModal({
       course_package_id: selectedPackageId,
       instructor_id: selectedInstructorId,
       duration: parseFloat(duration),
-      session_date: finalDate.toISOString(),
+      // session_date: finalDate.toISOString(),
+      session_date, // Send the zoned UTC string
       location_id: isCustom ? null : locationId,
       custom_location_address: isCustom ? customAddress : null,
       summary,

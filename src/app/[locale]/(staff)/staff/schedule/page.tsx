@@ -25,7 +25,7 @@ import { AddExceptionModal } from "@/components/schedule/AddExceptionModal"
 import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 
-import { toZonedTime } from 'date-fns-tz'
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 
 
 const HOURS = eachHourOfInterval({
@@ -36,6 +36,14 @@ const HOURS = eachHourOfInterval({
 type ViewMode = 'day' | 'week'
 
 export default function SchedulePage() {
+
+  // This prevents React from trying to calculate "today" or "local time" during the server-side render
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+
   const t = useTranslations("Schedule")
   const locale = useLocale()
   const dateLocale = locale === "ua" ? uk : enUS
@@ -57,6 +65,8 @@ export default function SchedulePage() {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+
+  const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
 
   // 1. Responsive UI logic
@@ -107,62 +117,76 @@ export default function SchedulePage() {
 
 
 
-const [workHours, setWorkHours] = useState<any[]>([])
-const [exceptions, setExceptions] = useState<any[]>([])
-const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false)
-const [editingException, setEditingException] = useState<any | null>(null)
-const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false)
+  const [workHours, setWorkHours] = useState<any[]>([])
+  const [exceptions, setExceptions] = useState<any[]>([])
+  const [isExceptionModalOpen, setIsExceptionModalOpen] = useState(false)
+  const [editingException, setEditingException] = useState<any | null>(null)
+  const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false)
 
-// 2. Загрузка всех данных (Уроки, График, Исключения) через Promise.all
-const fetchAllData = useCallback(async () => {
-  if (!targetInstructorId && !showAllInstructors) return
-  setLoading(true)
+  // 2. Загрузка всех данных (Уроки, График, Исключения) через Promise.all
+  const fetchAllData = useCallback(async () => {
+    if (!targetInstructorId && !showAllInstructors) return
+    setLoading(true)
 
-  const start = (viewMode === 'day' ? startOfDay(selectedDate) : startOfWeek(selectedDate, { weekStartsOn: 1 })).toISOString()
-  const end = addDays(new Date(start), viewMode === 'day' ? 1 : 7).toISOString()
+    // const start = (viewMode === 'day' ? startOfDay(selectedDate) : startOfWeek(selectedDate, { weekStartsOn: 1 })).toISOString()
+    // const end = addDays(new Date(start), viewMode === 'day' ? 1 : 7).toISOString()
 
-  try {
-    // 1. Создаем базовый запрос для уроков
-    let lessonsQuery = supabase
-      .from('view_schedule_lessons')
-      .select('*')
-      .gte('session_date', start)
-      .lt('session_date', end)
+    // Define the boundaries in Kyiv time
+    const zonedStart = toZonedTime(selectedDate, TZ);
+    const start = (viewMode === 'day' 
+      ? startOfDay(zonedStart) 
+      : startOfWeek(zonedStart, { weekStartsOn: 1 })
+    );
+    
+    const end = addDays(start, viewMode === 'day' ? 1 : 7);
 
-    // 2. Условно добавляем фильтр по инструктору
-    const isGlobalView = profile?.role === 'admin' && showAllInstructors
-    if (!isGlobalView && targetInstructorId) {
-      lessonsQuery = lessonsQuery.eq('instructor_id', targetInstructorId)
+    // Use formatInTimeZone to get the exact UTC string for these Kyiv moments
+    const startISO = formatInTimeZone(start, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const endISO = formatInTimeZone(end, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+
+    try {
+      // 1. Создаем базовый запрос для уроков
+      let lessonsQuery = supabase
+        .from('view_schedule_lessons')
+        .select('*')
+        .gte('session_date', startISO)
+        .lt('session_date', endISO)
+
+      // 2. Условно добавляем фильтр по инструктору
+      const isGlobalView = profile?.role === 'admin' && showAllInstructors
+      if (!isGlobalView && targetInstructorId) {
+        lessonsQuery = lessonsQuery.eq('instructor_id', targetInstructorId)
+      }
+
+      // 3. Выполняем все запросы параллельно
+      const [lessonsRes, workHoursRes, exceptionsRes] = await Promise.all([
+        lessonsQuery,
+        supabase.from('instructor_work_hours')
+          .select('*')
+          .eq('instructor_id', targetInstructorId)
+          .eq('is_active', true),
+        supabase.from('instructor_exceptions')
+          .select('*')
+          .eq('instructor_id', targetInstructorId)
+          //.or(`and(start_at.lte.${end},end_at.gte.${start})`) // Логіка перетину інтервалів
+          .or(`and(start_at.lte.${endISO},end_at.gte.${startISO})`)
+      ])
+
+      if (lessonsRes.error) throw lessonsRes.error
+      if (workHoursRes.error) throw workHoursRes.error
+      if (exceptionsRes.error) throw exceptionsRes.error
+
+      setLessons(lessonsRes.data || [])
+      setWorkHours(workHoursRes.data || [])
+      setExceptions(exceptionsRes.data || [])
+    } catch (err: any) {
+      console.error("Fetch All Data Error:", err.message || err);
+    } finally {
+      setLoading(false)
     }
+  }, [selectedDate, targetInstructorId, viewMode, showAllInstructors, profile])
 
-    // 3. Выполняем все запросы параллельно
-    const [lessonsRes, workHoursRes, exceptionsRes] = await Promise.all([
-      lessonsQuery,
-      supabase.from('instructor_work_hours')
-        .select('*')
-        .eq('instructor_id', targetInstructorId)
-        .eq('is_active', true),
-      supabase.from('instructor_exceptions')
-        .select('*')
-        .eq('instructor_id', targetInstructorId)
-        .or(`and(start_at.lte.${end},end_at.gte.${start})`) // Логіка перетину інтервалів
-    ])
-
-    if (lessonsRes.error) throw lessonsRes.error
-    if (workHoursRes.error) throw workHoursRes.error
-    if (exceptionsRes.error) throw exceptionsRes.error
-
-    setLessons(lessonsRes.data || [])
-    setWorkHours(workHoursRes.data || [])
-    setExceptions(exceptionsRes.data || [])
-  } catch (err) {
-    console.error("Fetch All Data Error:", err)
-  } finally {
-    setLoading(false)
-  }
-}, [selectedDate, targetInstructorId, viewMode, showAllInstructors, profile])
-
-useEffect(() => { fetchAllData() }, [fetchAllData])
+  useEffect(() => { fetchAllData() }, [fetchAllData])
 
 
 // 3. Проверка рабочего времени
@@ -195,16 +219,14 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
   }
   
 
-  const branchTimeZone = 'Europe/Kyiv' // This would come from your settings/database
-
   const getExceptionStyles = (ex: any, targetDate: Date) => {
 
     // const start = new Date(ex.start_at)
     // const end = new Date(ex.end_at)
 
     // Convert the UTC database time specifically to the Branch Time
-    const start = toZonedTime(new Date(ex.start_at), branchTimeZone)
-    const end = toZonedTime(new Date(ex.end_at), branchTimeZone)
+    const start = toZonedTime(new Date(ex.start_at), TZ)
+    const end = toZonedTime(new Date(ex.end_at), TZ)
     
     // Визначаємо початок і кінець блоку для конкретного дня
     // Якщо виняток почався раніше цього дня, малюємо з 7:00 (top: 0)
@@ -259,11 +281,23 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
 
   // 4. Overlap & Layout Logic
   const getLessonStyles = (lesson: any) => {
-    const date = new Date(lesson.session_date);
+
+    // const date = new Date(lesson.session_date);
+    // const duration = Number(lesson.duration) || 1;
+    // const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight;
+    // const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date));
+
+
+    const TZ = 'Europe/Kyiv';
+    // Convert UTC session_date to a Kyiv Date object
+    const date = toZonedTime(new Date(lesson.session_date), TZ);
     const duration = Number(lesson.duration) || 1;
+    // Now getHours() returns the Kyiv hour regardless of where the Admin is
     const top = (date.getHours() - 7) * hourHeight + (date.getMinutes() / 60) * hourHeight;
-    
-    const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date));
+    // When filtering dayLessons, compare using Zoned dates
+    const dayLessons = lessons.filter(l => 
+      isSameDay(toZonedTime(new Date(l.session_date), TZ), date)
+    );
     
     // Determine overlaps only with lessons in the same column (same instructor if in multi-instructor view)
     const overlaps = dayLessons.filter(other => {
@@ -448,17 +482,38 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
           {(viewMode === 'week' || isTeamView) && (
             <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70]">
               {viewMode === 'week' ? (
-                weekDays.map((day, i) => (
-                  <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
-                    <p className="text-[9px] font-black uppercase text-slate-500">
-                      <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
-                      <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
-                    </p>
-                    <p className={`text-sm font-black italic ${isSameDay(day, new Date()) ? 'text-primary' : 'text-white'}`}>
-                      {format(day, 'dd.MM')}
-                    </p>
-                  </div>
-                ))
+                // weekDays.map((day, i) => (
+                //   <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
+                //     <p className="text-[9px] font-black uppercase text-slate-500">
+                //       <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
+                //       <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
+                //     </p>
+                //     <p className={`text-sm font-black italic ${isSameDay(day, new Date()) ? 'text-primary' : 'text-white'}`}>
+                //       {format(day, 'dd.MM')}
+                //     </p>
+                //   </div>
+                // ))
+
+                weekDays.map((day, i) => {
+                  // FIX: Only check for "today" after mounting on the client
+                  const isToday = isMounted && isSameDay(toZonedTime(day, TZ), toZonedTime(new Date(), TZ));
+              
+                  return (
+                    <div 
+                      key={i} 
+                      className={`flex-1 py-3 text-center border-r border-white/5 ${isToday ? 'bg-primary/5' : ''}`}
+                    >
+                      <p className="text-[9px] font-black uppercase text-slate-500">
+                        <span className="md:hidden">{format(day, 'eeeeee', { locale: dateLocale })}</span>
+                        <span className="hidden md:inline">{format(day, 'EEEE', { locale: dateLocale })}</span>
+                      </p>
+                      <p className={`text-sm font-black italic ${isToday ? 'text-primary' : 'text-white'}`}>
+                        {format(day, 'dd.MM')}
+                      </p>
+                    </div>
+                  );
+                })
+                
               ) : (
                 instructors.map((ins) => (
                   <div key={ins.id} className="flex-1 py-3 text-center border-r border-white/5 bg-[#0D0D0D]">
@@ -474,11 +529,20 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
           <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
             {/* Часова шкала (Таймлайн) */}
             <div className="absolute left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
-              {HOURS.map(h => (
+              {/* {HOURS.map(h => (
                 <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                   {format(h, 'HH:mm')}
                 </div>
-              ))}
+              ))} */}
+              {HOURS.map(h => (
+                  <div 
+                    key={h.toString()} 
+                    style={{ height: `${hourHeight}px` }} 
+                    className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums"
+                  >
+                    {format(h, 'HH:mm')}
+                  </div>
+                ))}
             </div>
 
             <div className="absolute left-10 top-0 right-0 h-full">
@@ -565,8 +629,8 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
                     {exceptions
                       .filter(ex => {
                         // BUG FIX: Don't use new Date(ex.start_at). Use toZonedTime!
-                        const start = toZonedTime(new Date(ex.start_at), branchTimeZone)
-                        const end = toZonedTime(new Date(ex.end_at), branchTimeZone)
+                        const start = toZonedTime(new Date(ex.start_at), TZ)
+                        const end = toZonedTime(new Date(ex.end_at), TZ)
                         
                         // Now 'start' correctly reflects the date in Kyiv
                         return isWithinInterval(currentDay, { 
@@ -599,8 +663,8 @@ useEffect(() => { fetchAllData() }, [fetchAllData])
                           )} */}
                           {/* Use zoned dates for the label check too */}
                           {(() => {
-                            const zStart = toZonedTime(new Date(ex.start_at), branchTimeZone);
-                            const zEnd = toZonedTime(new Date(ex.end_at), branchTimeZone);
+                            const zStart = toZonedTime(new Date(ex.start_at), TZ);
+                            const zEnd = toZonedTime(new Date(ex.end_at), TZ);
                             
                             if (ex.is_all_day || differenceInDays(zEnd, zStart) > 0) {
                               return <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>;
