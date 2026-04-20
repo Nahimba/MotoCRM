@@ -94,8 +94,8 @@ export function WorkHoursModal({ isOpen, onClose, instructorId, onSuccess }: Pro
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-      <div className="bg-[#0D0D0D] border border-white/10 w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md">
+      <div className=" pb-safe-bottom-mobile bg-[#0D0D0D] border-t sm:border border-white/10 w-full max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
         <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-[#0D0D0D]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -103,51 +103,53 @@ export function WorkHoursModal({ isOpen, onClose, instructorId, onSuccess }: Pro
             </div>
             <h3 className="text-sm font-black uppercase italic text-white tracking-widest">Графік роботи</h3>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={20}/></button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors p-2"><X size={20}/></button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-3 custom-scrollbar">
           {hours.map((day, index) => (
             <div 
               key={day.day_of_week} 
-              className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+              className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all ${
                 day.is_active ? 'bg-white/5 border-white/10' : 'bg-transparent border-white/5 opacity-50'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-[140px]">
-                <button
-                  type="button"
-                  onClick={() => toggleDay(index)}
-                  className={`w-10 h-5 rounded-full transition-colors relative ${day.is_active ? 'bg-primary' : 'bg-slate-700'}`}
-                >
-                  <div className={`absolute top-1 w-3 h-3 bg-black rounded-full transition-all ${day.is_active ? 'left-6' : 'left-1'}`} />
-                </button>
-                <span className="text-xs font-black uppercase text-white">
-                  {DAYS_OF_WEEK.find(d => d.id === day.day_of_week)?.label}
-                </span>
+              {/* Day Selector Row */}
+              <div className="flex items-center justify-between sm:justify-start gap-3 min-w-[140px]">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleDay(index)}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${day.is_active ? 'bg-primary' : 'bg-slate-700'}`}
+                  >
+                    <div className={`absolute top-1 w-3 h-3 bg-black rounded-full transition-all ${day.is_active ? 'left-6' : 'left-1'}`} />
+                  </button>
+                  <span className="text-xs font-black uppercase text-white">
+                    {DAYS_OF_WEEK.find(d => d.id === day.day_of_week)?.label}
+                  </span>
+                </div>
               </div>
 
+              {/* Time Inputs Row */}
               {day.is_active && (
-                <div className="flex items-center gap-2 ml-auto">
-                  <div className="relative">
-                    {/* <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} /> */}
+                <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto justify-between sm:justify-end border-t border-white/5 pt-3 sm:pt-0 sm:border-t-0">
+                  <div className="flex-1 sm:flex-none">
                     <input 
                       type="time"
-                      step="600" // Крок 10 хв для зручності
+                      step="600"
                       value={day.start_time.substring(0,5)} 
                       onChange={(e) => updateTime(index, 'start_time', e.target.value)}
-                      className="bg-black border border-white/10 rounded-lg p-4 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
+                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
                     />
                   </div>
                   <span className="text-slate-600">—</span>
-                  <div className="relative">
-                    {/* <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} /> */}
+                  <div className="flex-1 sm:flex-none">
                     <input 
                       type="time"
                       step="600"
                       value={day.end_time.substring(0,5)} 
                       onChange={(e) => updateTime(index, 'end_time', e.target.value)}
-                      className="bg-black border border-white/10 rounded-lg p-4 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
+                      className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary [color-scheme:dark]"
                     />
                   </div>
                 </div>
