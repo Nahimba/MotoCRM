@@ -500,7 +500,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                     <ShieldCheck className="text-primary/10 absolute -right-4 -bottom-4" size={120} />
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
                   <Button 
                     type="submit" 
                     disabled={loading}
