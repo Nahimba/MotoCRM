@@ -35,7 +35,8 @@ export function AddLessonModal({
 
   const TZ = 'Europe/Kyiv'
   
-  const { profile: authProfile } = useAuth()
+  //const { profile: authProfile } = useAuth()
+  const { profile } = useAuth()
 
   const [selectedInstructorId, setSelectedInstructorId] = useState<string>("")
   
@@ -44,7 +45,8 @@ export function AddLessonModal({
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
-  const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
+  //const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
+  const [lessonDate, setLessonDate] = useState(format(toZonedTime(initialDate, TZ), 'yyyy-MM-dd'))
   const [selectedHour, setSelectedHour] = useState("12")
   const [selectedMinute, setSelectedMinute] = useState("00")
   const [duration, setDuration] = useState("2") 
@@ -193,7 +195,7 @@ export function AddLessonModal({
       custom_location_address: isCustom ? customAddress : null,
       summary,
       status,
-      created_by_profile_id: authProfile?.id
+      created_by_profile_id: profile?.id
     }
 
     const { error } = editLesson 
@@ -412,7 +414,7 @@ export function AddLessonModal({
           </div>
 
           <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
-            {editLesson && (
+            {editLesson && (profile?.role === 'admin') && (
               <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
                 <Trash2 size={22} />
               </button>

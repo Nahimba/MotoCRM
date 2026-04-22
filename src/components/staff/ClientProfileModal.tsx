@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { X, Phone, User, FileText, Mail, Clock, Loader2, ShieldCheck, MapPin } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 interface ClientProfileModalProps {
-  client: any // Объект урока из расписания
+  client: any // Об'єкт уроку з розкладу
   onClose: () => void
 }
 
@@ -15,7 +16,10 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
   const [loading, setLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
-  // Получаем ID клиента и ID конкретного пакета из пропсов
+  
+  const t = useTranslations("Constants")
+
+  // Отримуємо ID клієнта та ID конкретного пакета з пропсів
   const targetClientId = client.client_id || client.id
   const targetPackageId = client.course_package_id || client.package_id
 
@@ -28,7 +32,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
 
       setLoading(true)
       try {
-        // 1. Загружаем основные данные профиля
+        // 1. Завантажуємо основні дані профілю
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select(`
@@ -52,8 +56,8 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
           ? clientData?.profiles[0] 
           : clientData?.profiles
 
-        // 2. Загружаем данные из вьюхи по конкретному пакету
-        // Фильтруем по client_id И package_id для точности
+        // 2. Завантажуємо дані з в'юхи по конкретному пакету
+        // Фільтруємо за client_id ТА package_id для точності
         const { data: dossierData } = await supabase
           .from('client_profile_dossier')
           .select('*')
@@ -68,7 +72,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
           notes: clientData?.notes || dossierData?.client_notes 
         })
 
-        // 3. Обработка Аватара
+        // 3. Обробка Аватара
         const rawAvatar = rawProfile?.avatar_url
         if (rawAvatar) {
           if (rawAvatar.startsWith('http')) {
@@ -81,7 +85,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
           }
         }
       } catch (err) {
-        console.error("Tactical Dossier Fetch Error:", err)
+        console.error("Помилка завантаження досьє:", err)
       } finally {
         setLoading(false)
       }
@@ -90,7 +94,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
     fetchFullDossier()
   }, [targetClientId, targetPackageId])
 
-  const firstName = profile?.first_name || client.client_name || client.name || "Unknown"
+  const firstName = profile?.first_name || client.client_name || client.name || "Невідомо"
   const lastName = profile?.last_name || client.client_last_name || client.last_name || ""
 
   return (
@@ -114,7 +118,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             <div className="flex justify-between items-end mb-6">
               <div className="h-32 w-32 md:h-40 md:w-40 rounded-[2.5rem] bg-zinc-900 border-[6px] border-[#0A0A0A] overflow-hidden shadow-2xl relative">
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={avatarPreview} alt="Аватар" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-zinc-700 bg-zinc-800">
                     <User size={48} strokeWidth={1} />
@@ -124,11 +128,12 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
               
               <div className="flex flex-col items-end gap-2 mb-2">
                 <div className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${details?.is_graduated ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-primary/10 border-primary/20 text-primary'}`}>
-                  {details?.is_graduated ? "Graduate" : "Active"}
+                  {details?.is_graduated ? "Випускник" : "Активний"}
                 </div>
                 {details?.gear_type && (
                   <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-slate-400 uppercase italic">
-                    {details.gear_type}
+                    {/* {details.gear_type} */}
+                    {t('gear_type.'+details.gear_type)}
                   </div>
                 )}
               </div>
@@ -145,9 +150,9 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             <div className="grid grid-cols-1 gap-4 mt-8 mb-6">
               {/* Active Course Name */}
               <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
-                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Active Mission</p>
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Активний контракт</p>
                 <div className="text-xl font-black uppercase italic text-primary relative z-10 truncate">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (details?.active_course_name || "Training Mission")}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (details?.active_course_name || "Навчальний Контракт")}
                 </div>
               </div>
 
@@ -155,9 +160,9 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
               <div className="p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
                 <div className="flex justify-between items-center relative z-10">
                   <div>
-                    <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Remaining Time</p>
+                    <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Залишок часу</p>
                     <div className="text-4xl font-black tabular-nums text-white">
-                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : `${details?.remaining_hours || 0}H`}
+                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : `${details?.remaining_hours || 0}Г`}
                     </div>
                   </div>
                   <Clock className="w-12 h-12 text-primary/20 rotate-12" />
@@ -172,12 +177,12 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
                 className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${profile?.phone ? 'bg-white/5 border-white/5 hover:bg-primary hover:text-black hover:border-primary' : 'bg-white/5 border-white/5 opacity-40 cursor-not-allowed'}`}
               >
                 <div className="p-2 bg-black/20 rounded-lg"><Phone size={16} /></div>
-                <span className="text-sm font-black tabular-nums tracking-tight">{profile?.phone || 'NO PHONE'}</span>
+                <span className="text-sm font-black tabular-nums tracking-tight">{profile?.phone || 'НЕМАЄ ТЕЛЕФОНУ'}</span>
               </a>
 
               <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl">
                 <div className="p-2 bg-black/20 rounded-lg"><Mail size={16} className="text-primary" /></div>
-                <span className="text-sm font-bold truncate text-white tracking-tight">{profile?.email || 'NO EMAIL'}</span>
+                <span className="text-sm font-bold truncate text-white tracking-tight">{profile?.email || 'НЕМАЄ EMAIL'}</span>
               </div>
 
               {profile?.address && (
@@ -192,10 +197,10 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             <div className="mt-6 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] relative overflow-hidden">
               <div className="flex items-center gap-2 mb-4">
                 <ShieldCheck size={14} className="text-primary" />
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Notes about Client</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Нотатки про клієнта</span>
               </div>
               <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
-                {loading ? "Decrypting..." : (details?.notes || "No specific mission notes recorded for this pilot.")}
+                {loading ? "Розшифровка..." : (details?.notes || "Для цього пілота не зафіксовано жодних специфічних нотаток.")}
               </p>
               <FileText className="absolute -right-4 -bottom-4 w-24 h-24 text-primary/5 -rotate-12" />
             </div>
@@ -208,7 +213,7 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
               onClick={onClose}
               className="w-full py-4 bg-white text-black font-black uppercase text-xs tracking-[0.2em] rounded-2xl active:scale-95 transition-all shadow-xl"
             >
-              Back
+              Назад
             </button>
         </div>
 

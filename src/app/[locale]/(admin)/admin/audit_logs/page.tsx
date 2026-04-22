@@ -54,7 +54,7 @@ export default function AuditLogsPage() {
             Журнал <span className="text-primary">аудиту</span>
           </h1>
           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mt-1">
-            Історія всіх фінансових маніпуляцій
+            Історія фінансових маніпуляцій
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export default function AuditLogsPage() {
               <thead className="bg-white/5 text-[9px] uppercase font-black tracking-[0.2em] text-zinc-500">
                 <tr>
                   <th className="p-5 border-b border-white/5"><div className="flex items-center gap-2"><Clock size={12}/> Час</div></th>
-                  <th className="p-5 border-b border-white/5"><div className="flex items-center gap-2"><User size={12}/> Користувач</div></th>
+                  <th className="p-5 border-b border-white/5"><div className="flex items-center gap-2"><User size={12}/> Ім'я</div></th>
                   <th className="p-5 border-b border-white/5">Опис зміни</th>
                   <th className="p-5 border-b border-white/5 text-right w-10"></th>
                 </tr>
@@ -102,9 +102,9 @@ export default function AuditLogsPage() {
                     </td>
                     <td className="p-5">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-black text-primary border border-white/5 group-hover:border-primary/30 transition-colors">
+                        {/* <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-black text-primary border border-white/5 group-hover:border-primary/30 transition-colors">
                           {log.user_display_name?.charAt(0).toUpperCase()}
-                        </div>
+                        </div> */}
                         <span className="text-[11px] font-black uppercase tracking-tight text-zinc-300 group-hover:text-white transition-colors">
                           {log.user_display_name}
                         </span>
