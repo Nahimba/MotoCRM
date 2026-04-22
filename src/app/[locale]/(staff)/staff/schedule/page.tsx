@@ -123,6 +123,7 @@ export default function SchedulePage() {
 
   // 2. Загрузка всех данных (Уроки, График, Исключения) через Promise.all
   const fetchAllData = useCallback(async () => {
+    
     if (!targetInstructorId && !showAllInstructors) return
     setLoading(true)
 
@@ -151,10 +152,22 @@ export default function SchedulePage() {
         .lt('session_date', endISO)
 
       // 2. Условно добавляем фильтр по инструктору
-      const isGlobalView = profile?.role === 'admin' && showAllInstructors
+      //const isGlobalView = profile?.role === 'admin' && showAllInstructors
+      const isGlobalView = profile?.role === 'admin' && showAllInstructors && viewMode === 'day';
       if (!isGlobalView && targetInstructorId) {
         lessonsQuery = lessonsQuery.eq('instructor_id', targetInstructorId)
       }
+      // if (!isGlobalView) {
+      //   // Force filter by target instructor if not in team day-view
+      //   if (targetInstructorId) {
+      //     lessonsQuery = lessonsQuery.eq('instructor_id', targetInstructorId);
+      //   } else {
+      //     // If no instructor is selected and not global, return nothing
+      //     setLessons([]);
+      //     setLoading(false);
+      //     return;
+      //   }
+      // }
 
       // 3. Выполняем все запросы параллельно
       const [lessonsRes, workHoursRes, exceptionsRes] = await Promise.all([
