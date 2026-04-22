@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
 import { LessonStatus } from "@/constants/constants"
-import { StudentSelector } from "./StudentSelector"
+import { StudentSelectorPlus } from "./StudentSelectorPlus"
 
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
 
@@ -26,6 +26,7 @@ interface AddLessonModalProps {
   editLesson: any | null
   // existingLessons: any[]
 }
+
 
 export function AddLessonModal({ 
   isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson 
@@ -45,7 +46,6 @@ export function AddLessonModal({
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
-  //const [lessonDate, setLessonDate] = useState(format(initialDate, 'yyyy-MM-dd'))
   const [lessonDate, setLessonDate] = useState(format(toZonedTime(initialDate, TZ), 'yyyy-MM-dd'))
   const [selectedHour, setSelectedHour] = useState("12")
   const [selectedMinute, setSelectedMinute] = useState("00")
@@ -62,6 +62,32 @@ export function AddLessonModal({
   )
   
   const clientData = selectedPkg?.accounts?.clients
+
+  
+  
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedQuickCourseId, setSelectedQuickCourseId] = useState<string | null>(null);
+  const [isQuickCreationMode, setIsQuickCreationMode] = useState(false);
+  const [quickPrice, setQuickPrice] = useState<number | undefined>(undefined);
+
+  const quickClientData = useMemo(() => {
+    if (!isQuickCreationMode || !selectedClientId) return null;
+    // Find the client info from the packages list using the ID from Quick Mode
+    const pkgWithClient = packages.find(p => p.accounts?.clients?.id === selectedClientId);
+    return pkgWithClient?.accounts?.clients;
+  }, [isQuickCreationMode, selectedClientId, packages]);
+
+  // Use either the standard package client or the quick-mode client
+  //const displayClient = clientData || quickClientData;
+  const displayClient = useMemo(() => {
+    if (isQuickCreationMode) {
+      // Look through all packages to find the profile info for the selected client
+      const pkgWithClient = packages.find(p => p.accounts?.clients?.id === selectedClientId);
+      return pkgWithClient?.accounts?.clients;
+    }
+    return selectedPkg?.accounts?.clients;
+  }, [isQuickCreationMode, selectedPkg, packages, selectedClientId]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -120,11 +146,6 @@ export function AddLessonModal({
 
       if (editLesson) {
 
-        // const dateObj = parseISO(editLesson.session_date)
-        // setLessonDate(format(dateObj, "yyyy-MM-dd"))
-        // setSelectedHour(format(dateObj, "HH"))
-        // setSelectedMinute(format(dateObj, "mm"))
-
         // Convert the UTC database string specifically to Kyiv time for the form
         const dateObj = toZonedTime(new Date(editLesson.session_date), TZ)
         // Now these will always show the "Kyiv Clock" time
@@ -151,6 +172,11 @@ export function AddLessonModal({
         setCustomAddress("")
         setSelectedPackageId("")
         setSelectedInstructorId(instructorId || "")
+
+        setIsQuickCreationMode(false)
+        setSelectedClientId(null)
+        setSelectedQuickCourseId(null)
+        setQuickPrice(undefined)
       }
     }
   }, [isOpen, editLesson, instructorId])
@@ -167,49 +193,158 @@ export function AddLessonModal({
     return locations.filter(loc => loc.type === courseType || loc.type === 'General')
   }, [locations, selectedPkg])
 
+
+
+
+  // Handler for the Quick Mode (Zap button in your component)
+  const handleSelectQuickMode = (clientId: string | null, courseId: string, price?: number) => {
+    if (!clientId) return;
+    setSelectedClientId(clientId);
+    setSelectedQuickCourseId(courseId);
+    setQuickPrice(price);
+    setSelectedPackageId(""); // Clear package since we are creating a new one
+    setIsQuickCreationMode(true);
+  };
+
+  // Handler for changing client (passed as prop)
+  const handleSetSelectedClient = (id: string) => {
+    setSelectedClientId(id || null);
+    // Optional: clear quick mode if switching clients manually
+    if (!id) setIsQuickCreationMode(false);
+  };
+
+  /**
+   * Handles the selection from StudentSelector.
+   * If pkgId is provided, it's a standard lesson for an existing package.
+   * If pkgId is empty but clientId/courseId exist, it triggers Quick Creation Mode.
+   */
+  // const handleStudentSelect = (
+  //   pkgId: string, 
+  //   clientId?: string, 
+  //   courseId?: string
+  // ) => {
+  //   if (pkgId) {
+  //     // STANDARD MODE
+  //     setSelectedPackageId(pkgId);
+  //     setIsQuickCreationMode(false);
+  //     setSelectedClientId(null);
+  //     setSelectedQuickCourseId(null);
+  //   } else if (clientId && courseId) {
+  //     // QUICK CREATION MODE
+  //     setSelectedPackageId("");
+  //     setIsQuickCreationMode(true);
+  //     setSelectedClientId(clientId);
+  //     setSelectedQuickCourseId(courseId);
+  //   }
+  // };
+
+
+  // // Get a unique list of students from the packages
+  // const uniqueStudents = useMemo(() => {
+  //   const map = new Map();
+  //   packages.forEach(p => {
+  //     const client = p.accounts?.clients;
+  //     if (client && !map.has(client.id)) map.set(client.id, client);
+  //   });
+  //   return Array.from(map.values());
+  // }, [packages]);
+
+  // // Handle the logic when the second dropdown changes
+  // const handlePackageChange = (val: string) => {
+  //   if (val.startsWith("quick_")) {
+  //     const courseId = val.replace("quick_", "");
+  //     setIsQuickCreationMode(true);
+  //     setSelectedPackageId("");
+  //     setSelectedQuickCourseId(courseId);
+  //   } else {
+  //     setIsQuickCreationMode(false);
+  //     setSelectedPackageId(val);
+  //     setSelectedQuickCourseId(null);
+  //   }
+  // };
+
+
+    
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedPackageId) return toast.error(t("selectStudentError"))
-    if (!selectedInstructorId) return toast.error("Оберіть інструктора")
+    e.preventDefault();
+    
+    if (!selectedInstructorId) return toast.error("Оберіть інструктора");
+    
+    const isReady = selectedPackageId || (isQuickCreationMode && selectedClientId && selectedQuickCourseId);
+  
+    if (!isReady) return toast.error(t("selectStudentError"));
 
-    setLoading(true)
+    setLoading(true);
+  
+    const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`;
+    const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const isCustom = locationId === "custom";
+  
+    try {
+      let error;
+  
+      if (!selectedPackageId && isQuickCreationMode) {
+        
+        // 1. Find the course object to get the original base_price
+        // We assume StudentSelectorPlus might be passing the course data or you fetch it
+        // For this example, we calculate it based on the current quickPrice vs course base_price
+        const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses 
+        || { base_price: 999999 }; // Fallback
+        // 2. Logic: If the price in state is less than the official base_price, it's a discount
+        const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
 
-    // 1. Construct a clean string from your state inputs
-    const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`
-    // 2. Explicitly tell the system: "This string represents Kyiv time"
-    // This creates the correct UTC string with the offset (e.g., +03:00)
-    const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX")
-
-    // const [year, month, day] = lessonDate.split('-').map(Number)
-    // const finalDate = new Date(year, month - 1, day, parseInt(selectedHour), parseInt(selectedMinute))
-
-    const isCustom = locationId === "custom"
-
-    const payload = {
-      course_package_id: selectedPackageId,
-      instructor_id: selectedInstructorId,
-      duration: parseFloat(duration),
-      // session_date: finalDate.toISOString(),
-      session_date, // Send the zoned UTC string
-      location_id: isCustom ? null : locationId,
-      custom_location_address: isCustom ? customAddress : null,
-      summary,
-      status,
-      created_by_profile_id: profile?.id
+        // 🚀 SILENT TRANSACTIONAL CREATION
+        const { data, error: rpcError } = await supabase.rpc('fn_quick_lesson_creation', {
+          p_client_id: selectedClientId,
+          p_course_id: selectedQuickCourseId, 
+          p_instructor_id: selectedInstructorId,
+          p_session_date: session_date,
+          p_duration: parseFloat(duration),
+          p_location_id: isCustom ? null : locationId,
+          p_custom_address: isCustom ? customAddress : null,
+          p_summary: summary,
+          p_created_by: profile?.id,
+          p_status: status,
+          p_price: quickPrice,
+          p_is_discounted: isDiscounted
+        });
+        error = rpcError;
+      } else {
+        // 📝 STANDARD LOGGING / UPDATE
+        const payload = {
+          course_package_id: selectedPackageId,
+          instructor_id: selectedInstructorId,
+          duration: parseFloat(duration),
+          session_date,
+          location_id: isCustom ? null : locationId,
+          custom_location_address: isCustom ? customAddress : null,
+          summary,
+          status,
+          created_by_profile_id: profile?.id
+        };
+  
+        const result = editLesson 
+          ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
+          : await supabase.from('lessons').insert([payload]);
+        error = result.error;
+      }
+  
+      if (!error) {
+        toast.success(editLesson ? t("lessonUpdated") : t("lessonLogged"));
+        onSuccess(); 
+        onClose();
+      } else {
+        toast.error(error.message);
+      }
+    } catch (err) {
+      toast.error("Unexpected error occurred");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const { error } = editLesson 
-      ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
-      : await supabase.from('lessons').insert([payload])
 
-    if (!error) {
-      toast.success(editLesson ? t("lessonUpdated") : t("lessonLogged"))
-      onSuccess(); onClose()
-    } else {
-      toast.error(error.message)
-    }
-    setLoading(false)
-  }
 
   const handleDelete = async () => {
     if (!confirm(t("deleteConfirm"))) return
@@ -268,24 +403,31 @@ export function AddLessonModal({
           </div>
 
 
-          {/* ИСПОЛЬЗОВАНИЕ НОВОГО КОМПОНЕНТА */}
-          <StudentSelector 
+          <StudentSelectorPlus 
             packages={packages}
             selectedPackageId={selectedPackageId}
-            onSelect={setSelectedPackageId}
-            currentInstructorId={instructorId}
+            selectedClientId={selectedClientId}
+            setSelectedClientId={handleSetSelectedClient}
+            setSelectedPackageId={(id) => {
+              setSelectedPackageId(id);
+              setIsQuickCreationMode(false); // Disable quick mode if a standard package is picked
+            }}
+            onSelectQuickMode={handleSelectQuickMode}
+            currentInstructorId={selectedInstructorId} // Use the instructor currently selected in the modal
           />
 
-          {clientData && (
+
+
+          {displayClient && (
             <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
-                    {clientData.avatar_url ? (
+                    {displayClient.avatar_url ? (
                       <img 
-                        src={clientData.avatar_url.startsWith('http') 
-                          ? clientData.avatar_url 
-                          : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${clientData.avatar_url}`} 
+                        src={displayClient.avatar_url.startsWith('http') 
+                          ? displayClient.avatar_url 
+                          : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${displayClient.avatar_url}`} 
                         className="w-full h-full object-cover" 
                         alt=""
                       />
@@ -294,15 +436,27 @@ export function AddLessonModal({
                     )}
                   </div>
                   <div className="leading-tight">
-                    <h3 className="text-sm font-black text-white uppercase italic">{clientData.name} {clientData.last_name}</h3>
-                    <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
-                       <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
-                    </div>
+                    <h3 className="text-sm font-black text-white uppercase italic">
+                      {displayClient.name} {displayClient.last_name}
+                    </h3>
+                    
+                    {/* Only show hours if we have a selected package, not in quick mode */}
+                    {!isQuickCreationMode && selectedPkg && (
+                      <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
+                        <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
+                      </div>
+                    )}
+                    
+                    {isQuickCreationMode && (
+                      <div className="text-[10px] text-amber-500 font-black uppercase italic">
+                        Новий пакет
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button 
                   type="button" 
-                  onClick={() => onOpenDossier(clientData)} 
+                  onClick={() => onOpenDossier(displayClient)} 
                   className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
                 >
                   <Contact2 size={18} />

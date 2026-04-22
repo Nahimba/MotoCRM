@@ -63,8 +63,6 @@ export default function SchedulePage() {
   const [editingLesson, setEditingLesson] = useState<any | null>(null)
   const [selectedClient, setSelectedClient] = useState<any | null>(null)
 
-  const abortControllerRef = useRef<AbortController | null>(null)
-
 
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
@@ -379,6 +377,18 @@ export default function SchedulePage() {
   const isTeamView = viewMode === 'day' && showAllInstructors;
   const gridMinWidth = isTeamView ? `${Math.max(1, instructors.length) * 200}px` : (viewMode === 'day' ? '100%' : '1200px');
   const gridColumns = isTeamView ? Math.max(1, instructors.length) : (viewMode === 'day' ? 1 : 7);
+
+
+  // BLOCK RENDERING UNTIL MOUNTED
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="animate-pulse text-zinc-700 font-black uppercase italic tracking-tighter">
+          Оновлення даних...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
