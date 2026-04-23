@@ -37,7 +37,7 @@ export function StudentSelectorPlus({
   const [courses, setCourses] = useState<any[]>([])
   const [selectedQuickCourse, setSelectedQuickCourse] = useState<any>(null)
   const [isCustomPrice, setIsCustomPrice] = useState(false)
-  const [price, setPrice] = useState<number>(0)
+  const [price, setPrice] = useState<number | string>(0)
 
   const studentRef = useRef<HTMLDivElement>(null)
   const packageRef = useRef<HTMLDivElement>(null)
@@ -101,7 +101,9 @@ export function StudentSelectorPlus({
   // Sync price with parent whenever it changes
   useEffect(() => {
     if (isQuickMode && selectedQuickCourse && selectedClientId) {
-      onSelectQuickMode(selectedClientId, selectedQuickCourse.id, price);
+      // Fallback to 0 if price is currently an empty string
+      const finalPrice = price === "" ? 0 : Number(price);
+      onSelectQuickMode(selectedClientId, selectedQuickCourse.id, finalPrice);
     }
   }, [price, isQuickMode]);
 
@@ -297,7 +299,11 @@ export function StudentSelectorPlus({
                   type="number"
                   disabled={!isCustomPrice}
                   value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // If input is empty, set to empty string so user can type. Otherwise, convert to number.
+                    setPrice(val === "" ? "" : Number(val));
+                  }}
                   className={`w-full bg-white/5 border rounded-xl py-2 pl-9 pr-4 text-xs font-black outline-none transition-all ${
                     isCustomPrice ? 'border-primary ring-2 ring-primary/10 text-white' : 'border-white/5 text-slate-500 opacity-50'
                   }`}

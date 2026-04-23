@@ -447,11 +447,11 @@ export function AddLessonModal({
                       </div>
                     )}
                     
-                    {isQuickCreationMode && (
+                    {/* {isQuickCreationMode && (
                       <div className="text-[10px] text-amber-500 font-black uppercase italic">
                         Новий пакет
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
                 <button 
