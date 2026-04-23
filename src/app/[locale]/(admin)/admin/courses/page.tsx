@@ -39,6 +39,7 @@ export default function CoursesPage() {
       .select('*')
       .eq('is_active', view === 'active')
       .order('type')
+      .order('base_price', { ascending: false })
     
     if (error) toast.error(error.message)
     if (data) setCourses(data)
