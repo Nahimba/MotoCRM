@@ -17,6 +17,8 @@ interface Course {
   base_price: number;
   discounted_price: number | null;
   is_active: boolean;
+  allow_quick_creation: boolean;
+  price_type: 'hour' | 'package';
 }
 
 export default function CoursesPage() {
@@ -84,6 +86,7 @@ export default function CoursesPage() {
     const formData = new FormData(e.currentTarget)
     
     const dPrice = formData.get('discounted_price')
+
     
     const payload = {
       name: formData.get('name'),
@@ -91,7 +94,9 @@ export default function CoursesPage() {
       total_hours: Number(formData.get('hours')),
       base_price: Number(formData.get('price')),
       discounted_price: dPrice === "" ? null : Number(dPrice),
-      is_active: true
+      is_active: true,
+      allow_quick_creation: formData.get('allow_quick_creation') === 'on',
+      price_type: formData.get('price_type')
     }
 
     try {
@@ -314,6 +319,48 @@ export default function CoursesPage() {
                     placeholder={t("modal.fields.optional")}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">{t("modal.fields.priceType")}</label>
+                <div className="flex bg-white/5 p-1 rounded-2xl mt-1 border border-white/10">
+                  <label className="flex-1">
+                    <input 
+                      type="radio" name="price_type" value="hour" className="peer hidden" 
+                      defaultChecked={courses.find(c => c.id === editingId)?.price_type === 'hour'} 
+                    />
+                    <div className="text-center py-2 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all peer-checked:bg-white/10 peer-checked:text-primary text-slate-500">
+                      {t("modal.fields.perHour")}
+                    </div>
+                  </label>
+                  <label className="flex-1">
+                    <input 
+                      type="radio" name="price_type" value="package" className="peer hidden" 
+                      defaultChecked={courses.find(c => c.id === editingId)?.price_type !== 'hour'} 
+                    />
+                    <div className="text-center py-2 rounded-xl text-[10px] font-black uppercase cursor-pointer transition-all peer-checked:bg-white/10 peer-checked:text-primary text-slate-500">
+                      {t("modal.fields.perPackage")}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 px-1 py-2">
+                <div className="relative flex items-center h-5">
+                  <input
+                    id="allow_quick_creation"
+                    name="allow_quick_creation"
+                    type="checkbox"
+                    defaultChecked={courses.find(c => c.id === editingId)?.allow_quick_creation}
+                    className="w-5 h-5 rounded-lg bg-white/5 border border-white/10 checked:bg-primary checked:border-transparent transition-all cursor-pointer appearance-none"
+                  />
+                  <div className="absolute pointer-events-none opacity-0 check-icon text-black left-1">
+                    {/* Optional: Add a small checkmark icon here if your CSS supports it, or use standard browser checkbox */}
+                  </div>
+                </div>
+                <label htmlFor="allow_quick_creation" className="text-xs font-bold uppercase text-slate-300 cursor-pointer select-none">
+                  {t("modal.fields.allowQuickCreation")}
+                </label>
               </div>
 
               <div className="pt-4 pb-4 pb-safe-bottom-mobile">

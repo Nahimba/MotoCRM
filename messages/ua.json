@@ -194,7 +194,11 @@
           "hours": "Всього годин",
           "price": "Базова ціна (грн)",
           "promoPrice": "Акційна ціна (грн)",
-          "optional": "Опціонально"
+          "optional": "Опціонально",
+          "allowQuickCreation": "Швидке додаваня(з Уроком)",
+          "perHour": "За Годину",
+          "perPackage": "За Курс",
+          "priceType": "Тип Ціни"
         }
       },
       "notifications": {
