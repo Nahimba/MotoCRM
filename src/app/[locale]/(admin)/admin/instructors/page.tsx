@@ -204,7 +204,7 @@ export default function HQStaffPage() {
           .insert([{ 
             profile_id: newProfileId, 
             is_active: true,
-            specialization: 'Both' 
+            specializations: ['Moto', 'Auto']
           }]);
         if (iErr) throw iErr;
 

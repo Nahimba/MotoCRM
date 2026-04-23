@@ -50,7 +50,7 @@ export default function ProfilePage() {
     social_link: "",
     avatar_url: "", 
     gear_type: "Manual",
-    specialization: "",
+    // specialization: "",
     default_location_id: ""
   })
 
@@ -218,7 +218,7 @@ export default function ProfilePage() {
         social_link: profile.social_link || "",
         avatar_url: profile?.avatar_url || "", 
         gear_type: "Manual",
-        specialization: "",
+        // specialization: "",
         default_location_id: ""
       }
 
@@ -239,7 +239,7 @@ export default function ProfilePage() {
         if (data) {
           initialData = { 
             ...initialData, 
-            specialization: data.specialization || "",
+            // specialization: data.specialization || "",
             default_location_id: data.default_location_id || ""
           }
         }
@@ -278,7 +278,7 @@ export default function ProfilePage() {
       else if (role === 'instructor' || role === 'admin') {
         const { error: iErr } = await supabase.from('instructors').update({
 
-          specialization: formData.specialization,
+          // specialization: formData.specialization,
           default_location_id: formData.default_location_id || null
 
         }).eq('profile_id', profile.id)
@@ -516,7 +516,7 @@ export default function ProfilePage() {
               </>
             ) : (
               <>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("specialization")}</label>
                   <input 
                     value={formData.specialization || ""}
@@ -524,7 +524,7 @@ export default function ProfilePage() {
                     placeholder={t("specialization_placeholder")}
                     className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-5 py-4 text-white focus:border-primary outline-none font-bold"
                   />
-                </div>
+                </div> */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-slate-500 ml-3">{t("primary_location")}</label>
                   <div className="relative">
