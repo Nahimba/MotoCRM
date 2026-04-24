@@ -200,11 +200,23 @@ export function StudentSelectorPlus({
         {/* Student Dropdown */}
         <div className="relative" ref={studentRef}>
           <label className="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1.5">Учень</label>
-          <div 
+          {/* <div 
             onClick={() => !isEditMode && setIsStudentOpen(!isStudentOpen)}
             className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between transition-all ${
               isEditMode ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:bg-white/10'
             } ${isStudentOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10'}`}
+          >
+            <span className={`text-[13px] font-black uppercase italic ${selectedStudent ? 'text-white' : 'text-slate-500'}`}>
+              {selectedStudent ? `${selectedStudent.name} ${selectedStudent.last_name}` : "Оберіть учня..."}
+            </span>
+            <ChevronDown size={16} className={`text-slate-500 transition-transform ${isStudentOpen ? 'rotate-180' : ''}`} />
+          </div> */}
+
+          <div 
+            onClick={() => setIsStudentOpen(!isStudentOpen)}
+            className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all ${
+              isStudentOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10 hover:bg-white/10'
+            }`}
           >
             <span className={`text-[13px] font-black uppercase italic ${selectedStudent ? 'text-white' : 'text-slate-500'}`}>
               {selectedStudent ? `${selectedStudent.name} ${selectedStudent.last_name}` : "Оберіть учня..."}
@@ -252,10 +264,25 @@ export function StudentSelectorPlus({
         {/* Package/Course Dropdown */}
         <div className="relative" ref={packageRef}>
           <label className="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1.5">Курс / Пакет</label>
-          <div 
+          {/* <div 
             onClick={() => selectedClientId && !isEditMode && setIsPackageOpen(!isPackageOpen)}
             className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between transition-all ${
               (!selectedClientId || isEditMode) ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/10'
+            } ${isPackageOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10'}`}
+          >
+            <span className={`text-[13px] font-black uppercase italic ${selectedPackageId || isQuickMode ? 'text-white' : 'text-slate-500'}`}>
+              {isQuickMode ? `⚡ ${selectedQuickCourse?.name}` : selectedPkg ? `${selectedPkg.courses?.name}` : "Оберіть курс..."}
+            </span>
+            <div className="flex items-center gap-2">
+              {selectedPkg && <span className="text-[10px] font-black text-primary italic bg-primary/10 px-2 py-0.5 rounded-lg">{selectedPkg.remaining}г</span>}
+              <ChevronDown size={16} className="text-slate-500" />
+            </div>
+          </div> */}
+
+          <div 
+            onClick={() => selectedClientId && setIsPackageOpen(!isPackageOpen)}
+            className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between transition-all ${
+              !selectedClientId ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/10'
             } ${isPackageOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10'}`}
           >
             <span className={`text-[13px] font-black uppercase italic ${selectedPackageId || isQuickMode ? 'text-white' : 'text-slate-500'}`}>
