@@ -483,11 +483,7 @@ const handleCourseSelect = (course: any) => {
         onClick={() => {
           const newMode = !isCustomPrice;
           setIsCustomPrice(newMode);
-          // RESET LOGIC: Revert to the course's default unit price
-          if (!newMode) {
-            // setPrice(selectedQuickCourse.discounted_price || selectedQuickCourse.base_price);
-            if (!newMode) setPrice(defaultUnitPrice); // Reset to unit price
-          }
+          if (!newMode) setPrice(defaultUnitPrice);
         }}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all duration-300 ${
           isCustomPrice 
@@ -500,8 +496,37 @@ const handleCourseSelect = (course: any) => {
       </button>
     </div>
 
+    {/* REFERENCE PRICES ROW: Shows original database values with conditional suffixes */}
+    <div className="flex gap-4 px-1">
+      <div className="flex flex-col">
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Базова ціна</span>
+        <div className="flex items-center gap-1">
+          <span className={`text-[10px] font-bold ${selectedQuickCourse.discounted_price ? 'text-slate-300 decoration-slate-600' : 'text-slate-300'}`}>
+            {selectedQuickCourse.base_price} ₴
+          </span>
+          <span className="text-[8px] font-medium text-slate-600 italic">
+            {selectedQuickCourse.price_type === 'hour' ? '/год' : '/пакет'}
+          </span>
+        </div>
+      </div>
+
+      {selectedQuickCourse.discounted_price && (
+        <div className="flex flex-col">
+          <span className="text-[8px] font-black text-primary uppercase tracking-tighter">Акційна ціна</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-bold text-white">
+              {selectedQuickCourse.discounted_price} ₴
+            </span>
+            <span className="text-[8px] font-medium text-slate-500 italic">
+              {selectedQuickCourse.price_type === 'hour' ? '/год' : '/пакет'}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+
     <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
-      {/* 1. INPUT SIDE: User edits the Hourly Rate OR the Package Price */}
+      {/* 1. INPUT SIDE */}
       <div className="space-y-1.5">
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
           <div className="w-1 h-1 bg-primary rounded-full" /> 
@@ -511,7 +536,6 @@ const handleCourseSelect = (course: any) => {
           <input 
             type="number"
             disabled={!isCustomPrice}
-            // 'price' represents the unit cost
             value={price}
             onChange={(e) => {
               const val = e.target.value;
@@ -527,13 +551,12 @@ const handleCourseSelect = (course: any) => {
         </div>
       </div>
       
-      {/* 2. DISPLAY SIDE: Shows the final resulting Total */}
+      {/* 2. DISPLAY SIDE */}
       <div className="flex flex-col items-end justify-center">
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Підсумок до сплати</label>
         <div className="flex flex-col items-end">
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-black text-white italic leading-none">
-              {/* If hour: unit * duration. If package: just unit. */}
               {selectedQuickCourse.price_type === 'hour' 
                 ? (Number(price || 0) * Number(duration || 0)).toFixed(0) 
                 : price}
@@ -544,7 +567,6 @@ const handleCourseSelect = (course: any) => {
           <div className="flex items-center gap-2 mt-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
             {selectedQuickCourse.price_type === 'hour' ? (
               <span className="text-[9px] font-black text-slate-400 tracking-tight">
-                {/* Visual feedback of the calculation */}
                 {price || 0} ₴ × {Number(duration)} год
               </span>
             ) : (
@@ -558,6 +580,8 @@ const handleCourseSelect = (course: any) => {
     </div>
   </div>
 )}
+
+
     </div>
   )
 }
