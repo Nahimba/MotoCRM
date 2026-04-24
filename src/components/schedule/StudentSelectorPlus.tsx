@@ -480,28 +480,25 @@ export function StudentSelectorPlus({
             {/* 2. DISPLAY SIDE: Shows the Final Total to be paid */}
             <div className="flex flex-col items-end justify-center">
               <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Підсумок до сплати</label>
-              <div className="flex flex-col items-end">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-black text-white italic leading-none">
-                    {/* If hour: Rate * Duration | If package: Rate only */}
-                    {selectedQuickCourse.price_type === 'hour' 
-                      ? (Number(price || 0) * duration).toFixed(0) 
-                      : price}
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-black text-white italic leading-none">
+                  {selectedQuickCourse.price_type === 'hour' 
+                    ? (Number(price || 0) * Number(duration || 0)).toFixed(0) 
+                    : price}
+                </span>
+                <span className="text-[10px] font-black text-slate-500 uppercase italic">грн</span>
+              </div>
+
+              <div className="flex items-center gap-2 mt-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
+                {selectedQuickCourse.price_type === 'hour' ? (
+                  <span className="text-[9px] font-black text-slate-400 tracking-tight">
+                    {price} ₴ × {Number(duration)} год
                   </span>
-                  <span className="text-[10px] font-black text-slate-500 uppercase italic">грн</span>
-                </div>
-                
-                <div className="flex items-center gap-2 mt-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
-                  {selectedQuickCourse.price_type === 'hour' ? (
-                    <span className="text-[9px] font-black text-slate-400 tracking-tight">
-                      {price} ₴ × {duration} год
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-black text-slate-400 tracking-tight uppercase">
-                      Фіксована ціна
-                    </span>
-                  )}
-                </div>
+                ) : (
+                  <span className="text-[9px] font-black text-slate-400 tracking-tight uppercase">
+                    Фіксована ціна
+                  </span>
+                )}
               </div>
             </div>
           </div>
