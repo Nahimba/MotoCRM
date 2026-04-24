@@ -50,18 +50,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     if (!error) setDocCount(count || 0);
   };
 
-  // Function to refresh client data after a new package is added
+  // // Function to refresh client data after a new package is added
+  // const refreshClientData = async () => {
+  //   setLoading(true)
+  //   // Re-run your existing fetch logic or move it to a named function
+  //   // For now, we can just trigger a router refresh or re-fetch manually
+  //   router.refresh() 
+  //   // Note: Since you use local state 'setClient', it's better to 
+  //   // wrap your existing useEffect logic into a function called 'loadClientData' 
+  //   // and call it here.
+  // }
+
   const refreshClientData = async () => {
-    setLoading(true)
-    // Re-run your existing fetch logic or move it to a named function
-    // For now, we can just trigger a router refresh or re-fetch manually
-    router.refresh() 
-    // Note: Since you use local state 'setClient', it's better to 
-    // wrap your existing useEffect logic into a function called 'loadClientData' 
-    // and call it here.
+    await loadClientData();
+    await refreshData(); // Updates doc count too
   }
-
-
 
   const [isLinking, setIsLinking] = useState(false);
 
@@ -255,7 +258,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           payments (*),
           course_packages (
             *,
-            courses (name),
+            courses (name, allow_quick_creation),
             lessons (duration, status, is_counted)
           )
         )
@@ -586,7 +589,19 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                 .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
               
               return (
-                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-5 sm:p-6 relative overflow-hidden group">
+                <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-6 sm:p-6 relative overflow-hidden group">
+                  
+                  {/* DATE TAG - TOP RIGHT */}
+                  <div className="absolute top-0 right-6 sm:top-0 sm:right-8">
+                    <span className="text-[12px] font-black text-slate-600 uppercase tracking-widest tabular-nums">
+                      {pkg.created_at ? new Date(pkg.created_at).toLocaleDateString('uk-UA', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit'
+                      }) : ''}
+                    </span>
+                  </div>
+
                   <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-4 min-w-[140px]">
                       {/* <div className="p-3 bg-white/5 rounded-xl text-slate-500">
