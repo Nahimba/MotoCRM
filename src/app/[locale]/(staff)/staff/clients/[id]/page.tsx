@@ -258,7 +258,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           payments (*),
           course_packages (
             *,
-            courses (name, allow_quick_creation),
+            courses!inner (name, allow_quick_creation),
             lessons (duration, status, is_counted)
           )
         )
