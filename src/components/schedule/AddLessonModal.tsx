@@ -88,6 +88,20 @@ export function AddLessonModal({
     return selectedPkg?.accounts?.clients;
   }, [isQuickCreationMode, selectedPkg, packages, selectedClientId]);
 
+  // 2. Add this specific effect to sync edit data once packages are loaded
+  useEffect(() => {
+    if (editLesson && packages.length > 0) {
+      const pkgId = editLesson.course_package_id;
+      const currentPackage = packages.find(p => p.id === pkgId);
+      
+      if (currentPackage) {
+        setSelectedPackageId(pkgId);
+        // This is the missing link:
+        setSelectedClientId(currentPackage.accounts?.clients?.id || null);
+      }
+    }
+  }, [editLesson, packages]); // Re-runs as soon as packages array is filled
+
 
   useEffect(() => {
     if (isOpen) {
@@ -152,10 +166,17 @@ export function AddLessonModal({
         setLessonDate(format(dateObj, "yyyy-MM-dd"))
         setSelectedHour(format(dateObj, "HH"))
         setSelectedMinute(format(dateObj, "mm"))
-
+        
+        const pkgId = editLesson.course_package_id;
         setSelectedPackageId(editLesson.course_package_id)
         setSelectedInstructorId(editLesson.instructor_id)
-        setDuration(editLesson.duration?.toString() || "2")
+        setDuration(editLesson.duration?.toString() || "1")
+
+        // // FIX: Find the client ID associated with this package to "pre-fill" the student selector
+        // const currentPackage = packages.find(p => p.id === pkgId);
+        // if (currentPackage?.accounts?.clients?.id) {
+        //   setSelectedClientId(currentPackage.accounts.clients.id);
+        // }
         
         if (editLesson.location_id) {
           setLocationId(editLesson.location_id)
@@ -213,55 +234,7 @@ export function AddLessonModal({
     if (!id) setIsQuickCreationMode(false);
   };
 
-  /**
-   * Handles the selection from StudentSelector.
-   * If pkgId is provided, it's a standard lesson for an existing package.
-   * If pkgId is empty but clientId/courseId exist, it triggers Quick Creation Mode.
-   */
-  // const handleStudentSelect = (
-  //   pkgId: string, 
-  //   clientId?: string, 
-  //   courseId?: string
-  // ) => {
-  //   if (pkgId) {
-  //     // STANDARD MODE
-  //     setSelectedPackageId(pkgId);
-  //     setIsQuickCreationMode(false);
-  //     setSelectedClientId(null);
-  //     setSelectedQuickCourseId(null);
-  //   } else if (clientId && courseId) {
-  //     // QUICK CREATION MODE
-  //     setSelectedPackageId("");
-  //     setIsQuickCreationMode(true);
-  //     setSelectedClientId(clientId);
-  //     setSelectedQuickCourseId(courseId);
-  //   }
-  // };
 
-
-  // // Get a unique list of students from the packages
-  // const uniqueStudents = useMemo(() => {
-  //   const map = new Map();
-  //   packages.forEach(p => {
-  //     const client = p.accounts?.clients;
-  //     if (client && !map.has(client.id)) map.set(client.id, client);
-  //   });
-  //   return Array.from(map.values());
-  // }, [packages]);
-
-  // // Handle the logic when the second dropdown changes
-  // const handlePackageChange = (val: string) => {
-  //   if (val.startsWith("quick_")) {
-  //     const courseId = val.replace("quick_", "");
-  //     setIsQuickCreationMode(true);
-  //     setSelectedPackageId("");
-  //     setSelectedQuickCourseId(courseId);
-  //   } else {
-  //     setIsQuickCreationMode(false);
-  //     setSelectedPackageId(val);
-  //     setSelectedQuickCourseId(null);
-  //   }
-  // };
 
 
     
@@ -449,13 +422,13 @@ export function AddLessonModal({
                     
                     {/* {isQuickCreationMode && (
                       <div className="text-[10px] text-amber-500 font-black uppercase italic">
-                        Новий пакет
+                        Разове
                       </div>
                     )} */}
                   </div>
                 </div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => onOpenDossier(displayClient)} 
                   className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
                 >
@@ -587,6 +560,60 @@ export function AddLessonModal({
     </div>
   )
 }
+
+
+
+  /**
+   * Handles the selection from StudentSelector.
+   * If pkgId is provided, it's a standard lesson for an existing package.
+   * If pkgId is empty but clientId/courseId exist, it triggers Quick Creation Mode.
+   */
+  // const handleStudentSelect = (
+  //   pkgId: string, 
+  //   clientId?: string, 
+  //   courseId?: string
+  // ) => {
+  //   if (pkgId) {
+  //     // STANDARD MODE
+  //     setSelectedPackageId(pkgId);
+  //     setIsQuickCreationMode(false);
+  //     setSelectedClientId(null);
+  //     setSelectedQuickCourseId(null);
+  //   } else if (clientId && courseId) {
+  //     // QUICK CREATION MODE
+  //     setSelectedPackageId("");
+  //     setIsQuickCreationMode(true);
+  //     setSelectedClientId(clientId);
+  //     setSelectedQuickCourseId(courseId);
+  //   }
+  // };
+
+
+  // // Get a unique list of students from the packages
+  // const uniqueStudents = useMemo(() => {
+  //   const map = new Map();
+  //   packages.forEach(p => {
+  //     const client = p.accounts?.clients;
+  //     if (client && !map.has(client.id)) map.set(client.id, client);
+  //   });
+  //   return Array.from(map.values());
+  // }, [packages]);
+
+  // // Handle the logic when the second dropdown changes
+  // const handlePackageChange = (val: string) => {
+  //   if (val.startsWith("quick_")) {
+  //     const courseId = val.replace("quick_", "");
+  //     setIsQuickCreationMode(true);
+  //     setSelectedPackageId("");
+  //     setSelectedQuickCourseId(courseId);
+  //   } else {
+  //     setIsQuickCreationMode(false);
+  //     setSelectedPackageId(val);
+  //     setSelectedQuickCourseId(null);
+  //   }
+  // };
+
+
 
 
 

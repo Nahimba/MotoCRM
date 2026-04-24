@@ -88,10 +88,14 @@ export function StudentSelectorPlus({
     return packages.filter(p => p.accounts?.clients?.id === selectedClientId);
   }, [packages, selectedClientId]);
 
-  const selectedStudent = useMemo(() => 
-    selectedClientId ? uniqueStudents.find(s => s.id === selectedClientId) : null,
-    [uniqueStudents, selectedClientId]
-  );
+  // This should always look at the raw data, never the filtered 'uniqueStudents'
+  const selectedStudent = useMemo(() => {
+    if (!selectedClientId || packages.length === 0) return null;
+    
+    // Look through ALL packages, ignoring who the instructor is
+    const pkg = packages.find(p => p.accounts?.clients?.id === selectedClientId);
+    return pkg?.accounts?.clients || null;
+  }, [selectedClientId, packages]);
 
   const selectedPkg = useMemo(() => 
     packages.find(p => p.id === selectedPackageId),
@@ -105,7 +109,7 @@ export function StudentSelectorPlus({
       const finalPrice = price === "" ? 0 : Number(price);
       onSelectQuickMode(selectedClientId, selectedQuickCourse.id, finalPrice);
     }
-  }, [price, isQuickMode]);
+  }, [price, isQuickMode, selectedQuickCourse, selectedClientId]);
 
   return (
     <div className="space-y-4">

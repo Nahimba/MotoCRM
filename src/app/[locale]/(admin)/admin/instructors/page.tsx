@@ -25,6 +25,7 @@ interface StaffMember {
   instructors: {
     id: string;
     is_active: boolean;
+    specializations: string[];
   } | null;
 }
 

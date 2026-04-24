@@ -297,7 +297,7 @@
     "noPackages": "Активних пакетів не знайдено",
     "status": {
       "active": "Активний",
-      "completed": "Завершений",
+      "finished": "Завершений",
       "cancelled": "Скасований"
     },
     "filters": {

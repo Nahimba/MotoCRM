@@ -54,6 +54,7 @@ interface Props {
 
 export default function PackageFormModal({ isOpen, packageId, accountId, onClose, onSuccess }: Props) {
   const t = useTranslations("NewPackage")
+  const tSt = useTranslations("Packages.status")
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(false)
@@ -446,7 +447,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                             <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
                               {PACKAGE_STATUSES.map(s => (
                                 <SelectItem key={s} value={s} className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer">
-                                  {s.toUpperCase()}
+                                  {tSt(s)} 
                                 </SelectItem>
                               ))}
                             </SelectContent>
