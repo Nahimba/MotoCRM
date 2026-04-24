@@ -343,7 +343,7 @@ export function StudentSelectorPlus({
       </div>
 
       {/* Pricing Controls for Quick Mode */}
-      {isQuickMode && selectedQuickCourse && (
+      {/* {isQuickMode && selectedQuickCourse && (
         <div className="p-4 bg-[#1A1A1A] border border-amber-500/20 rounded-2xl space-y-4 animate-in zoom-in-95 duration-300">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
@@ -399,17 +399,115 @@ export function StudentSelectorPlus({
               <label className="text-[9px] font-bold text-slate-500 uppercase block mb-1.5">Авторахунок</label>
               <div className="flex flex-col items-end">
                 <span className="text-[12px] font-black text-white italic">{calculatedStandardPrice} грн</span>
-                {selectedQuickCourse.price_type === 'hour' && (
-                   <span className="text-[8px] font-bold text-slate-500 tracking-tighter">
-                     {selectedQuickCourse.discounted_price || selectedQuickCourse.base_price} × {duration}г
-                   </span>
-                )}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {selectedQuickCourse.discounted_price && (
+                    <span className="text-[8px] font-bold text-slate-600 line-through tracking-tighter">
+                      {selectedQuickCourse.base_price}
+                    </span>
+                  )}
+                  <span className="text-[8px] font-bold text-slate-500 tracking-tighter">
+                    {selectedQuickCourse.discounted_price || selectedQuickCourse.base_price} 
+                    {selectedQuickCourse.price_type === 'hour' ? ` × ${duration}г` : ' (фікс)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )} */}
+{/* Pricing Controls for Quick Mode */}
+{isQuickMode && selectedQuickCourse && (
+        <div className="p-4 bg-[#1A1A1A] border border-amber-500/20 rounded-2xl space-y-4 animate-in zoom-in-95 duration-300">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-black shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                <Zap size={14} fill="currentColor" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Разовий Урок</span>
+                <span className="text-[11px] text-white/60 font-bold italic">
+                   {selectedQuickCourse.name}
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const newMode = !isCustomPrice;
+                setIsCustomPrice(newMode);
+                // When turning off custom, reset price to the standard unit rate (discounted or base)
+                if (!newMode) setPrice(selectedQuickCourse.discounted_price || selectedQuickCourse.base_price);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all duration-300 ${
+                isCustomPrice 
+                  ? 'bg-primary text-black border-primary shadow-[0_0_20px_rgba(var(--primary),0.4)]' 
+                  : 'bg-white/5 text-slate-400 border-white/10 hover:border-white/20'
+              }`}
+            >
+              <Tag size={12} />
+              <span className="text-[9px] font-black uppercase italic">Корекція ціни</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+            {/* 1. INPUT SIDE: User enters either Hourly Rate OR Package Price */}
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <div className="w-1 h-1 bg-primary rounded-full" /> 
+                {selectedQuickCourse.price_type === 'hour' ? 'Ціна за годину' : 'Ціна за пакет'}
+              </label>
+              <div className="relative">
+                <input 
+                  type="number"
+                  disabled={!isCustomPrice}
+                  // Holds the unit price
+                  value={price}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPrice(val === "" ? "" : Number(val));
+                  }}
+                  className={`w-full bg-white/5 border rounded-xl py-3 px-4 text-sm font-black outline-none transition-all ${
+                    isCustomPrice 
+                      ? 'border-primary ring-4 ring-primary/10 text-white' 
+                      : 'border-white/5 text-slate-400 opacity-40 cursor-not-allowed'
+                  }`}
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 italic">₴</span>
+              </div>
+            </div>
+            
+            {/* 2. DISPLAY SIDE: Shows the Final Total to be paid */}
+            <div className="flex flex-col items-end justify-center">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Підсумок до сплати</label>
+              <div className="flex flex-col items-end">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-black text-white italic leading-none">
+                    {/* If hour: Rate * Duration | If package: Rate only */}
+                    {selectedQuickCourse.price_type === 'hour' 
+                      ? (Number(price || 0) * duration).toFixed(0) 
+                      : price}
+                  </span>
+                  <span className="text-[10px] font-black text-slate-500 uppercase italic">грн</span>
+                </div>
+                
+                <div className="flex items-center gap-2 mt-1 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5">
+                  {selectedQuickCourse.price_type === 'hour' ? (
+                    <span className="text-[9px] font-black text-slate-400 tracking-tight">
+                      {price} ₴ × {duration} год
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-black text-slate-400 tracking-tight uppercase">
+                      Фіксована ціна
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
-      
+
     </div>
   )
 }
