@@ -302,8 +302,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   
   const profile = client?.profiles
   const account = client?.accounts?.[0]
-  const packages = account?.course_packages || []
 
+  // const packages = account?.course_packages || []
+  // SORT and FILTER packages
+  const packages = (account?.course_packages || [])
+  .filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
+  .sort((a: any, b: any) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
   
   // Перевіряємо, чи користувач вже хоча б раз підтвердив пошту / залогінився
   const isConfirmed = profile?.is_confirmed || false;
