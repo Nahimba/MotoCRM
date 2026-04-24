@@ -535,19 +535,31 @@ const handleCourseSelect = (course: any) => {
         <div className="relative">
           <input 
             type="number"
+            min="0"
             disabled={!isCustomPrice}
             value={price}
             onChange={(e) => {
               const val = e.target.value;
-              setPrice(val === "" ? "" : Number(val));
+              // 1. Allow empty string so user can delete everything and start over
+              if (val === "") {
+                setPrice("");
+                return;
+              }
+              // 2. Convert to number and prevent negative values
+              const num = parseFloat(val);
+              if (num >= 0) {
+                setPrice(num);
+              }
             }}
-            className={`w-full bg-white/5 border rounded-xl py-3 px-4 text-sm font-black outline-none transition-all ${
+            className={`w-full bg-white/5 border rounded-xl py-3 px-4 text-sm font-black outline-none transition-all 
+              [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+              ${
               isCustomPrice 
                 ? 'border-primary ring-4 ring-primary/10 text-white' 
                 : 'border-white/5 text-slate-400 opacity-40 cursor-not-allowed'
             }`}
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-600 italic">₴</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] font-black text-slate-500 italic">₴</span>
         </div>
       </div>
       
