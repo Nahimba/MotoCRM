@@ -112,9 +112,10 @@ export function AddLessonModal({
 
           const { data: pkgData, error: pkgError } = await supabase
             .from('course_packages')
+            // courses price_type is "package"/"hour"
             .select(`
-              id, instructor_id, total_hours, status,
-              courses:course_id ( name, type ),
+              id, instructor_id, total_hours, status, contract_price,
+              courses:course_id!inner ( name, type, allow_quick_creation, price_type, base_price, discounted_price ),
               accounts:account_id (
                 clients:client_id ( 
                   id, notes,
@@ -124,6 +125,11 @@ export function AddLessonModal({
               lessons ( duration, status, is_counted )
             `)
             .eq('status', 'active')
+            // // 1. Only include packages where the course allow_quick_creation is FALSE
+            // .eq('courses.allow_quick_creation', false) 
+            // 2. Sort by creation date (newest first)
+            .order('created_at', { ascending: false });
+          
           
           if (pkgError) throw pkgError
 
@@ -387,6 +393,8 @@ export function AddLessonModal({
             }}
             onSelectQuickMode={handleSelectQuickMode}
             currentInstructorId={selectedInstructorId} // Use the instructor currently selected in the modal
+            duration = {duration}
+            isEditMode = {!!editLesson}
           />
 
 
