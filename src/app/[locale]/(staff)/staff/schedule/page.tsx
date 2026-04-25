@@ -719,8 +719,12 @@ export default function SchedulePage() {
 
 
       <AddLessonModal 
+        key={editingLesson?.id || 'new-lesson'}// 🚩 CRITICAL: fix for ui update. The Key Trick: When this ID changes, the entire modal REBOOTS
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingLesson(null); // 🚩 CRITICAL: Clear the lesson being edited
+        }}
         instructorId={targetInstructorId} 
         instructors= {instructors}
         initialDate={selectedDate} 

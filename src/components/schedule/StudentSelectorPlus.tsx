@@ -53,18 +53,21 @@ export function StudentSelectorPlus({
   const isInitialEditSetup = useRef(false);
 
   
-  // useEffect(() => {
-  //   if (!isOpen) {
-  //     isInitialEditSetup.current = false;
-  //   }
-  // }, [isOpen]);
-
   useEffect(() => {
     if (!isOpen) {
-      isInitialEditSetup.current = false;
-      // Optional: Reset local quick mode states when closing
+      // isInitialEditSetup.current = false;
+      // // Optional: Reset local quick mode states when closing
+      // setPrice(0);
+      // //setIsQuickMode(false);
+      // setSelectedQuickCourse(null);
+
+      // 🚩 Total Wipeout of the "Setup" flag
+      isInitialEditSetup.current = false; 
+      setPrice(0);
       setIsQuickMode(false);
       setSelectedQuickCourse(null);
+      setStudentSearch("");
+      setIsStudentOpen(false);
     }
   }, [isOpen]);
 
@@ -215,7 +218,7 @@ export function StudentSelectorPlus({
 
   useEffect(() => {
     // Only run this logic if we haven't done the initial setup yet
-    if (isEditMode && selectedPackageId && packages.length > 0 && !isInitialEditSetup.current) {
+    if (isOpen && isEditMode && selectedPackageId && packages.length > 0 && !isInitialEditSetup.current) {
       const currentPkg = packages.find(p => p.id === selectedPackageId);
       
       if (currentPkg?.courses?.allow_quick_creation) {
@@ -240,7 +243,7 @@ export function StudentSelectorPlus({
         isInitialEditSetup.current = true;
       }
     }
-  }, [isEditMode, selectedPackageId, packages, duration]);
+  }, [isOpen,isEditMode, selectedPackageId, packages, duration]);
 
 
 

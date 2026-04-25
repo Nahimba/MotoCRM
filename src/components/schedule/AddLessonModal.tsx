@@ -96,7 +96,6 @@ export function AddLessonModal({
       
       if (currentPackage) {
         setSelectedPackageId(pkgId);
-        // This is the missing link:
         setSelectedClientId(currentPackage.accounts?.clients?.id || null);
       }
     }
@@ -105,6 +104,17 @@ export function AddLessonModal({
 
   useEffect(() => {
     if (isOpen) {
+
+      // 🚩 1. RESET EVERYTHING TO PREVENT STALE UI
+      setPackages([]); // Clear packages so the "Sync edit data" effect waits for fresh data
+      setSelectedPackageId("");
+      setSelectedClientId(null);
+      setIsQuickCreationMode(false);
+      setQuickPrice(undefined);
+      setSummary("");
+      setCustomAddress("");
+      // ... reset any other local states like duration if needed
+      
       const fetchData = async () => {
         try {
           const { data: locData } = await supabase.from('locations').select('*').eq('is_active', true)
@@ -206,7 +216,7 @@ export function AddLessonModal({
         setQuickPrice(undefined)
       }
     }
-  }, [isOpen, editLesson, instructorId])
+  }, [isOpen, editLesson, editLesson?.id, instructorId])
 
   const displayAddress = useMemo(() => {
     if (locationId === "custom") return customAddress
@@ -324,32 +334,72 @@ export function AddLessonModal({
         };
 
 
-        if (editLesson) {
+        // if (editLesson) {
           
+        //   const currentPkg = packages.find(p => p.id === selectedPackageId);
+        //   const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
+          
+        //   // Use the price from StudentSelectorPlus (quickPrice) if available, 
+        //   // otherwise fallback to the current package price
+        //   const priceToSync = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+        
+        //   // We use the RPC if it's a "Quick Created" package OR if the duration changed
+        //   if (currentPkg?.courses?.allow_quick_creation || hasDurationChanged) {
+        //     const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
+        //       p_lesson_id: editLesson.id,
+        //       p_new_duration: parseFloat(duration),
+        //       p_new_price: priceToSync
+        //     });
+        //     error = syncError;
+        //   } else {
+        //     // Standard update for regular lessons
+        //     const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
+        //     error = result.error;
+        //   }
+        // } else {
+        //   const result = await supabase.from('lessons').insert([payload]);
+        //   error = result.error;
+        // }
+
+        if (editLesson) {
           const currentPkg = packages.find(p => p.id === selectedPackageId);
           const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
           
-          // Use the price from StudentSelectorPlus (quickPrice) if available, 
-          // otherwise fallback to the current package price
-          const priceToSync = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+          // 1. Determine if the price has actually changed from what is in the DB
+          const priceFromUI = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+          const hasPriceChanged = currentPkg && priceFromUI !== currentPkg.contract_price;
         
-          // We use the RPC if it's a "Quick Created" package OR if the duration changed
-          if (currentPkg?.courses?.allow_quick_creation || hasDurationChanged) {
+          // 2. If Price or Duration changed, we MUST use the RPC to update the Package table too
+          if (hasPriceChanged || hasDurationChanged) {
             const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
               p_lesson_id: editLesson.id,
               p_new_duration: parseFloat(duration),
-              p_new_price: priceToSync // Now correctly uses the state from the selector
+              p_new_price: priceFromUI
             });
-            error = syncError;
+            
+            // 3. Even after the RPC, we might want to update non-financial fields (summary, address, status)
+            // The RPC usually only handles duration/price sync.
+            const { error: lessonError } = await supabase
+              .from('lessons')
+              .update({
+                instructor_id: selectedInstructorId,
+                session_date,
+                location_id: isCustom ? null : locationId,
+                custom_location_address: isCustom ? customAddress : null,
+                summary,
+                status
+              })
+              .eq('id', editLesson.id);
+        
+            error = syncError || lessonError;
           } else {
-            // Standard update for regular lessons
+            // 4. No financial changes, just a standard lesson update
             const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
             error = result.error;
           }
-        } else {
-          const result = await supabase.from('lessons').insert([payload]);
-          error = result.error;
         }
+
+
       }
       //     const result = editLesson 
       //     ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
