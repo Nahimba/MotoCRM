@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
@@ -42,6 +42,7 @@ interface Course {
   base_price: number
   discounted_price: number | null
   total_hours: number
+  type: string
 }
 
 interface Props {
@@ -104,7 +105,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
         // Fetch all instructors for the dropdown
         const { data: allInst } = await supabase
           .from("instructors")
-          .select(`id, profiles (first_name, last_name)`)
+          .select(`id, specializations, profiles (first_name, last_name)`)
         if (allInst) setInstructors(allInst)
 
         // Find current logged-in instructor
@@ -120,14 +121,32 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
         }
 
         
-        const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
-        if (accData) {
-          const formatted = accData.map((acc: any) => ({
-            id: acc.id,
-            account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
-          }))
-          setAccounts(formatted.sort((a, b) => a.account_label.localeCompare(b.account_label)))
-        }
+        // const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
+        // if (accData) {
+        //   const formatted = accData.map((acc: any) => ({
+        //     id: acc.id,
+        //     account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
+        //   }))
+        //   setAccounts(formatted.sort((a, b) => a.account_label.localeCompare(b.account_label)))
+        // }
+
+        const { data: accData } = await supabase
+        .from("accounts")
+        .select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
+      
+      if (accData) {
+        const formatted = accData.map((acc: any) => ({
+          id: acc.id,
+          account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
+        }))
+      
+        // Use a Map to keep only one entry per unique name (account_label)
+        const uniqueAccounts = Array.from(
+          new Map(formatted.map(item => [item.account_label, item])).values()
+        )
+      
+        setAccounts(uniqueAccounts.sort((a, b) => a.account_label.localeCompare(b.account_label)))
+      }
 
         const { data: courData } = await supabase.from("courses").select("*").eq("is_active", true)
         if (courData) setCourses(courData as Course[])
@@ -250,6 +269,20 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
       setLoading(false)
     }
   }
+
+  const selectedInstructorId = form.watch("instructor_id")
+
+  const filteredCourses = useMemo(() => {
+    if (!selectedInstructorId) return []
+    
+    const selectedInstructor = instructors.find(ins => ins.id === selectedInstructorId)
+    if (!selectedInstructor || !selectedInstructor.specializations) return []
+
+    // Filters courses where course.type exists within the instructor's specialization array
+    return courses.filter(course => 
+      selectedInstructor.specializations.includes(course.type)
+    )
+  }, [selectedInstructorId, instructors, courses])
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
@@ -381,9 +414,20 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                               <SelectValue placeholder={t("selectCourse")} />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                          {/* <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
                             {courses.map(c => (
                               <SelectItem key={c.id} value={c.id} className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer">
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent> */}
+                          <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                            {filteredCourses.map((c) => (
+                              <SelectItem 
+                                key={c.id} 
+                                value={c.id} 
+                                className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer"
+                              >
                                 {c.name}
                               </SelectItem>
                             ))}
