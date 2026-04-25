@@ -31,8 +31,14 @@ interface StaffMember {
 
 export default function HQStaffPage() {
   const t = useTranslations("admin.staff");
-  
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+
+  // Define a grouped type for clarity
+  type GroupedStaff = {
+    admin: StaffMember[];
+    staff: StaffMember[];
+  };
+  //const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<GroupedStaff>({ admin: [], staff: [] });
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +50,8 @@ export default function HQStaffPage() {
 
   const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
 
+  
+
   async function fetchStaff() {
     setLoading(true);
     
@@ -53,8 +61,8 @@ export default function HQStaffPage() {
       .select(`
         id,
         auth_user_id,
-        first_name, 
-        last_name, 
+        first_name,
+        last_name,
         email, 
         last_synced_email,
         phone, 
@@ -63,32 +71,56 @@ export default function HQStaffPage() {
         instructors(id, is_active, specializations)
       `)
       .in('role', ['admin', 'instructor']) 
-      .order('created_at', { ascending: false });
+      .order('first_name', { ascending: true });
+      
   
     if (error) {
       toast.error(error.message);
-    } else {
-      // 2. Оскільки ми прибрали фільтр в самому SQL (.eq('instructors.is_active', ...)),
-      // ми маємо відфільтрувати архівних/активних локально або перевірити наявність об'єкта
-      const filteredData = (data as any[]).filter(profile => {
-        // Якщо це адмін і в нього немає запису в instructors — показуємо його як активного
-        if (!profile.instructors) return view === 'active'; 
+    // } else {
+    //   // 2. Оскільки ми прибрали фільтр в самому SQL (.eq('instructors.is_active', ...)),
+    //   // ми маємо відфільтрувати архівних/активних локально або перевірити наявність об'єкта
+    //   const filteredData = (data as any[]).filter(profile => {
+    //     // Якщо це адмін і в нього немає запису в instructors — показуємо його як активного
+    //     if (!profile.instructors) return view === 'active'; 
         
-        // Для інших перевіряємо статус
+    //     // Для інших перевіряємо статус
+    //     const isActive = Array.isArray(profile.instructors) 
+    //       ? profile.instructors[0]?.is_active 
+    //       : profile.instructors?.is_active;
+          
+    //     return view === 'active' ? isActive === true : isActive === false;
+    //   });
+  
+    //   const mappedData = filteredData.map(profile => ({
+    //     ...profile,
+    //     role: profile.role === 'instructor' ? 'staff' : profile.role,
+    //     instructors: Array.isArray(profile.instructors) ? profile.instructors[0] : profile.instructors
+    //   }));
+  
+    //   setStaff(mappedData);
+    // }
+    } else {
+      const filteredData = (data as any[]).filter(profile => {
+        if (!profile.instructors) return view === 'active'; 
         const isActive = Array.isArray(profile.instructors) 
           ? profile.instructors[0]?.is_active 
           : profile.instructors?.is_active;
-          
         return view === 'active' ? isActive === true : isActive === false;
       });
-  
-      const mappedData = filteredData.map(profile => ({
+
+      const mappedData: StaffMember[] = filteredData.map(profile => ({
         ...profile,
-        role: profile.role === 'instructor' ? 'staff' : profile.role,
+        role: profile.role === 'instructor' ? 'staff' : (profile.role as 'admin'),
         instructors: Array.isArray(profile.instructors) ? profile.instructors[0] : profile.instructors
       }));
-  
-      setStaff(mappedData);
+
+      // Group data by role
+      const grouped = mappedData.reduce((acc, member) => {
+        acc[member.role].push(member);
+        return acc;
+      }, { admin: [], staff: [] } as GroupedStaff);
+
+      setStaff(grouped);
     }
     setLoading(false);
   }
@@ -278,7 +310,7 @@ export default function HQStaffPage() {
       </div>
 
       {/* STAFF GRID */}
-      {loading ? (
+      {/* {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="animate-spin text-primary" size={40} />
           <p className="text-[10px] font-black uppercase text-slate-500">{t('loading')}</p>
@@ -334,8 +366,86 @@ export default function HQStaffPage() {
             </div>
           ))}
         </div>
-      )}
+      )} */}
 
+      {/* STAFF GRID */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Loader2 className="animate-spin text-primary" size={40} />
+          <p className="text-[10px] font-black uppercase text-slate-500">{t('loading')}</p>
+        </div>
+      ) : staff.admin.length === 0 && staff.staff.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 border border-dashed border-white/5 rounded-[3rem]">
+          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">{t('no_staff')}</p>
+        </div>
+      ) : (
+        <div className="space-y-12">
+          {(['admin', 'staff'] as const).map((roleKey) => {
+            const members = staff[roleKey];
+            if (members.length === 0) return null;
+
+            return (
+              <div key={roleKey} className="space-y-6">
+                {/* ROLE HEADER */}
+                <div className="flex items-center gap-4 px-2">
+                  <h2 className="text-[11px] font-black uppercase tracking-[0.3em] text-primary whitespace-nowrap">
+                    {t(`form.roles.${roleKey}`)} — {members.length}
+                  </h2>
+                  <div className="h-px w-full bg-white/5" />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {members.map((member) => (
+                    <div key={member.id} className={`group bg-[#111] border rounded-[2rem] md:rounded-[2.5rem] p-5 md:p-6 transition-all flex flex-col ${view === 'archived' ? 'opacity-50 grayscale border-white/5' : 'border-white/5 hover:border-primary/30'}`}>
+                      
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black text-xl md:text-2xl text-primary uppercase italic">
+                          {member.first_name?.[0]}{member.last_name?.[0]}
+                        </div>
+                        {view === 'active' && (
+                          <button onClick={() => openEdit(member)} className="p-3 bg-white/5 rounded-xl text-slate-500 hover:text-white transition-colors">
+                            <Settings size={18} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-1 mb-6">
+                        <h3 className="text-xl font-black uppercase italic text-white leading-tight">
+                          {member.first_name} <span className="text-primary">{member.last_name}</span>
+                        </h3>
+                        <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                          member.role === 'admin' 
+                            ? 'bg-primary/10 text-primary border-primary/20' 
+                            : 'bg-white/5 text-slate-400 border-white/5'
+                        }`}>
+                          {t(`form.roles.${member.role}`)}
+                        </span>
+                      </div>
+
+                      <div className="pt-6 border-t border-white/5 space-y-4 flex-1">
+                        <div className="flex items-center gap-3">
+                          <Mail size={14} className="text-slate-600" />
+                          <span className="text-[10px] font-bold text-slate-400 truncate uppercase">{member.email}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <PhoneIcon size={14} className="text-slate-600" />
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">
+                            {member.phone ? formatDisplayPhone(member.phone) : "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button onClick={() => toggleAccess(member)} className="mt-8 w-full py-4 text-[10px] font-black uppercase tracking-widest border border-white/5 rounded-xl hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-white">
+                        {view === 'active' ? <><Archive size={14} /> {t('actions.archive')}</> : <><RotateCcw size={14} /> {t('actions.restore')}</>}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* MODAL */}
       {showModal && (
@@ -444,10 +554,22 @@ export default function HQStaffPage() {
                       lastName={editingMember.last_name}
                       role={editingMember.role === 'staff' ? 'instructor' : 'admin'}
                       authUserId={(editingMember as any).auth_user_id} 
+                      // onStatusChange={(newAuthId) => {
+                      //   setStaff(prev => prev.map(s => 
+                      //     s.id === editingMember.id ? { ...s, auth_user_id: newAuthId } : s
+                      //   ));
+                      //   setEditingMember(prev => prev ? { ...prev, auth_user_id: newAuthId } : null);
+                      // }}
                       onStatusChange={(newAuthId) => {
-                        setStaff(prev => prev.map(s => 
-                          s.id === editingMember.id ? { ...s, auth_user_id: newAuthId } : s
-                        ));
+                        setStaff(prev => {
+                          const role = editingMember.role; // 'admin' or 'staff'
+                          return {
+                            ...prev,
+                            [role]: prev[role].map(s => 
+                              s.id === editingMember.id ? { ...s, auth_user_id: newAuthId } : s
+                            )
+                          };
+                        });
                         setEditingMember(prev => prev ? { ...prev, auth_user_id: newAuthId } : null);
                       }}
                     />
