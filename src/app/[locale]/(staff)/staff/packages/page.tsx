@@ -23,6 +23,7 @@ interface TrainingPackage {
   instructor_profile_id: string
   instructor_name: string
   created_at: string
+  allow_quick_creation?: boolean
 }
 
 export default function PackagesPage() {
@@ -33,7 +34,10 @@ export default function PackagesPage() {
   const [loading, setLoading] = useState(true)
   
   const [filterType, setFilterType] = useState<"all" | "mine">("mine")
+  
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active")
+  const [contractType, setContractType] = useState<"all" | "package" | "quick">("all")
+
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
@@ -60,13 +64,30 @@ export default function PackagesPage() {
     fetchPackages() 
   }, [user])
 
+  // const filtered = packages.filter(p => {
+  //   const searchStr = `${p.account_label} ${p.course_name || ''} ${p.instructor_name || ''}`.toLowerCase()
+  //   const matchesSearch = searchStr.includes(search.toLowerCase())
+  //   const matchesInstructor = filterType === "all" || p.instructor_profile_id === user?.id
+  //   const matchesStatus = statusFilter === "active" ? p.status === "active" : p.status !== "active"
+  //   return matchesSearch && matchesInstructor && matchesStatus
+  // })
   const filtered = packages.filter(p => {
     const searchStr = `${p.account_label} ${p.course_name || ''} ${p.instructor_name || ''}`.toLowerCase()
     const matchesSearch = searchStr.includes(search.toLowerCase())
     const matchesInstructor = filterType === "all" || p.instructor_profile_id === user?.id
+    
+    // Перевірка статусу (Активний/Архів)
     const matchesStatus = statusFilter === "active" ? p.status === "active" : p.status !== "active"
-    return matchesSearch && matchesInstructor && matchesStatus
+    
+    // Перевірка типу (Пакет/Разовий)
+    const matchesType = 
+      contractType === "all" ? true :
+      contractType === "quick" ? p.allow_quick_creation === true :
+      p.allow_quick_creation !== true; // Для "package"
+  
+    return matchesSearch && matchesInstructor && matchesStatus && matchesType
   })
+
 
   const handleCreateNew = () => {
     setSelectedPackageId(null)
@@ -101,9 +122,11 @@ export default function PackagesPage() {
         </button>
       </div>
 
+
       {/* COMPACT FILTER BAR */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-grow group">
+      <div className="flex flex-col gap-4">
+        {/* Пошук */}
+        <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-primary transition-colors" size={16} />
           <Input 
             placeholder={t("searchPlaceholder")} 
@@ -113,14 +136,17 @@ export default function PackagesPage() {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Фільтри: flex-wrap ensures they stack on small screens */}
+        <div className="flex flex-wrap items-center gap-3 md:gap-2">
+          
+          {/* Адмін-фільтр (Мій/Всі) */}
           {profile?.role === 'admin' && (
             <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
               {(['mine', 'all'] as const).map((type) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
-                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
+                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
                 >
                   {t(`filters.${type}`)}
                 </button>
@@ -128,22 +154,46 @@ export default function PackagesPage() {
             </div>
           )}
 
+          {/* ГРУПА 1: СТАТУС */}
           <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
             <button 
               onClick={() => setStatusFilter("active")} 
-              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
             >
-              {t("filters.active")}
+              Активні
             </button>
             <button 
               onClick={() => setStatusFilter("inactive")} 
-              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
             >
-              {t("filters.archived")}
+              Архів
+            </button>
+          </div>
+
+          {/* ГРУПА 2: ТИП — will wrap to next line on small screens automatically */}
+          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+            <button 
+              onClick={() => setContractType("all")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${contractType === "all" ? "bg-white/10 text-white" : "text-slate-500"}`}
+            >
+              Всі
+            </button>
+            <button 
+              onClick={() => setContractType("package")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${contractType === "package" ? "bg-primary/10 text-primary" : "text-slate-500"}`}
+            >
+              Пакети
+            </button>
+            <button 
+              onClick={() => setContractType("quick")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${contractType === "quick" ? "bg-primary/20 text-primary border border-primary/20" : "text-slate-500"}`}
+            >
+              Разові
             </button>
           </div>
         </div>
       </div>
+
 
       {/* LIST SECTION */}
       <div className="space-y-2">
@@ -158,10 +208,21 @@ export default function PackagesPage() {
             const isFullyPaid = pkg.total_paid >= pkg.contract_price;
 
             return (
+              // <div 
+              //   key={pkg.id} 
+              //   onClick={() => handleEdit(pkg.id)}
+              //   className="bg-[#0A0A0A] border border-white/5 rounded-xl p-3 md:px-8 md:py-5 hover:bg-white/[0.02] transition-all cursor-pointer group"
+              // >
               <div 
                 key={pkg.id} 
                 onClick={() => handleEdit(pkg.id)}
-                className="bg-[#0A0A0A] border border-white/5 rounded-xl p-3 md:px-8 md:py-5 hover:bg-white/[0.02] transition-all cursor-pointer group"
+                className={`
+                  bg-[#0A0A0A] border rounded-xl p-3 md:px-8 md:py-5 transition-all cursor-pointer group
+                  ${pkg.allow_quick_creation 
+                    ? 'border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)]' 
+                    : 'border-white/5'
+                  }
+                `}
               >
                 <div className="flex items-center justify-between gap-4">
                   
