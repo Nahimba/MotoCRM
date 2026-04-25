@@ -36,7 +36,7 @@ export default function PackagesPage() {
   const [filterType, setFilterType] = useState<"all" | "mine">("mine")
   
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active")
-  const [contractType, setContractType] = useState<"all" | "package" | "quick">("all")
+  const [contractType, setContractType] = useState<"all" | "package" | "quick">("package")
 
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -122,6 +122,50 @@ export default function PackagesPage() {
         </button>
       </div>
 
+      {/* COMPACT FILTER BAR */}
+      {/* <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-grow group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-primary transition-colors" size={16} />
+          <Input 
+            placeholder={t("searchPlaceholder")} 
+            className="w-full pl-11 bg-[#0A0A0A] border-white/5 h-12 text-[10px] font-bold uppercase tracking-widest focus:border-primary/40 focus:ring-0 rounded-xl"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {profile?.role === 'admin' && (
+            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+              {(['mine', 'all'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
+                >
+                  {t(`filters.${type}`)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+            <button 
+              onClick={() => setStatusFilter("active")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
+            >
+              {t("filters.active")}
+            </button>
+            <button 
+              onClick={() => setStatusFilter("inactive")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
+            >
+              {t("filters.archived")}
+            </button>
+          </div>
+
+        </div>
+      </div> */}
 
       {/* COMPACT FILTER BAR */}
       <div className="flex flex-col gap-4">
@@ -160,12 +204,14 @@ export default function PackagesPage() {
               onClick={() => setStatusFilter("active")} 
               className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
             >
+              {/* {t("filters.active")} */}
               Активні
             </button>
             <button 
               onClick={() => setStatusFilter("inactive")} 
               className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
             >
+              {/* {t("filters.archived")} */}
               Архів
             </button>
           </div>
