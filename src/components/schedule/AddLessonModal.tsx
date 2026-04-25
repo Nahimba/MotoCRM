@@ -229,7 +229,11 @@ export function AddLessonModal({
     setSelectedClientId(clientId);
     setSelectedQuickCourseId(courseId);
     setQuickPrice(price);
-    setSelectedPackageId(""); // Clear package since we are creating a new one
+    // Only clear package if we are NOT in edit mode
+    if (!editLesson) {
+      setSelectedPackageId("");
+    }
+    // setSelectedPackageId(""); // Clear package since we are creating a new one
     setIsQuickCreationMode(true);
   };
 
@@ -262,7 +266,6 @@ export function AddLessonModal({
     if (!selectedInstructorId) return toast.error("Оберіть інструктора");
     
     const isReady = selectedPackageId || (isQuickCreationMode && selectedClientId && selectedQuickCourseId);
-  
     if (!isReady) return toast.error(t("selectStudentError"));
 
     setLoading(true);
@@ -284,9 +287,7 @@ export function AddLessonModal({
         // // 2. Logic: If the price in state is less than the official base_price, it's a discount
         // const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
 
-        // Inside handleSubmit, change this logic:
         const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
-
         // Compare current price against (Base Price * Duration) to see if it's discounted
         const expectedPrice = (currentCourse?.base_price || 0) * parseFloat(duration);
         const isDiscounted = quickPrice ? quickPrice < expectedPrice : false;
@@ -321,12 +322,40 @@ export function AddLessonModal({
           status,
           created_by_profile_id: profile?.id
         };
-  
-        const result = editLesson 
-          ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
-          : await supabase.from('lessons').insert([payload]);
-        error = result.error;
+
+
+        if (editLesson) {
+          
+          const currentPkg = packages.find(p => p.id === selectedPackageId);
+          const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
+          
+          // Use the price from StudentSelectorPlus (quickPrice) if available, 
+          // otherwise fallback to the current package price
+          const priceToSync = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+        
+          // We use the RPC if it's a "Quick Created" package OR if the duration changed
+          if (currentPkg?.courses?.allow_quick_creation || hasDurationChanged) {
+            const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
+              p_lesson_id: editLesson.id,
+              p_new_duration: parseFloat(duration),
+              p_new_price: priceToSync // Now correctly uses the state from the selector
+            });
+            error = syncError;
+          } else {
+            // Standard update for regular lessons
+            const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
+            error = result.error;
+          }
+        } else {
+          const result = await supabase.from('lessons').insert([payload]);
+          error = result.error;
+        }
       }
+      //     const result = editLesson 
+      //     ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
+      //     : await supabase.from('lessons').insert([payload]);
+      //   error = result.error;
+      // }
   
       if (!error) {
         toast.success(editLesson ? t("lessonUpdated") : t("lessonLogged"));
@@ -402,6 +431,7 @@ export function AddLessonModal({
 
 
           <StudentSelectorPlus 
+            isOpen={isOpen}
             packages={packages}
             selectedPackageId={selectedPackageId}
             selectedClientId={selectedClientId}

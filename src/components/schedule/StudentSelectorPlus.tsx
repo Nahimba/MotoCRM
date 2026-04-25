@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { supabase } from "@/lib/supabase"
 
 interface StudentSelectorPlusProps {
+  isOpen: boolean
   packages: any[]
   selectedPackageId: string
   selectedClientId: string | null
@@ -19,6 +20,7 @@ interface StudentSelectorPlusProps {
 }
 
 export function StudentSelectorPlus({ 
+  isOpen,
   packages, 
   selectedPackageId, 
   selectedClientId,
@@ -47,6 +49,24 @@ export function StudentSelectorPlus({
 
   const studentRef = useRef<HTMLDivElement>(null)
   const packageRef = useRef<HTMLDivElement>(null)
+
+  const isInitialEditSetup = useRef(false);
+
+  
+  // useEffect(() => {
+  //   if (!isOpen) {
+  //     isInitialEditSetup.current = false;
+  //   }
+  // }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      isInitialEditSetup.current = false;
+      // Optional: Reset local quick mode states when closing
+      setIsQuickMode(false);
+      setSelectedQuickCourse(null);
+    }
+  }, [isOpen]);
 
   const filteredQuickCourses = useMemo(() => {
     return courses.filter(course => course.specialization === specialization);
@@ -157,33 +177,71 @@ export function StudentSelectorPlus({
     return Number(selectedQuickCourse.discounted_price || selectedQuickCourse.base_price || 0);
   }, [selectedQuickCourse]);
 
-// 3. Sync with Parent (Calculates Total on the fly)
-useEffect(() => {
-  if (isQuickMode && selectedQuickCourse && selectedClientId) {
-    const unitPriceValue = price === "" ? 0 : Number(price);
-    const hours = parseFloat(duration) || 0;
+
+    // // Sync price when standard calculation changes (only if NOT custom and NOT in initial edit mode sync)
+    // useEffect(() => {
+    //   if (!isCustomPrice && isQuickMode && selectedQuickCourse) {
+    //     setPrice(calculatedStandardPrice);
+    //   }
+    // }, [calculatedStandardPrice, isCustomPrice, isQuickMode, selectedQuickCourse]);
     
-    const finalTotal = selectedQuickCourse.price_type === 'hour' 
-      ? unitPriceValue * hours 
-      : unitPriceValue;
 
-    onSelectQuickMode(selectedClientId, selectedQuickCourse.id, finalTotal);
-  }
-}, [price, isQuickMode, selectedQuickCourse, selectedClientId, duration]);
-
-  // // Sync price when standard calculation changes (only if NOT custom and NOT in initial edit mode sync)
+  // // 2. Sync UNIT price when course changes or custom mode is turned off
   // useEffect(() => {
   //   if (!isCustomPrice && isQuickMode && selectedQuickCourse) {
-  //     setPrice(calculatedStandardPrice);
+  //     setPrice(defaultUnitPrice);
   //   }
-  // }, [calculatedStandardPrice, isCustomPrice, isQuickMode, selectedQuickCourse]);
+  // }, [defaultUnitPrice, isCustomPrice, isQuickMode]);
+
+
+  // 3. Sync with Parent (Calculates Total on the fly)
+  useEffect(() => {
+    // Only sync if we are in Quick Mode and have the necessary IDs
+    if (isQuickMode && selectedQuickCourse && selectedClientId) {
+      const unitPriceValue = price === "" ? 0 : Number(price);
+      const hours = parseFloat(duration) || 0;
+      
+      const finalTotal = selectedQuickCourse.price_type === 'hour' 
+        ? unitPriceValue * hours 
+        : unitPriceValue;
   
-// 2. Sync UNIT price when course changes or custom mode is turned off
-useEffect(() => {
-  if (!isCustomPrice && isQuickMode && selectedQuickCourse) {
-    setPrice(defaultUnitPrice);
-  }
-}, [defaultUnitPrice, isCustomPrice, isQuickMode]);
+      // Optional: Only call if the value actually changed from the previous state
+      onSelectQuickMode(selectedClientId, selectedQuickCourse.id, finalTotal);
+    }
+  }, [price, isQuickMode, selectedQuickCourse, selectedClientId, duration]);
+
+
+
+
+  useEffect(() => {
+    // Only run this logic if we haven't done the initial setup yet
+    if (isEditMode && selectedPackageId && packages.length > 0 && !isInitialEditSetup.current) {
+      const currentPkg = packages.find(p => p.id === selectedPackageId);
+      
+      if (currentPkg?.courses?.allow_quick_creation) {
+        setIsQuickMode(true);
+        setSelectedQuickCourse(currentPkg.courses);
+        
+        const total = currentPkg.contract_price || 0;
+        const hours = parseFloat(duration) || 1;
+        
+        const unitPrice = currentPkg.courses.price_type === 'hour' 
+          ? Math.round((total / hours) * 100) / 100 
+          : total;
+  
+        setPrice(unitPrice);
+        
+        const dbUnitPrice = currentPkg.courses.discounted_price || currentPkg.courses.base_price;
+        if (unitPrice !== dbUnitPrice) {
+          setIsCustomPrice(true);
+        }
+  
+        // 🚩 Mark setup as complete so this doesn't run again
+        isInitialEditSetup.current = true;
+      }
+    }
+  }, [isEditMode, selectedPackageId, packages, duration]);
+
 
 
 
@@ -206,23 +264,26 @@ useEffect(() => {
   // };
 
   // 1. When selecting a course, set the UNIT price only
-// 4. Handle Course Selection
-const handleCourseSelect = (course: any) => {
-  if (!selectedClientId) return;
-  const unitPrice = course.discounted_price || course.base_price;
 
-  setSelectedQuickCourse(course);
-  setPrice(unitPrice); // Set UNIT price
-  setIsCustomPrice(false);
-  setIsQuickMode(true);
-  setSelectedPackageId("");
-  setIsPackageOpen(false);
-  
-  // Notification to parent with calculated total
-  const hours = parseFloat(duration) || 0;
-  const initialTotal = course.price_type === 'hour' ? unitPrice * hours : unitPrice;
-  onSelectQuickMode(selectedClientId, course.id, initialTotal);
-};
+  // 4. Handle Course Selection
+  const handleCourseSelect = (course: any) => {
+    if (!selectedClientId) return;
+    const unitPrice = course.discounted_price || course.base_price;
+
+    setSelectedQuickCourse(course);
+    setPrice(unitPrice); // Set UNIT price
+    setIsCustomPrice(false);
+    setIsQuickMode(true);
+    setSelectedPackageId("");
+    setIsPackageOpen(false);
+    
+    // Notification to parent with calculated total
+    const hours = parseFloat(duration) || 0;
+    const initialTotal = course.price_type === 'hour' ? unitPrice * hours : unitPrice;
+    onSelectQuickMode(selectedClientId, course.id, initialTotal);
+  };
+
+
 
   return (
     <div className="space-y-4">
@@ -265,12 +326,20 @@ const handleCourseSelect = (course: any) => {
             <ChevronDown size={16} className={`text-slate-500 transition-transform ${isStudentOpen ? 'rotate-180' : ''}`} />
           </div> */}
 
-          <div 
+          {/* <div 
             onClick={() => setIsStudentOpen(!isStudentOpen)}
             className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all ${
               isStudentOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10 hover:bg-white/10'
             }`}
+          > */}
+
+          <div 
+            onClick={() => setIsStudentOpen(!isStudentOpen)}
+            className={`w-full bg-white/5 border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all ${
+              isEditMode ? 'border-amber-500/30' : '' // Visual hint for editing
+            } ${isStudentOpen ? 'border-primary ring-4 ring-primary/5' : 'border-white/10 hover:bg-white/10'}`}
           >
+
             <span className={`text-[13px] font-black uppercase italic ${selectedStudent ? 'text-white' : 'text-slate-500'}`}>
               {selectedStudent ? `${selectedStudent.name} ${selectedStudent.last_name}` : "Оберіть учня..."}
             </span>
