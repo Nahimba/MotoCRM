@@ -15,6 +15,7 @@ interface StudentSelectorPlusProps {
   currentInstructorId: string | null
   duration: string
   isEditMode?: boolean
+  specialization?: string | null
 }
 
 export function StudentSelectorPlus({ 
@@ -26,7 +27,8 @@ export function StudentSelectorPlus({
   onSelectQuickMode,
   currentInstructorId,
   duration,
-  isEditMode = false
+  isEditMode = false,
+  specialization
 }: StudentSelectorPlusProps) {
   const t = useTranslations("Schedule")
   
@@ -45,6 +47,10 @@ export function StudentSelectorPlus({
 
   const studentRef = useRef<HTMLDivElement>(null)
   const packageRef = useRef<HTMLDivElement>(null)
+
+  const filteredQuickCourses = useMemo(() => {
+    return courses.filter(course => course.specialization === specialization);
+  }, [courses, specialization]);
 
   // Fetch Courses
   useEffect(() => {
@@ -99,8 +105,9 @@ export function StudentSelectorPlus({
     return packages.filter(p => 
       p.accounts?.clients?.id === selectedClientId && 
       p.courses?.allow_quick_creation !== true // Filter out quick courses
+      && p.courses?.specialization === specialization
     );
-  }, [packages, selectedClientId]);
+  }, [packages, selectedClientId, specialization]);
 
   // This should always look at the raw data, never the filtered 'uniqueStudents'
   const selectedStudent = useMemo(() => {
@@ -358,7 +365,7 @@ const handleCourseSelect = (course: any) => {
                   </button>
                 ))}
 
-                <div className="mt-1 pt-1 border-t border-white/5">
+                {/* <div className="mt-1 pt-1 border-t border-white/5">
                   <p className="px-3 py-2 text-[8px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Zap size={10} fill="currentColor" /> Швидкий запис
                   </p>
@@ -377,6 +384,31 @@ const handleCourseSelect = (course: any) => {
                         </div>
                         {course.discounted_price && (
                            <span className="text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded uppercase font-black tracking-tighter">Акція</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div> */}
+
+                <div className="mt-1 pt-1 border-t border-white/5">
+                  <p className="px-3 py-2 text-[8px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <Zap size={10} fill="currentColor" /> Швидкий запис
+                  </p>
+                  {filteredQuickCourses.map(course => (
+                    <button
+                      key={course.id}
+                      onClick={() => handleCourseSelect(course)}
+                      className="w-full text-left p-3 rounded-xl hover:bg-amber-500 hover:text-black transition-all group"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-black uppercase italic">+ {course.name}</span>
+                          <span className="text-[8px] font-bold opacity-50 uppercase tracking-tighter">
+                            {course.price_type === 'hour' ? 'Погодинно' : 'Пакетно'}
+                          </span>
+                        </div>
+                        {course.discounted_price && (
+                          <span className="text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded uppercase font-black tracking-tighter">Акція</span>
                         )}
                       </div>
                     </button>
