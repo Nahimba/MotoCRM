@@ -121,32 +121,14 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
         }
 
         
-        // const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
-        // if (accData) {
-        //   const formatted = accData.map((acc: any) => ({
-        //     id: acc.id,
-        //     account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
-        //   }))
-        //   setAccounts(formatted.sort((a, b) => a.account_label.localeCompare(b.account_label)))
-        // }
-
-        const { data: accData } = await supabase
-        .from("accounts")
-        .select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
-      
-      if (accData) {
-        const formatted = accData.map((acc: any) => ({
-          id: acc.id,
-          account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
-        }))
-      
-        // Use a Map to keep only one entry per unique name (account_label)
-        const uniqueAccounts = Array.from(
-          new Map(formatted.map(item => [item.account_label, item])).values()
-        )
-      
-        setAccounts(uniqueAccounts.sort((a, b) => a.account_label.localeCompare(b.account_label)))
-      }
+        const { data: accData } = await supabase.from("accounts").select(`id, clients!inner (profiles!clients_profile_id_fkey (first_name, last_name))`)
+        if (accData) {
+          const formatted = accData.map((acc: any) => ({
+            id: acc.id,
+            account_label: `${acc.clients?.profiles?.first_name || ''} ${acc.clients?.profiles?.last_name || ''}`.trim()
+          }))
+          setAccounts(formatted.sort((a, b) => a.account_label.localeCompare(b.account_label)))
+        }
 
         const { data: courData } = await supabase.from("courses").select("*").eq("is_active", true)
         if (courData) setCourses(courData as Course[])
