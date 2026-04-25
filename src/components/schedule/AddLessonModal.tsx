@@ -241,7 +241,18 @@ export function AddLessonModal({
   };
 
 
-
+  useEffect(() => {
+    if (isQuickCreationMode && selectedQuickCourseId) {
+      // Find the course details from your packages list
+      const course = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
+      
+      // If the course is billed hourly, sync price with duration
+      if (course?.price_type === 'hour') {
+        const basePrice = course.base_price || 0;
+        setQuickPrice(basePrice * parseFloat(duration));
+      }
+    }
+  }, [duration, isQuickCreationMode, selectedQuickCourseId, packages]);
 
     
 
@@ -265,13 +276,21 @@ export function AddLessonModal({
   
       if (!selectedPackageId && isQuickCreationMode) {
         
-        // 1. Find the course object to get the original base_price
-        // We assume StudentSelectorPlus might be passing the course data or you fetch it
-        // For this example, we calculate it based on the current quickPrice vs course base_price
-        const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses 
-        || { base_price: 999999 }; // Fallback
-        // 2. Logic: If the price in state is less than the official base_price, it's a discount
-        const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
+        // // 1. Find the course object to get the original base_price
+        // // We assume StudentSelectorPlus might be passing the course data or you fetch it
+        // // For this example, we calculate it based on the current quickPrice vs course base_price
+        // const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses 
+        // || { base_price: 999999 }; // Fallback
+        // // 2. Logic: If the price in state is less than the official base_price, it's a discount
+        // const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
+
+        // Inside handleSubmit, change this logic:
+        const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
+
+        // Compare current price against (Base Price * Duration) to see if it's discounted
+        const expectedPrice = (currentCourse?.base_price || 0) * parseFloat(duration);
+        const isDiscounted = quickPrice ? quickPrice < expectedPrice : false;
+
 
         // 🚀 SILENT TRANSACTIONAL CREATION
         const { data, error: rpcError } = await supabase.rpc('fn_quick_lesson_creation', {

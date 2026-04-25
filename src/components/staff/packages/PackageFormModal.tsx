@@ -7,7 +7,8 @@ import { useAuth } from "@/context/AuthContext"
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
+  DialogHeader,
+  DialogDescription,
   DialogTitle 
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -274,6 +275,10 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
             <DialogTitle className="text-4xl font-black italic tracking-tighter uppercase leading-none">
               {packageId ? t("edit") : t("new")}
             </DialogTitle>
+            {/* 2. Added DialogDescription (sr-only hides it visually but keeps ARIA happy) */}
+            <DialogDescription className="sr-only">
+            Форма створення / редагування Контракту: вибір інструктора, курсу та ціни.
+            </DialogDescription>
             {isLocked && (
                 <div className="flex items-center gap-2 mt-4 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl w-fit">
                     <Lock size={14} className="text-amber-500" />
