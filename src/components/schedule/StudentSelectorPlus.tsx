@@ -55,19 +55,19 @@ export function StudentSelectorPlus({
   
   useEffect(() => {
     if (!isOpen) {
-      // isInitialEditSetup.current = false;
-      // // Optional: Reset local quick mode states when closing
-      // setPrice(0);
-      // //setIsQuickMode(false);
-      // setSelectedQuickCourse(null);
-
-      // 🚩 Total Wipeout of the "Setup" flag
-      isInitialEditSetup.current = false; 
+      isInitialEditSetup.current = false;
+      // Optional: Reset local quick mode states when closing
       setPrice(0);
       setIsQuickMode(false);
       setSelectedQuickCourse(null);
-      setStudentSearch("");
-      setIsStudentOpen(false);
+
+      // // 🚩 Total Wipeout of the "Setup" flag
+      // isInitialEditSetup.current = false; 
+      // setPrice(0);
+      // setIsQuickMode(false);
+      // setSelectedQuickCourse(null);
+      // setStudentSearch("");
+      // setIsStudentOpen(false);
     }
   }, [isOpen]);
 

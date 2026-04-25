@@ -105,15 +105,15 @@ export function AddLessonModal({
   useEffect(() => {
     if (isOpen) {
 
-      // 🚩 1. RESET EVERYTHING TO PREVENT STALE UI
-      setPackages([]); // Clear packages so the "Sync edit data" effect waits for fresh data
-      setSelectedPackageId("");
-      setSelectedClientId(null);
-      setIsQuickCreationMode(false);
-      setQuickPrice(undefined);
-      setSummary("");
-      setCustomAddress("");
-      // ... reset any other local states like duration if needed
+      // // 🚩 1. RESET EVERYTHING TO PREVENT STALE UI
+      // setPackages([]); // Clear packages so the "Sync edit data" effect waits for fresh data
+      // setSelectedPackageId("");
+      // setSelectedClientId(null);
+      // setIsQuickCreationMode(false);
+      // setQuickPrice(undefined);
+      // setSummary("");
+      // setCustomAddress("");
+      // // ... reset any other local states like duration if needed
       
       const fetchData = async () => {
         try {
@@ -216,7 +216,7 @@ export function AddLessonModal({
         setQuickPrice(undefined)
       }
     }
-  }, [isOpen, editLesson, editLesson?.id, instructorId])
+  }, [isOpen, editLesson, instructorId])
 
   const displayAddress = useMemo(() => {
     if (locationId === "custom") return customAddress
