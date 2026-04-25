@@ -737,6 +737,7 @@ export default function SchedulePage() {
       />
 
       <AddExceptionModal 
+        key={editingException?.id || 'new-exception'}
         isOpen={isExceptionModalOpen}
         onClose={() => {
           setIsExceptionModalOpen(false);
