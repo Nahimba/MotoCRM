@@ -42,6 +42,8 @@ export default function HQStaffPage() {
 
   const [phoneValue, setPhoneValue] = useState("");
 
+  const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
+
   async function fetchStaff() {
     setLoading(true);
     
@@ -58,7 +60,7 @@ export default function HQStaffPage() {
         phone, 
         role, 
         created_at,
-        instructors(id, is_active)
+        instructors(id, is_active, specializations)
       `)
       .in('role', ['admin', 'instructor']) 
       .order('created_at', { ascending: false });
@@ -95,7 +97,8 @@ export default function HQStaffPage() {
 
   const openEdit = (member: StaffMember) => {
     setEditingMember(member);
-    setPhoneValue(member.phone ? formatDisplayPhone(member.phone) : ""); // Форматуємо при відкритті
+    setPhoneValue(member.phone ? formatDisplayPhone(member.phone) : "");
+    setSelectedSpecs(member.instructors?.specializations || ['Moto']);
     setShowModal(true);
   };
 
@@ -103,6 +106,13 @@ export default function HQStaffPage() {
     setShowModal(false);
     setEditingMember(null);
     setPhoneValue("");
+    setSelectedSpecs([]);
+  };
+
+  const toggleSpec = (spec: string) => {
+    setSelectedSpecs(prev => 
+      prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec]
+    );
   };
 
   async function toggleAccess(member: StaffMember) {
@@ -191,6 +201,15 @@ export default function HQStaffPage() {
           .eq('id', editingMember.id);
         
         if (pErr) throw pErr;
+        
+        if (editingMember.instructors?.id) {
+          const { error: iErr } = await supabase
+            .from('instructors')
+            .update({ specializations: selectedSpecs })
+            .eq('id', editingMember.instructors.id);
+          if (iErr) throw iErr;
+        }
+
         toast.success(t('notifications.update_success'));
       } else {
         const newProfileId = crypto.randomUUID();
@@ -205,7 +224,7 @@ export default function HQStaffPage() {
           .insert([{ 
             profile_id: newProfileId, 
             is_active: true,
-            specializations: ['Moto', 'Auto']
+            specializations: selectedSpecs
           }]);
         if (iErr) throw iErr;
 
@@ -386,6 +405,28 @@ export default function HQStaffPage() {
                   <option value="staff" className="bg-black">{t('form.roles.staff')}</option>
                   <option value="admin" className="bg-black">{t('form.roles.admin')}</option>
                 </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-500 px-1">
+                  Спеціалізація (Specialization)
+                </label>
+                <div className="flex gap-3">
+                  {['Moto', 'Auto'].map((spec) => (
+                    <button
+                      key={spec}
+                      type="button"
+                      onClick={() => toggleSpec(spec)}
+                      className={`flex-1 py-4 rounded-2xl border font-black uppercase text-[10px] tracking-widest transition-all ${
+                        selectedSpecs.includes(spec)
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-white/5 border-white/10 text-slate-500 hover:border-white/20'
+                      }`}
+                    >
+                      {spec}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* НОВИЙ РОЗДІЛ: КЕРУВАННЯ ДОСТУПОМ (тільки при редагуванні) */}
