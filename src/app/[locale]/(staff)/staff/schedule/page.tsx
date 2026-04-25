@@ -750,6 +750,7 @@ export default function SchedulePage() {
       />
 
       <WorkHoursModal 
+        key={targetInstructorId || 'work-hours'}
         isOpen={isWorkHoursModalOpen}
         onClose={() => setIsWorkHoursModalOpen(false)}
         instructorId={targetInstructorId}
