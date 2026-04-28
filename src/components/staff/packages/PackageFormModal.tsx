@@ -647,8 +647,8 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
     </Dialog>
 
 
-    {/* COURSE DIRECTORY OVERLAY */}
-    <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
+{/* COURSE DIRECTORY OVERLAY */}
+<Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
       <DialogContent className="bg-[#0A0A0A] border-white/10 text-white max-w-xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
         <DialogHeader className="p-8 border-b border-white/5 bg-white/[0.02]">
           <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
@@ -671,14 +671,24 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                 key={c.id} 
                 className="group border border-white/5 bg-white/[0.02] p-5 rounded-[1.8rem] transition-all hover:bg-white/[0.04] hover:border-white/10"
               >
-                {/* LINE 1: Title & Type */}
+                {/* LINE 1: Title & Type/Tags */}
                 <div className="flex justify-between items-center mb-5">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    {/* Visual Status Dot */}
                     <div className={`w-1.5 h-1.5 rounded-full ${c.allow_quick_creation ? 'bg-primary shadow-[0_0_10px_#FFFF00]' : 'bg-slate-700'}`} />
+                    
                     <h4 className="text-[13px] font-black uppercase tracking-tight text-white leading-none">
                       {c.name}
                     </h4>
+
+                    {/* NEW: Explicit "One-time" Label */}
+                    {c.allow_quick_creation && (
+                      <span className="ml-1 text-[7px] font-black bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                        Разове
+                      </span>
+                    )}
                   </div>
+
                   <span className="text-[8px] font-black uppercase text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5 tracking-widest">
                     {translatedType}
                   </span>
@@ -694,7 +704,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                     </div>
                   </div>
                   
-                  {/* Refined Pricing Block */}
+                  {/* Pricing Block */}
                   <div className="flex items-center gap-4">
                     {hasDiscount && (
                       <div className="flex flex-col items-end">
@@ -705,8 +715,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                       </div>
                     )}
                     
-                    <div className={`flex flex-col items-end ${!hasDiscount ? 'justify-center' : ''}`}>
-                      {/* {!hasDiscount && <span className="text-[7px] font-black text-slate-600 uppercase tracking-tighter mb-1">Ціна</span>} */}
+                    <div className="flex flex-col items-end justify-center">
                       <div className="bg-primary px-4 py-2 rounded-xl">
                         <span className="text-[14px] font-black text-black leading-none">
                           {(c.discounted_price || c.base_price).toLocaleString()} ₴
