@@ -42,6 +42,8 @@ export default function PackagesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null)
 
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
   useEffect(() => {
     if (profile?.role === 'admin') setFilterType("all")
   }, [profile])
@@ -237,6 +239,7 @@ export default function PackagesPage() {
               Разові
             </button>
           </div>
+          
         </div>
       </div>
 

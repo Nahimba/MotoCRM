@@ -4,13 +4,7 @@ import { useEffect, useState, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { useTranslations } from "next-intl"
 import { useAuth } from "@/context/AuthContext"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader,
-  DialogDescription,
-  DialogTitle 
-} from "@/components/ui/dialog"
+import {  Dialog,  DialogContent,  DialogHeader, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,7 +14,7 @@ import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { Clock, ShieldCheck, Loader2, Tag, Lock } from "lucide-react"
+import { Clock, ShieldCheck, Loader2, Tag, Lock, BookOpen } from "lucide-react"
 
 export const PACKAGE_STATUSES = ["active", "finished", "cancelled"] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
@@ -66,6 +60,8 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
   const [courses, setCourses] = useState<Course[]>([])
   const [instructorId, setInstructorId] = useState<string | null>(null)
   const [isLocked, setIsLocked] = useState(false)
+
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -313,6 +309,7 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
 
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-[#0A0A0A] border-white/10 text-white max-w-2xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
         <div className="p-8 md:p-12 overflow-y-auto max-h-[90vh]">
@@ -447,7 +444,21 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                   
                       return (
                       <FormItem className="space-y-3">
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("course")}</FormLabel>
+                              {/* FLEX CONTAINER TO ALIGN LABEL AND BUTTON ON ONE LINE */}
+                              <div className="flex items-center justify-between">
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                                  {t("course")}
+                                </FormLabel>
+                                
+                                <button 
+                                  type="button" 
+                                  onClick={() => setIsInfoModalOpen(true)}
+                                  className="flex items-center gap-1.5 text-[10px] font-black uppercase text-primary hover:text-white transition-colors tracking-widest"
+                                >
+                                  <BookOpen size={12} strokeWidth={3} />
+                                  Довідник
+                                </button>
+                              </div>
                         <Select onValueChange={(v) => { field.onChange(v); onCourseChange(v); }} value={field.value} disabled={isLocked}>
                           <FormControl>
                             <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
@@ -634,7 +645,87 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
         </div>
       </DialogContent>
     </Dialog>
+
+
+    {/* COURSE DIRECTORY OVERLAY */}
+    <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
+      <DialogContent className="bg-[#0A0A0A] border-white/10 text-white max-w-xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
+        <DialogHeader className="p-8 border-b border-white/5 bg-white/[0.02]">
+          <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
+            Довідник <span className="text-primary">Курсів</span>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="max-h-[65vh] overflow-y-auto p-6 space-y-3 custom-scrollbar">
+          {courses.map((c) => {
+            const typeTranslations: Record<string, string> = {
+              "moto": "Мото",
+              "auto": "Авто",
+              "category_b": "Кат. B",
+            };
+            const translatedType = typeTranslations[c.type.toLowerCase()] || c.type;
+            const hasDiscount = !!c.discounted_price;
+
+            return (
+              <div 
+                key={c.id} 
+                className="group border border-white/5 bg-white/[0.02] p-5 rounded-[1.8rem] transition-all hover:bg-white/[0.04] hover:border-white/10"
+              >
+                {/* LINE 1: Title & Type */}
+                <div className="flex justify-between items-center mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-1.5 h-1.5 rounded-full ${c.allow_quick_creation ? 'bg-primary shadow-[0_0_10px_#FFFF00]' : 'bg-slate-700'}`} />
+                    <h4 className="text-[13px] font-black uppercase tracking-tight text-white leading-none">
+                      {c.name}
+                    </h4>
+                  </div>
+                  <span className="text-[8px] font-black uppercase text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5 tracking-widest">
+                    {translatedType}
+                  </span>
+                </div>
+
+                {/* LINE 2: Stats & Refined Pricing */}
+                <div className="flex items-end justify-between">
+                  {/* Hours Info */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex flex-col">
+                      <span className="text-[14px] font-black text-white leading-none">{c.total_hours}</span>
+                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Годин</span>
+                    </div>
+                  </div>
+                  
+                  {/* Refined Pricing Block */}
+                  <div className="flex items-center gap-4">
+                    {hasDiscount && (
+                      <div className="flex flex-col items-end">
+                        <span className="text-[7px] font-black text-primary uppercase tracking-tighter mb-1">Знижка</span>
+                        <span className="text-[11px] font-bold text-slate-600 line-through leading-none">
+                          {c.base_price.toLocaleString()}₴
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className={`flex flex-col items-end ${!hasDiscount ? 'justify-center' : ''}`}>
+                      {/* {!hasDiscount && <span className="text-[7px] font-black text-slate-600 uppercase tracking-tighter mb-1">Ціна</span>} */}
+                      <div className="bg-primary px-4 py-2 rounded-xl">
+                        <span className="text-[14px] font-black text-black leading-none">
+                          {(c.discounted_price || c.base_price).toLocaleString()} ₴
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+    
+    </>
   )
+
+  
 }
 
                 {/* <FormField
