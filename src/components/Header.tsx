@@ -35,14 +35,14 @@ export default function Header() {
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-end text-right">
             <span className="text-[10px] font-bold text-white uppercase tracking-tight leading-none">
-              {user?.user_metadata?.full_name || role}
+              {user?.user_metadata?.display_name || role}
             </span>
             <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">
               {user?.user_metadata?.email || ' '}
             </span>
           </div>
           <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center font-black text-black text-xs border border-white/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
-          { user?.user_metadata?.full_name?.charAt(0) || 
+          { user?.user_metadata?.display_name?.charAt(0) || 
             user?.email?.charAt(0) || 
             role.charAt(0).toUpperCase()}
           </div>
