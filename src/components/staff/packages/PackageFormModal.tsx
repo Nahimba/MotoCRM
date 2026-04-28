@@ -20,7 +20,7 @@ import { useForm, Control } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { Clock, ShieldCheck, Loader2, Tag, Lock, Activity } from "lucide-react"
+import { Clock, ShieldCheck, Loader2, Tag, Lock } from "lucide-react"
 
 export const PACKAGE_STATUSES = ["active", "finished", "cancelled"] as const;
 export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
@@ -44,6 +44,7 @@ interface Course {
   discounted_price: number | null
   total_hours: number
   type: string
+  allow_quick_creation: boolean
 }
 
 interface Props {
@@ -149,11 +150,15 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
   }, [user?.id, isOpen, accountId, packageId])
 
 
+
+  const [associatedLesson, setAssociatedLesson] = useState<any | null>(null);
+
   useEffect(() => {
     async function loadExistingPackage() {
       if (!packageId || !isOpen) {
         if (!packageId) {
           setIsLocked(false)
+          setAssociatedLesson(null);
           form.reset({
             // account_id: "",
             account_id: accountId || "",
@@ -169,6 +174,24 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
       setFetching(true)
       try {
         const { data: pkg } = await supabase.from("course_packages").select("*").eq("id", packageId).single()
+
+        if (pkg) {
+
+        // Get lesson info for 1time contract
+        // Fetch the associated lesson for this package
+        const courseDetails = courses.find(c => c.id === pkg.course_id);
+        if (courseDetails?.allow_quick_creation === true) {
+          // 2. ONLY fetch lesson info for 1-time (quick creation) contracts
+          const { data: lessonData } = await supabase
+            .from("lessons")
+            .select("session_date")
+            .eq("course_package_id", packageId)
+            .maybeSingle();
+          setAssociatedLesson(lessonData);
+        } else {
+          setAssociatedLesson(null);
+        }
+
         
         const [payments, lessons] = await Promise.all([
             supabase.from("payments").select("id", { count: 'exact', head: true }).eq("course_package_id", packageId),
@@ -182,7 +205,6 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
         // To this (Temporary override): !!!!!!!!!!!!!
         setIsLocked(false)
 
-        if (pkg) {
           form.reset({
             account_id: pkg.account_id,
             instructor_id: pkg.instructor_id,
@@ -254,18 +276,41 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
   }
 
   const selectedInstructorId = form.watch("instructor_id")
+  const currentCourseId = form.watch("course_id"); // Watch current selection
 
   const filteredCourses = useMemo(() => {
-    if (!selectedInstructorId) return []
+    if (!selectedInstructorId) return [];
     
-    const selectedInstructor = instructors.find(ins => ins.id === selectedInstructorId)
-    if (!selectedInstructor || !selectedInstructor.specializations) return []
+    const selectedInstructor = instructors.find(ins => ins.id === selectedInstructorId);
+    if (!selectedInstructor || !selectedInstructor.specializations) return [];
 
-    // Filters courses where course.type exists within the instructor's specialization array
-    return courses.filter(course => 
-      selectedInstructor.specializations.includes(course.type)
-    )
-  }, [selectedInstructorId, instructors, courses])
+    return courses.filter(course => {
+      // 1. Basic Type Check (must match instructor specialization)
+      const matchesSpecialization = selectedInstructor.specializations.includes(course.type);
+      
+      // 2. Quick Creation Check
+      const isStandardCourse = course.allow_quick_creation !== true;
+      
+      // 3. Edit Mode Exception: If we are editing and this is the active course, show it anyway
+      const isCurrentlySelected = course.id === currentCourseId;
+
+      return matchesSpecialization && (isStandardCourse || isCurrentlySelected);
+    });
+  }, [selectedInstructorId, instructors, courses, currentCourseId]);
+
+  // const filteredCourses = useMemo(() => {
+  //   if (!selectedInstructorId) return []
+    
+  //   const selectedInstructor = instructors.find(ins => ins.id === selectedInstructorId)
+  //   if (!selectedInstructor || !selectedInstructor.specializations) return []
+
+  //   // Filters courses where course.type exists within the instructor's specialization array
+  //   return courses.filter(course => 
+  //     selectedInstructor.specializations.includes(course.type)
+  //   )
+  // }, [selectedInstructorId, instructors, courses])
+
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
@@ -392,18 +437,52 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                   <FormField
                     control={control}
                     name="course_id"
-                    render={({ field }) => (
+                    render={({ field }) =>{
+                      // Find the currently selected course object
+                      const selectedCourse = courses.find(c => c.id === field.value);
+                      const isQuickCreation = selectedCourse?.allow_quick_creation;
+                      const dateLabel = (isQuickCreation && associatedLesson?.session_date)
+                        ? new Date(associatedLesson.session_date).toLocaleDateString()
+                        : null;
+                  
+                      return (
                       <FormItem className="space-y-3">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t("course")}</FormLabel>
                         <Select onValueChange={(v) => { field.onChange(v); onCourseChange(v); }} value={field.value} disabled={isLocked}>
                           <FormControl>
                             <SelectTrigger className="bg-black border-white/5 h-16 text-white rounded-xl">
-                              <SelectValue placeholder={t("selectCourse")} />
+                              {/* <SelectValue placeholder={t("selectCourse")} /> */}
+                              {/* Custom Value Display */}
+                              <div className="flex flex-col items-start text-left">
+                                <SelectValue placeholder={t("selectCourse")}>
+                                  {selectedCourse && (
+                                    <div className="flex items-center gap-2">
+                                      <span>{selectedCourse.name}</span>
+                                      {dateLabel && (
+                                        <span className="text-slate-500 text-[14px] normal-case font-medium">
+                                          ({dateLabel})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </SelectValue>
+                              </div>
                             </SelectTrigger>
                           </FormControl>
                           {/* <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
                             {courses.map(c => (
                               <SelectItem key={c.id} value={c.id} className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer">
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent> */}
+                          {/* <SelectContent className="bg-[#0F0F0F] border-white/10 text-white">
+                            {filteredCourses.map((c) => (
+                              <SelectItem 
+                                key={c.id} 
+                                value={c.id} 
+                                className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer"
+                              >
                                 {c.name}
                               </SelectItem>
                             ))}
@@ -415,13 +494,21 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
                                 value={c.id} 
                                 className="focus:bg-primary font-bold uppercase text-[10px] tracking-widest cursor-pointer"
                               >
-                                {c.name}
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{c.name}</span>
+                                  {c.allow_quick_creation && (
+                                    <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400">
+                                      Разовий
+                                    </span>
+                                  )}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </FormItem>
-                    )}
+                    );
+                    }}
                   />
                 </div>
 
