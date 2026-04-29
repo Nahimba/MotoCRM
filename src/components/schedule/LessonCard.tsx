@@ -49,15 +49,15 @@ export function LessonCard({
   
     // 3. Successfully Completed
     if (lesson.status === 'completed') {
-      return 'border-l-emerald-500 bg-[#0d1410]'
+      return 'border-l-emerald-500 bg-[#0d1b10]'
     }
   
     // 4. Planned (Color depends on Moto vs Car)
     if (isMoto) {
-      return 'border-l-fuchsia-500 bg-[#150e17] shadow-lg shadow-fuchsia-500/5'
+      return 'border-l-fuchsia-500 bg-[#160e1e] shadow-lg shadow-fuchsia-500/5'
     }
     
-    return 'border-l-primary bg-[#0d1114]'
+    return 'border-l-primary bg-[#0d1124]'
   }
 
   return (

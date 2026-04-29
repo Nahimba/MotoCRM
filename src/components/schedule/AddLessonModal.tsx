@@ -643,6 +643,7 @@ export function AddLessonModal({
                 className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer ${
                   status === 'planned' ? 'text-blue-400' : 
                   status === 'completed' ? 'text-green-400' :
+                  status === 'no_show' || status === 'late_cancelled' ? 'text-orange-400' : // Add this
                   status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
                   'text-red-500'
                 }`}
