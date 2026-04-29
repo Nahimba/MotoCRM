@@ -132,7 +132,8 @@ export function AddLessonModal({
               ),
               lessons ( duration, status, is_counted )
             `)
-            .eq('status', 'active')
+            //.eq('status', 'active')
+            .or(`status.eq.active${editLesson ? `,id.eq.${editLesson.course_package_id}` : ''}`)
             // // 1. Only include packages where the course allow_quick_creation is FALSE
             // .eq('courses.allow_quick_creation', false) 
             // 2. Sort by creation date (newest first)
@@ -478,7 +479,7 @@ export function AddLessonModal({
           summary,
           status,
           created_by_profile_id: profile?.id,
-          is_counted: true
+          is_counted: status !== 'cancelled'
         };
   
         if (editLesson) {

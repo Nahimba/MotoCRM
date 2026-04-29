@@ -36,18 +36,25 @@ export function LessonCard({
   
 
   const getStatusStyles = () => {
-    // 1. Отменено
+    // 1. Fully Cancelled (Opacity dropped, grayed out)
     if (lesson.status === 'cancelled') {
-      return 'border-l-red-500 opacity-40 bg-[#1a0a0a] grayscale-[0.5]'
+      return 'border-l-red-500 opacity-40 bg-[#230e0e] grayscale-[0.5]'
     }
-    // 2. Завершено
+  
+    // 2. Student didn't show or cancelled too late (Warning style)
+    // We use a dim orange/amber to show it's "Done" but was a problem
+    if (lesson.status === 'no_show' || lesson.status === 'late_cancelled') {
+      return 'border-l-orange-500 bg-[#330a0a] opacity-80'
+    }
+  
+    // 3. Successfully Completed
     if (lesson.status === 'completed') {
       return 'border-l-emerald-500 bg-[#0d1410]'
     }
-
-    // 3. Запланировано (Цвет зависит от типа курса)
+  
+    // 4. Planned (Color depends on Moto vs Car)
     if (isMoto) {
-      return 'border-l-fuchsia-500 bg-[#130d14] shadow-lg shadow-fuchsia-500/5'
+      return 'border-l-fuchsia-500 bg-[#150e17] shadow-lg shadow-fuchsia-500/5'
     }
     
     return 'border-l-primary bg-[#0d1114]'
