@@ -425,7 +425,12 @@ export function AddLessonModal({
             p_lesson_id: editLesson.id,
             p_new_duration: durationNum,
             p_new_price: priceToSync,
-            p_new_status: status // Database function will now auto-close the package if status is 'completed'
+            p_new_status: status,
+            p_instructor_id: selectedInstructorId,
+            p_session_date: session_date,
+            p_location_id: isCustom ? null : locationId,
+            p_custom_address: isCustom ? customAddress : null,
+            p_summary: summary
           });
   
           // // Update non-financial fields that the RPC might not touch
@@ -443,7 +448,7 @@ export function AddLessonModal({
           //error = syncError || lessonError;
   
           error = syncError;
-          
+
         } else {
           // B) Create Brand New Quick Lesson
           const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
