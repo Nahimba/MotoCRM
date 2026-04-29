@@ -428,20 +428,22 @@ export function AddLessonModal({
             p_new_status: status // Database function will now auto-close the package if status is 'completed'
           });
   
-          // Update non-financial fields that the RPC might not touch
-          const { error: lessonError } = await supabase
-            .from('lessons')
-            .update({
-              instructor_id: selectedInstructorId,
-              session_date,
-              location_id: isCustom ? null : locationId,
-              custom_location_address: isCustom ? customAddress : null,
-              summary,
-              status // Redundant but safe
-            })
-            .eq('id', editLesson.id);
+          // // Update non-financial fields that the RPC might not touch
+          // const { error: lessonError } = await supabase
+          //   .from('lessons')
+          //   .update({
+          //     instructor_id: selectedInstructorId,
+          //     session_date,
+          //     location_id: isCustom ? null : locationId,
+          //     custom_location_address: isCustom ? customAddress : null,
+          //     summary,
+          //     status // Redundant but safe
+          //   })
+          //   .eq('id', editLesson.id);
+          //error = syncError || lessonError;
   
-          error = syncError || lessonError;
+          error = syncError;
+          
         } else {
           // B) Create Brand New Quick Lesson
           const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
