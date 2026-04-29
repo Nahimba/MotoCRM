@@ -61,21 +61,19 @@ export function AddLessonModal({
     [packages, selectedPackageId]
   )
   
-  const clientData = selectedPkg?.accounts?.clients
-
-  
+  // const clientData = selectedPkg?.accounts?.clients
   
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedQuickCourseId, setSelectedQuickCourseId] = useState<string | null>(null);
   const [isQuickCreationMode, setIsQuickCreationMode] = useState(false);
   const [quickPrice, setQuickPrice] = useState<number | undefined>(undefined);
 
-  const quickClientData = useMemo(() => {
-    if (!isQuickCreationMode || !selectedClientId) return null;
-    // Find the client info from the packages list using the ID from Quick Mode
-    const pkgWithClient = packages.find(p => p.accounts?.clients?.id === selectedClientId);
-    return pkgWithClient?.accounts?.clients;
-  }, [isQuickCreationMode, selectedClientId, packages]);
+  // const quickClientData = useMemo(() => {
+  //   if (!isQuickCreationMode || !selectedClientId) return null;
+  //   // Find the client info from the packages list using the ID from Quick Mode
+  //   const pkgWithClient = packages.find(p => p.accounts?.clients?.id === selectedClientId);
+  //   return pkgWithClient?.accounts?.clients;
+  // }, [isQuickCreationMode, selectedClientId, packages]);
 
   // Use either the standard package client or the quick-mode client
   //const displayClient = clientData || quickClientData;
@@ -183,7 +181,7 @@ export function AddLessonModal({
         setSelectedHour(format(dateObj, "HH"))
         setSelectedMinute(format(dateObj, "mm"))
         
-        const pkgId = editLesson.course_package_id;
+        // const pkgId = editLesson.course_package_id;
         setSelectedPackageId(editLesson.course_package_id)
         setSelectedInstructorId(editLesson.instructor_id)
         setDuration(editLesson.duration?.toString() || "1")
@@ -270,157 +268,248 @@ export function AddLessonModal({
 
     
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+    
+  //   if (!selectedInstructorId) return toast.error("Оберіть інструктора");
+    
+  //   const isReady = selectedPackageId || (isQuickCreationMode && selectedClientId && selectedQuickCourseId);
+  //   if (!isReady) return toast.error(t("selectStudentError"));
+
+  //   setLoading(true);
+  
+  //   const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`;
+  //   const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+  //   const isCustom = locationId === "custom";
+  
+  //   try {
+  //     let error;
+  
+  //     if (!selectedPackageId && isQuickCreationMode) {
+        
+  //       // // 1. Find the course object to get the original base_price
+  //       // // We assume StudentSelectorPlus might be passing the course data or you fetch it
+  //       // // For this example, we calculate it based on the current quickPrice vs course base_price
+  //       // const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses 
+  //       // || { base_price: 999999 }; // Fallback
+  //       // // 2. Logic: If the price in state is less than the official base_price, it's a discount
+  //       // const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
+
+  //       const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
+  //       // Compare current price against (Base Price * Duration) to see if it's discounted
+  //       const expectedPrice = (currentCourse?.base_price || 0) * parseFloat(duration);
+  //       const isDiscounted = quickPrice ? quickPrice < expectedPrice : false;
+
+
+  //       // 🚀 SILENT TRANSACTIONAL CREATION
+  //       const { data, error: rpcError } = await supabase.rpc('fn_quick_lesson_creation', {
+  //         p_client_id: selectedClientId,
+  //         p_course_id: selectedQuickCourseId, 
+  //         p_instructor_id: selectedInstructorId,
+  //         p_session_date: session_date,
+  //         p_duration: parseFloat(duration),
+  //         p_location_id: isCustom ? null : locationId,
+  //         p_custom_address: isCustom ? customAddress : null,
+  //         p_summary: summary,
+  //         p_created_by: profile?.id,
+  //         p_status: status,
+  //         p_price: quickPrice,
+  //         p_is_discounted: isDiscounted
+  //       });
+  //       error = rpcError;
+
+  //     } else {
+  //       // 📝 STANDARD LOGGING / UPDATE
+  //       const payload = {
+  //         course_package_id: selectedPackageId,
+  //         instructor_id: selectedInstructorId,
+  //         duration: parseFloat(duration),
+  //         session_date,
+  //         location_id: isCustom ? null : locationId,
+  //         custom_location_address: isCustom ? customAddress : null,
+  //         summary,
+  //         status,
+  //         created_by_profile_id: profile?.id
+  //       };
+
+
+  //       if (editLesson) {
+  //         const currentPkg = packages.find(p => p.id === selectedPackageId);
+  //         const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
+          
+  //         // 1. Determine if the price has actually changed from what is in the DB
+  //         const priceFromUI = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+  //         const hasPriceChanged = currentPkg && priceFromUI !== currentPkg.contract_price;
+        
+  //         // 2. If Price or Duration changed, we MUST use the RPC to update the Package table too
+  //         if (hasPriceChanged || hasDurationChanged) {
+
+  //           const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
+  //             p_lesson_id: editLesson.id,
+  //             p_new_duration: parseFloat(duration),
+  //             p_new_price: priceFromUI,
+  //             p_new_status: status
+  //           });
+            
+  //           // 3. Even after the RPC, we might want to update non-financial fields (summary, address, status)
+  //           // The RPC usually only handles duration/price sync.
+  //           const { error: lessonError } = await supabase
+  //             .from('lessons')
+  //             .update({
+  //               instructor_id: selectedInstructorId,
+  //               session_date,
+  //               location_id: isCustom ? null : locationId,
+  //               custom_location_address: isCustom ? customAddress : null,
+  //               summary,
+  //               status
+  //             })
+  //             .eq('id', editLesson.id);
+        
+  //           error = syncError || lessonError;
+  //         } else {
+  //           // 4. No financial changes, just a standard lesson update
+  //           const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
+  //           error = result.error;
+  //         }
+  //       }
+
+  //     }
+  
+  //     if (!error) {
+  //       toast.success(editLesson ? t("lessonUpdated") : t("lessonLogged"));
+  //       onSuccess(); 
+  //       onClose();
+  //     } else {
+  //       toast.error(error.message);
+  //     }
+  //   } catch (err) {
+  //     toast.error("Unexpected error occurred");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
+    // 1. Basic Validation
     if (!selectedInstructorId) return toast.error("Оберіть інструктора");
     
     const isReady = selectedPackageId || (isQuickCreationMode && selectedClientId && selectedQuickCourseId);
     if (!isReady) return toast.error(t("selectStudentError"));
-
+  
     setLoading(true);
   
+    // 2. Prepare Data
     const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`;
     const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
     const isCustom = locationId === "custom";
+    const durationNum = parseFloat(duration);
   
     try {
       let error;
   
-      if (!selectedPackageId && isQuickCreationMode) {
-        
-        // // 1. Find the course object to get the original base_price
-        // // We assume StudentSelectorPlus might be passing the course data or you fetch it
-        // // For this example, we calculate it based on the current quickPrice vs course base_price
-        // const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses 
-        // || { base_price: 999999 }; // Fallback
-        // // 2. Logic: If the price in state is less than the official base_price, it's a discount
-        // const isDiscounted = quickPrice ? quickPrice < (currentCourse.base_price || 0) : false;
-
-        const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
-        // Compare current price against (Base Price * Duration) to see if it's discounted
-        const expectedPrice = (currentCourse?.base_price || 0) * parseFloat(duration);
-        const isDiscounted = quickPrice ? quickPrice < expectedPrice : false;
-
-
-        // 🚀 SILENT TRANSACTIONAL CREATION
-        const { data, error: rpcError } = await supabase.rpc('fn_quick_lesson_creation', {
-          p_client_id: selectedClientId,
-          p_course_id: selectedQuickCourseId, 
-          p_instructor_id: selectedInstructorId,
-          p_session_date: session_date,
-          p_duration: parseFloat(duration),
-          p_location_id: isCustom ? null : locationId,
-          p_custom_address: isCustom ? customAddress : null,
-          p_summary: summary,
-          p_created_by: profile?.id,
-          p_status: status,
-          p_price: quickPrice,
-          p_is_discounted: isDiscounted
-        });
-        error = rpcError;
+      if (isQuickCreationMode) {
+        /**
+         * 🚀 QUICK CREATION MODE
+         * We use RPCs here because every change affects both the Lesson and its 1-to-1 Package.
+         */
+        if (editLesson) {
+          // A) Edit Existing Quick Lesson
+          const currentPkg = packages.find(p => p.id === selectedPackageId);
+          const priceToSync = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
+  
+          const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
+            p_lesson_id: editLesson.id,
+            p_new_duration: durationNum,
+            p_new_price: priceToSync,
+            p_new_status: status // Database function will now auto-close the package if status is 'completed'
+          });
+  
+          // Update non-financial fields that the RPC might not touch
+          const { error: lessonError } = await supabase
+            .from('lessons')
+            .update({
+              instructor_id: selectedInstructorId,
+              session_date,
+              location_id: isCustom ? null : locationId,
+              custom_location_address: isCustom ? customAddress : null,
+              summary,
+              status // Redundant but safe
+            })
+            .eq('id', editLesson.id);
+  
+          error = syncError || lessonError;
+        } else {
+          // B) Create Brand New Quick Lesson
+          const currentCourse = packages.find(p => p.courses?.id === selectedQuickCourseId)?.courses;
+          const expectedPrice = (currentCourse?.base_price || 0) * durationNum;
+          const isDiscounted = quickPrice ? quickPrice < expectedPrice : false;
+  
+          const { error: rpcError } = await supabase.rpc('fn_quick_lesson_creation', {
+            p_client_id: selectedClientId,
+            p_course_id: selectedQuickCourseId,
+            p_instructor_id: selectedInstructorId,
+            p_session_date: session_date,
+            p_duration: durationNum,
+            p_location_id: isCustom ? null : locationId,
+            p_custom_address: isCustom ? customAddress : null,
+            p_summary: summary,
+            p_created_by: profile?.id,
+            p_status: status,
+            p_price: quickPrice,
+            p_is_discounted: isDiscounted
+          });
+          error = rpcError;
+        }
       } else {
-        // 📝 STANDARD LOGGING / UPDATE
+        /**
+         * 📝 STANDARD MODE
+         * Lessons belong to multi-lesson packages. We use standard CRUD.
+         */
         const payload = {
           course_package_id: selectedPackageId,
           instructor_id: selectedInstructorId,
-          duration: parseFloat(duration),
+          duration: durationNum,
           session_date,
           location_id: isCustom ? null : locationId,
           custom_location_address: isCustom ? customAddress : null,
           summary,
           status,
-          created_by_profile_id: profile?.id
+          created_by_profile_id: profile?.id,
+          is_counted: true
         };
-
-
-        // if (editLesson) {
-          
-        //   const currentPkg = packages.find(p => p.id === selectedPackageId);
-        //   const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
-          
-        //   // Use the price from StudentSelectorPlus (quickPrice) if available, 
-        //   // otherwise fallback to the current package price
-        //   const priceToSync = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
-        
-        //   // We use the RPC if it's a "Quick Created" package OR if the duration changed
-        //   if (currentPkg?.courses?.allow_quick_creation || hasDurationChanged) {
-        //     const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
-        //       p_lesson_id: editLesson.id,
-        //       p_new_duration: parseFloat(duration),
-        //       p_new_price: priceToSync
-        //     });
-        //     error = syncError;
-        //   } else {
-        //     // Standard update for regular lessons
-        //     const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
-        //     error = result.error;
-        //   }
-        // } else {
-        //   const result = await supabase.from('lessons').insert([payload]);
-        //   error = result.error;
-        // }
-
-        if (editLesson) {
-          const currentPkg = packages.find(p => p.id === selectedPackageId);
-          const hasDurationChanged = parseFloat(duration) !== editLesson.duration;
-          
-          // 1. Determine if the price has actually changed from what is in the DB
-          const priceFromUI = quickPrice !== undefined ? quickPrice : currentPkg?.contract_price;
-          const hasPriceChanged = currentPkg && priceFromUI !== currentPkg.contract_price;
-        
-          // 2. If Price or Duration changed, we MUST use the RPC to update the Package table too
-          if (hasPriceChanged || hasDurationChanged) {
-            const { error: syncError } = await supabase.rpc('fn_sync_lesson_and_package', {
-              p_lesson_id: editLesson.id,
-              p_new_duration: parseFloat(duration),
-              p_new_price: priceFromUI
-            });
-            
-            // 3. Even after the RPC, we might want to update non-financial fields (summary, address, status)
-            // The RPC usually only handles duration/price sync.
-            const { error: lessonError } = await supabase
-              .from('lessons')
-              .update({
-                instructor_id: selectedInstructorId,
-                session_date,
-                location_id: isCustom ? null : locationId,
-                custom_location_address: isCustom ? customAddress : null,
-                summary,
-                status
-              })
-              .eq('id', editLesson.id);
-        
-            error = syncError || lessonError;
-          } else {
-            // 4. No financial changes, just a standard lesson update
-            const result = await supabase.from('lessons').update(payload).eq('id', editLesson.id);
-            error = result.error;
-          }
-        }
-
-
-      }
-      //     const result = editLesson 
-      //     ? await supabase.from('lessons').update(payload).eq('id', editLesson.id)
-      //     : await supabase.from('lessons').insert([payload]);
-      //   error = result.error;
-      // }
   
+        if (editLesson) {
+          const { error: updateError } = await supabase
+            .from('lessons')
+            .update(payload)
+            .eq('id', editLesson.id);
+          error = updateError;
+        } else {
+          const { error: insertError } = await supabase
+            .from('lessons')
+            .insert([payload]);
+          error = insertError;
+        }
+      }
+  
+      // 3. Finalize
       if (!error) {
         toast.success(editLesson ? t("lessonUpdated") : t("lessonLogged"));
-        onSuccess(); 
+        onSuccess();
         onClose();
       } else {
         toast.error(error.message);
       }
     } catch (err) {
+      console.error("Submit Error:", err);
       toast.error("Unexpected error occurred");
     } finally {
       setLoading(false);
     }
   };
-
 
 
   const handleDelete = async () => {
