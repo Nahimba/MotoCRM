@@ -91,7 +91,7 @@ export default function ClientsPage() {
   //         >
   //           <User size={14} />
   //           {/* {showOnlyMine ? "My Pilots" : "All Pilots"} */}
-  //           {showOnlyMine ? "Мої учні" : "Всі учні"}
+  //           {showOnlyMine ? "Мої Клієнти" : "Всі Клієнти"}
   //         </button>
 
   //         {/* TOGGLE: ACTIVE vs INACTIVE */}
@@ -248,7 +248,7 @@ export default function ClientsPage() {
               showOnlyMine ? 'bg-primary/20 border-primary/50 text-primary' : 'bg-white/5 border-white/10 text-slate-400'
             }`}
           >
-            <User size={14} /> {showOnlyMine ? "Мої учні" : "Всі учні"}
+            <User size={14} /> {showOnlyMine ? "Мої Клієнти" : "Всі Клієнти"}
           </button>
   
           <button 
