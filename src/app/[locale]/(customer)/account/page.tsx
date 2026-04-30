@@ -116,13 +116,13 @@ export default function ClientLandingPage() {
                     </div>
                   </div>
 
-                  <Link 
+                  {/* <Link 
                     href="/account/training" 
                     className="flex items-center justify-between w-full p-4 bg-white/5 hover:bg-primary hover:text-black rounded-2xl transition-all duration-300 group/btn"
                   >
                     <span className="font-black uppercase italic text-[10px] tracking-widest">Деталі навчання</span>
                     <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                  </Link>
+                  </Link> */}
                 </div>
               </div>
             )
