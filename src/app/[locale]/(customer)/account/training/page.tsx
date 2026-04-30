@@ -19,16 +19,21 @@ export default function ClientTrainingPage() {
     const fetchTrainingData = async () => {
       setLoading(true)
       try {
-        const { data: detailsData } = await supabase
+        // 1. Fetch package status details
+        const { data: detailsData, error: detError } = await supabase
           .from('client_training_details')
           .select('*')
           .eq('profile_id', profile.id)
-          .order('package_status', { ascending: true })
+          .order('package_status', { ascending: true }) // Active packages first
 
+        if (detError) throw detError
+        
         if (detailsData && detailsData.length > 0) {
-          setDetails(detailsData.find(p => p.package_status === 'active') || detailsData[0])
+          const activePack = detailsData.find(p => p.package_status === 'active') || detailsData[0]
+          setDetails(activePack)
         }
 
+        // 2. Fetch full lesson history
         const { data: lessonsData, error: lessonsError } = await supabase
           .from('client_lessons_log')
           .select('*')
@@ -46,15 +51,22 @@ export default function ClientTrainingPage() {
     }
 
     fetchTrainingData()
-  }, [profile])
+  }, [profile?.id])
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
-        <Loader2 className="animate-spin text-primary" size={40} />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black gap-4">
+        <Loader2 className="animate-spin text-primary" size={32} />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Завантаження...</p>
       </div>
     )
   }
 
-  return <TrainingDashboardView details={details} lessons={lessons} />
+  return (
+    <TrainingDashboardView 
+      details={details} 
+      lessons={lessons} 
+      isStaff={profile?.role === 'staff' || profile?.role === 'admin'} 
+    />
+  )
 }
