@@ -104,9 +104,14 @@ export default function Sidebar() {
           {/* <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
             MOTO<span className="text-primary">CRM</span>
           </h1> */}
-          <h1 className={`${saira.className} text-3xl font-black italic text-white tracking-tighter`}>
-            RaceWay<span className="text-primary">CRM</span>
-          </h1>
+          <Link 
+            href="/" 
+            className="transition-opacity active:opacity-70 outline-none"
+          >
+            <h1 className={`${saira.className} text-3xl font-black italic text-white tracking-tighter`}>
+              RaceWay<span className="text-primary">CRM</span>
+            </h1>
+          </Link>
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-2">
