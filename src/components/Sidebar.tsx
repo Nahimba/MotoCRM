@@ -4,14 +4,14 @@ import { useState, useRef, useEffect } from "react"
 import { usePathname, useRouter, Link } from '@/i18n/routing';
 import { 
   LogOut, Home, Users, BarChart3, ShieldCheck, 
-  User, Settings, Bike, 
+  User, Settings, FileSignature, 
   GraduationCap, Calendar, MoreHorizontal,
-  LayoutDashboard, ClipboardList, ChevronUp, Languages,
+  LayoutDashboard, ClipboardList, ChevronUp, Wallet,
   Package, Banknote, History, MapPin
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
-import { supabase } from "@/lib/supabase" // Ensure this is imported
+//import { supabase } from "@/lib/supabase" // Ensure this is imported
 
 import { Saira } from 'next/font/google'
 const saira = Saira({ 
@@ -100,7 +100,7 @@ export default function Sidebar() {
       {/* --- DESKTOP SIDEBAR (PC) --- */}
       <aside className="hidden lg:flex w-64 bg-[#0a0a0a] text-white h-screen p-6 fixed left-0 top-0 border-r border-white/5 flex-col z-[100]">
         <div className="mb-10 flex items-center gap-3 px-2">
-          <Bike className="text-primary" size={24} />
+          {/* <Bike className="text-primary" size={24} /> */}
           {/* <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
             MOTO<span className="text-primary">CRM</span>
           </h1> */}
@@ -133,13 +133,17 @@ export default function Sidebar() {
               {/* <SidebarLink href="/staff/lessons" icon={<ClipboardList size={16}/>} label={t('lessons') || 'Lessons'} active={pathname === '/staff/lessons'} /> */}
               <SidebarLink href="/staff/schedule" icon={<Calendar size={16}/>} label={t('schedule')} active={pathname.startsWith('/staff/schedule')} />
               <SidebarLink href="/staff/clients" icon={<GraduationCap size={16}/>} label={t('roster')} active={pathname.startsWith('/staff/clients')} />
-              <SidebarLink href="/staff/packages" icon={<Bike size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
+              <SidebarLink href="/staff/packages" icon={<FileSignature size={16}/>} label={t('packages')} active={pathname.startsWith('/staff/packages')} />
               <SidebarLink href="/staff/payments" icon={<Banknote size={16}/>} label={t('payments') || 'Payments'} active={pathname.startsWith('/staff/payments')} />
-              {role === 'instructor' && (
-                <>
-                <SidebarLink href="/staff/finances" icon={<ClipboardList size={16}/>} label={t('expences') || 'Expences'} active={pathname.startsWith('/staff/expences')} />
-                </>
-              )}
+
+              <SidebarLink href="/staff/training" icon={<ClipboardList size={16}/>} label={t('training')} active={pathname.startsWith('/staff/training')} />
+              
+            </>
+          )}
+
+          {(role === 'instructor') && (
+            <>
+              <SidebarLink href="/staff/finances" icon={<Wallet size={16}/>} label={t('expences') || 'Expences'} active={pathname.startsWith('/staff/expences')} />
             </>
           )}
 
@@ -218,13 +222,14 @@ export default function Sidebar() {
                     {/* <MobileExtraLink href="/staff/lessons" icon={<ClipboardList size={18}/>} label={t('lessons') || 'Lessons'} /> */}
                     <MobileExtraLink href="/staff/payments" icon={<Banknote size={18}/>} label={t('payments') || 'Payments'} />
                     <MobileExtraLink href="/staff/clients" icon={<Users size={18}/>} label={t('roster')} />
-                    <MobileExtraLink href="/staff/packages" icon={<Bike size={18}/>} label={t('packages')} />
+                    <MobileExtraLink href="/staff/packages" icon={<FileSignature size={18}/>} label={t('packages')} />
+                    <MobileExtraLink href="/staff/training" icon={<ClipboardList size={18}/>} label={t('training')} />
                   </>
                 )}
 
                 {(role === 'instructor') && (
                   <>
-                    <MobileExtraLink href="/staff/finances" icon={<ClipboardList size={18}/>} label={t('expences')} />
+                    <MobileExtraLink href="/staff/finances" icon={<Wallet size={18}/>} label={t('expences')} />
                   </>
                 )}
 

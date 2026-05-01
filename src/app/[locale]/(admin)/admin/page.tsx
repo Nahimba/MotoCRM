@@ -6,7 +6,7 @@ import {
   FileDown, TrendingUp, Wallet, Users, 
   PlusCircle, Calendar, ArrowUpRight, 
   BarChart3, ShieldCheck, GraduationCap, Loader2,
-  Package, Database, Bike, Banknote, History,
+  Package, Database, FileSignature, Banknote, History, ClipboardList,
   MapPin
 } from "lucide-react"
 import { toast } from "sonner"
@@ -222,8 +222,14 @@ export default function UnifiedDashboard() {
           sub={t('nav.recruit_sub')} 
         />
         <NavButton 
+          href="/staff/training" 
+          icon={<ClipboardList size={20}/>} 
+          label={t('nav.training')} 
+          sub={t('nav.training_sub')} 
+        />
+        <NavButton 
           href="/staff/packages" 
-          icon={<Bike size={20}/>} 
+          icon={<FileSignature size={20}/>} 
           label={t('nav.packages')} 
           sub={t('nav.packages_sub')} 
         />

@@ -1,4 +1,4 @@
-// app/uk/training/page.tsx
+// app/account/training/page.tsx
 "use client"
 
 import { useEffect, useState } from "react"
@@ -9,7 +9,7 @@ import TrainingDashboardView from "@/components/training/TrainingDashboardView"
 
 export default function ClientTrainingPage() {
   const { profile } = useAuth()
-  const [details, setDetails] = useState<any>(null)
+  const [packages, setPackages] = useState<any[]>([]) // Тепер це масив
   const [lessons, setLessons] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -19,21 +19,17 @@ export default function ClientTrainingPage() {
     const fetchTrainingData = async () => {
       setLoading(true)
       try {
-        // 1. Fetch package status details
+        // 1. Отримуємо всі пакети курсів клієнта
         const { data: detailsData, error: detError } = await supabase
           .from('client_training_details')
           .select('*')
           .eq('profile_id', profile.id)
-          .order('package_status', { ascending: true }) // Active packages first
+          .order('package_status', { ascending: true })
 
         if (detError) throw detError
-        
-        if (detailsData && detailsData.length > 0) {
-          const activePack = detailsData.find(p => p.package_status === 'active') || detailsData[0]
-          setDetails(activePack)
-        }
+        setPackages(detailsData || [])
 
-        // 2. Fetch full lesson history
+        // 2. Отримуємо повну історію занять
         const { data: lessonsData, error: lessonsError } = await supabase
           .from('client_lessons_log')
           .select('*')
@@ -64,7 +60,7 @@ export default function ClientTrainingPage() {
 
   return (
     <TrainingDashboardView 
-      details={details} 
+      packages={packages} 
       lessons={lessons} 
       isStaff={profile?.role === 'staff' || profile?.role === 'admin'} 
     />

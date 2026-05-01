@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Search, Users, UserCheck, Plus, Zap, CheckCircle2, ChevronDown, Tag } from "lucide-react"
+import { Search, Users, UserCheck, Zap, CheckCircle2, ChevronDown, Tag } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { supabase } from "@/lib/supabase"
 

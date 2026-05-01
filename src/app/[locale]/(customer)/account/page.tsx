@@ -11,7 +11,6 @@ import {
   Loader2,
   Bike
 } from "lucide-react"
-import Link from "next/link"
 import { useAuth } from "@/context/AuthContext"
 
 export default function ClientLandingPage() {

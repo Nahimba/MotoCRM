@@ -4,7 +4,7 @@ import { useState } from "react"
 import { 
   PlusCircle, Calendar,
   ShieldCheck, GraduationCap,
-  Bike, Banknote, ClipboardList
+  FileSignature, Banknote, ClipboardList, Wallet
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from 'next-intl'
@@ -64,8 +64,14 @@ export default function UnifiedDashboard() {
           sub={t('nav.recruit_sub')} 
         />
         <NavButton 
+          href="/staff/training" 
+          icon={<ClipboardList size={20}/>} 
+          label={t('nav.training')} 
+          sub={t('nav.training_sub')} 
+        />
+        <NavButton 
           href="/staff/packages" 
-          icon={<Bike size={20}/>} 
+          icon={<FileSignature size={20}/>} 
           label={t('nav.packages')} 
           sub={t('nav.packages_sub')} 
         />
@@ -77,7 +83,7 @@ export default function UnifiedDashboard() {
         />
         <NavButton 
           href="/staff/finances" 
-          icon={<ClipboardList size={20}/>} 
+          icon={<Wallet size={20}/>} 
           label={t('nav.expences')} 
           sub={t('nav.expences_sub')} 
         />
