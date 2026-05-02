@@ -7,39 +7,29 @@ export function cn(...inputs: ClassValue[]) {
 
 
 
-// /**
-//  * Перетворює сирий рядок цифр у читабельний формат для відображення.
-//  * Наприклад: 380931234567 -> +38 (093) 123 45 67
-//  */
-// export function formatPhoneDisplay(phone: string | null | undefined): string {
-//   if (!phone) return '';
 
-//   // Видаляємо всі нецифрові символи
-//   const cleaned = phone.replace(/\D/g, '');
+// export const handlePhoneChange = (input: string): string => {
+//   // Дозволяємо лише цифри та "+" на початку
+//   const rawValue = input.startsWith('+') 
+//     ? '+' + input.replace(/\D/g, "") 
+//     : input.replace(/\D/g, "");
 
-//   // Формат для України: +38 (0XX) XXX XX XX
-//   if (cleaned.length === 12 && cleaned.startsWith('380')) {
-//     return `+38 (${cleaned.slice(2, 5)}) ${cleaned.slice(5, 8)} ${cleaned.slice(8, 10)} ${cleaned.slice(10, 12)}`;
-//   }
-  
-//   // Якщо введено 10 цифр (0XX XXX XX XX)
-//   if (cleaned.length === 10 && cleaned.startsWith('0')) {
-//     return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)} ${cleaned.slice(6, 8)} ${cleaned.slice(8, 10)}`;
-//   }
-
-//   // Якщо номер вже з плюсом або іншої країни, просто повертаємо як є
-//   return phone;
-// }
-
+//   // Обмеження 15 цифр (стандарт E.164) + символ плюса = 16
+//   return rawValue.length <= 16 ? rawValue : rawValue.slice(0, 16);
+// };
 
 export const handlePhoneChange = (input: string): string => {
-  // Дозволяємо лише цифри та "+" на початку
-  const rawValue = input.startsWith('+') 
-    ? '+' + input.replace(/\D/g, "") 
-    : input.replace(/\D/g, "");
+  // 1. Видаляємо все, крім цифр та знаку "+"
+  let cleaned = input.replace(/[^\d+]/g, '');
 
-  // Обмеження 15 цифр (стандарт E.164) + символ плюса = 16
-  return rawValue.length <= 16 ? rawValue : rawValue.slice(0, 16);
+  // 2. Гарантуємо, що "+" може бути тільки першим символом
+  if (cleaned.includes('+')) {
+    // Беремо "+" і додаємо до нього всі цифри, що йшли після нього або до нього
+    cleaned = '+' + cleaned.replace(/\+/g, '');
+  }
+
+  // 3. Обмеження довжини (E.164: + і до 15 цифр)
+  return cleaned.slice(0, 16);
 };
 
 
