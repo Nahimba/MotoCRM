@@ -602,18 +602,6 @@ tConst: (key: string) => string
       });
     }
 
-    // 2. Process Payments (Money)
-    // We link the payment to the instructor via the package assigned to it
-    // if (payments) {
-    //   payments.forEach(p => {
-    //     const instId = p.course_packages?.instructor_id;
-    //     if (!instId) return;
-    //     const month = getMonthYear(p.created_at);
-    //     initStat(instId, month);
-    //     instructorStats[instId][month].revenue += Number(p.amount) || 0;
-    //   });
-    // }
-
     if (payments) {
       payments.forEach(p => {
         // Рахуємо лише фактично оплачені гроші
@@ -681,9 +669,47 @@ tConst: (key: string) => string
       { header: "Години", key: "hours", width: 10 }
     ];
 
+
+    // Object.keys(instructorStats).forEach(instId => {
+    //   const instName = instructorNameMap[instId] || `ID: ${instId.substring(0, 5)}`;
+    //   const months = Object.keys(instructorStats[instId]).sort();
+
+    //   months.forEach(month => {
+    //     const data = instructorStats[instId][month];
+    //     instSheet.addRow({
+    //       name: instName,
+    //       period: month,
+    //       contractValue: data.contractValue,
+    //       revenue: data.revenue,
+    //       contracts: data.contracts,
+    //       quickSales: data.quickSales,
+    //       hours: data.hours
+    //     });
+    //   });
+
+    //   // Total Row
+    //   const totalRow = instSheet.addRow({
+    //     name: `РАЗОМ: ${instName}`,
+    //     contractValue: months.reduce((sum, m) => sum + instructorStats[instId][m].contractValue, 0),
+    //     revenue: months.reduce((sum, m) => sum + instructorStats[instId][m].revenue, 0),
+    //     contracts: months.reduce((sum, m) => sum + instructorStats[instId][m].contracts, 0),
+    //     quickSales: months.reduce((sum, m) => sum + instructorStats[instId][m].quickSales, 0),
+    //     hours: months.reduce((sum, m) => sum + instructorStats[instId][m].hours, 0)
+    //   });
+
+    //   totalRow.font = { bold: true };
+    //   totalRow.eachCell(cell => {
+    //     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+    //   });
+    //   instSheet.addRow([]); 
+    // });
+
     Object.keys(instructorStats).forEach(instId => {
       const instName = instructorNameMap[instId] || `ID: ${instId.substring(0, 5)}`;
       const months = Object.keys(instructorStats[instId]).sort();
+
+      // Keep track of the first and last row of data for this instructor
+      const startRow = instSheet.rowCount + 1;
 
       months.forEach(month => {
         const data = instructorStats[instId][month];
@@ -698,22 +724,28 @@ tConst: (key: string) => string
         });
       });
 
-      // Total Row
+      const endRow = instSheet.rowCount;
+
+      // Add the Total Row using Excel Formulas
+      // C = contractValue, D = revenue, E = contracts, F = quickSales, G = hours
       const totalRow = instSheet.addRow({
         name: `РАЗОМ: ${instName}`,
-        contractValue: months.reduce((sum, m) => sum + instructorStats[instId][m].contractValue, 0),
-        revenue: months.reduce((sum, m) => sum + instructorStats[instId][m].revenue, 0),
-        contracts: months.reduce((sum, m) => sum + instructorStats[instId][m].contracts, 0),
-        quickSales: months.reduce((sum, m) => sum + instructorStats[instId][m].quickSales, 0),
-        hours: months.reduce((sum, m) => sum + instructorStats[instId][m].hours, 0)
+        contractValue: { formula: `SUM(C${startRow}:C${endRow})` },
+        revenue: { formula: `SUM(D${startRow}:D${endRow})` },
+        contracts: { formula: `SUM(E${startRow}:E${endRow})` },
+        quickSales: { formula: `SUM(F${startRow}:F${endRow})` },
+        hours: { formula: `SUM(G${startRow}:G${endRow})` }
       });
 
+      // Styling remains the same
       totalRow.font = { bold: true };
       totalRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        cell.border = { top: { style: 'thin' } };
       });
       instSheet.addRow([]); 
     });
+
 
     instSheet.getColumn('contractValue').numFmt = '#,##0.00';
     instSheet.getColumn('revenue').numFmt = '#,##0.00';
