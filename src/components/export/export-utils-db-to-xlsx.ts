@@ -166,13 +166,193 @@ tConst: (key: string) => string
       throw new Error("Failed to fetch database records");
     }
 
-
-
     // SHEET 1: Учні
     const UKRAINIAN_MONTHS: { [key: number]: string } = {
       0: "Січень", 1: "Лютий", 2: "Березень", 3: "Квітень", 4: "Травень", 5: "Червень",
       6: "Липень", 7: "Серпень", 8: "Вересень", 9: "Жовтень", 10: "Листопад", 11: "Грудень"
     };
+
+    // 1. Initialize the storage object
+    const instructorStats: Record<string, any> = {};
+    // --- 1. Create a Lookup Map for Instructor Names ---
+    const instructorNameMap: Record<string, string> = {};
+
+
+    
+    // Example of how your data fetch might look
+    const { data: lessons } = await supabase.from('lessons').select('*');
+    const { data: coursePackages } = await supabase.from('course_packages').select('*, instructors(profiles(*)), courses(*)');
+
+
+
+
+    
+
+    // 2. Helper to format dates into "Month Year" (e.g., "Травень 2026")
+    const getMonthYear = (dateStr: string | null) => {
+      if (!dateStr) return "—";
+      const d = new Date(dateStr);
+      return `${UKRAINIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    };
+
+    const initStat = (instId: string, month: string) => {
+      if (!instructorStats[instId]) instructorStats[instId] = {};
+      if (!instructorStats[instId][month]) {
+        instructorStats[instId][month] = {
+          revenue: 0,        // Actual Cash Received
+          contractValue: 0,  // Total Value of Signed Contracts
+          contracts: 0,   // Повні пакети
+          quickSales: 0,  // Разові заняття (Quick Creation)
+          hours: 0
+        };
+      }
+    };
+
+
+
+    // 1. Process Lessons (Hours)
+    // We only count completed lessons to get actual worked hours
+    if (lessons) {
+      lessons.forEach(l => {
+        if (l.status !== 'completed' || !l.instructor_id) return;
+        const month = getMonthYear(l.session_date);
+        initStat(l.instructor_id, month);
+        instructorStats[l.instructor_id][month].hours += Number(l.duration) || 0;
+      });
+    }
+
+    if (payments) {
+      payments.forEach(p => {
+        // Рахуємо лише фактично оплачені гроші
+        if (!p.is_paid || !p.course_packages?.instructor_id) return;
+    
+        // Find the instructor linked to the package this payment was for
+        const instId = p.course_packages?.instructor_id;
+        
+        if (!instId) return; // If payment isn't linked to a package, we can't credit an instructor
+        
+        const month = getMonthYear(p.created_at);
+        initStat(instId, month);
+        
+        // Add to "Каса"
+        instructorStats[instId][month].revenue += Number(p.amount) || 0;
+      });
+    }
+
+
+    // 2. Обробка Пакетів (Контракти vs Разові)
+    if (coursePackages) {
+      coursePackages.forEach(cp => {
+        if (!cp.instructor_id) return;
+    
+        // Мапа імен
+        const inst = Array.isArray(cp.instructors) ? cp.instructors[0] : cp.instructors;
+        const prof = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
+        if (prof && !instructorNameMap[cp.instructor_id]) {
+          instructorNameMap[cp.instructor_id] = `${prof.last_name || ''} ${prof.first_name || ''}`.trim();
+        }
+    
+        const month = getMonthYear(cp.created_at);
+        initStat(cp.instructor_id, month);
+    
+        // ЛОГІКА РАЗОВИХ: перевіряємо прапорець у таблиці courses
+        const courseData = Array.isArray(cp.courses) ? cp.courses[0] : cp.courses;
+        const isQuick = courseData?.allow_quick_creation === true;
+    
+        if (isQuick) {
+          instructorStats[cp.instructor_id][month].quickSales += 1;
+        } else {
+          instructorStats[cp.instructor_id][month].contracts += 1;
+        }
+    
+        // Загальна вартість проданого (план)
+        instructorStats[cp.instructor_id][month].contractValue += Number(cp.contract_price) || 0;
+      });
+    }
+
+
+
+
+
+
+
+
+    // // --- 1. Сначала расчет данных (ВАЖНО: этот блок должен быть ПЕРЕД созданием dashSheet) ---
+    // const instructorRanking = Object.keys(instructorStats).map(id => {
+    //   const months = Object.values(instructorStats[id]);
+      
+    //   // Явно типизируем объект totals
+    //   const totals = months.reduce((acc: { revenue: number; hours: number }, curr: any) => ({
+    //     revenue: acc.revenue + (curr.revenue || 0),
+    //     hours: acc.hours + (curr.hours || 0),
+    //   }), { revenue: 0, hours: 0 }); // Начальное значение — объект нужного типа
+
+    //   return {
+    //     name: instructorNameMap[id] || id,
+    //     revenue: totals.revenue,
+    //     hours: totals.hours
+    //   };
+    // }).sort((a, b) => b.revenue - a.revenue);
+
+
+    // // --- SHEET 0: Дашборд (Создаем ПЕРВЫМ) ---
+    // const dashSheet = workbook.addWorksheet("📊 Дашборд");
+
+    // // 1. Общие показатели (KPI)
+    // dashSheet.addRow(["ОСНОВНІ ПОКАЗНИКИ ШКОЛИ"]).font = { bold: true, size: 14 };
+    // dashSheet.addRow([]); // Отступ
+
+    // const totalRev = payments ? payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) : 0;
+    // const totalExp = expenses ? expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) : 0;
+
+    // dashSheet.addRows([
+    //   ["Параметр", "Значення"],
+    //   ["Загальна каса (Дохід)", totalRev],
+    //   ["Загальні витрати", totalExp],
+    //   ["Чистий прибуток", totalRev - totalExp],
+    // ]);
+
+    // // Стилизация KPI таблицы
+    // dashSheet.getRows(3, 4)?.forEach(row => {
+    //   row.getCell(1).font = { bold: true };
+    //   row.getCell(2).numFmt = '#,##0.00 "грн"';
+    // });
+
+    // dashSheet.addRow([]); // Отступ
+    // dashSheet.addRow([]); // Отступ
+
+    // // 2. Секция рейтинга (подготовим структуру под данные инструкторов)
+    // dashSheet.addRow(["🏆 РЕЙТИНГ ІНСТРУКТОРІВ (ТОП ПО ДОХОДУ)"]).font = { bold: true, size: 12 };
+    // const dashHeader = dashSheet.addRow(["Місце", "Інструктор", "Каса (грн)", "Години", "Ефективність (грн/год)"]);
+    // dashHeader.font = { bold: true };
+    // dashHeader.eachCell(c => {
+    //     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } };
+    //     c.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    // });
+
+
+    // instructorRanking.forEach((inst, idx) => {
+    //   const efficiency = inst.hours > 0 ? inst.revenue / inst.hours : 0;
+    //   dashSheet.addRow([
+    //     idx + 1,
+    //     inst.name,
+    //     inst.revenue,
+    //     inst.hours,
+    //     efficiency
+    //   ]);
+    // });
+
+    // // Форматування колонок Дашборда
+    // dashSheet.getColumn(1).width = 10; // Місце
+    // dashSheet.getColumn(2).width = 35; // Інструктор
+    // dashSheet.getColumn(3).width = 20; // Збільшуємо ширину для Каси (було мало)
+    // dashSheet.getColumn(4).width = 12; // Години
+    // dashSheet.getColumn(5).width = 20; // Ефективність
+
+    // // Убираем сетку для красоты
+    // dashSheet.views = [{ showGridLines: false }];
+
+
 
 
 
@@ -416,50 +596,6 @@ tConst: (key: string) => string
   }
 
 
-    // // --- SHEET 4: Витрати ---
-    // if (expenses) {
-    //   const sheet = workbook.addWorksheet("Витрати");
-
-    //   // 1. Define Columns
-    //   sheet.columns = [
-    //     { header: "Дата", key: "date" },
-    //     { header: "Хто створив", key: "createdBy" },
-    //     { header: "Тип", key: "type" },
-    //     { header: "Категорія", key: "category" },
-    //     { header: "Сума", key: "amount" },
-    //     { header: "Спосіб оплати", key: "method" },
-    //     { header: "Опис", key: "desc" }
-    //   ];
-
-    //   // 2. Map Data
-    //   const rows = expenses.map(e => {
-    //     const prof = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
-    //     const creatorName = prof 
-    //       ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
-    //       : '—';
-
-    //     return {
-    //       date: e.expense_date ? new Date(e.expense_date).toLocaleDateString() : '—',
-    //       createdBy: creatorName,
-    //       type: e.type ? tConst(`expense_types.${e.type}`) : (e.type || '—'),
-    //       category: e.category ? tConst(`expense_categories.${e.category}`) : '—',
-    //       amount: Number(e.amount) || 0,
-    //       method: e.payment_method ? tConst(`payment.method.${e.payment_method}`) : (e.payment_method || '—'),
-    //       desc: e.description || ''
-    //     };
-    //   });
-
-    //   // 3. Add Rows
-    //   sheet.addRows(rows);
-
-    //   // 4. Financial Formatting for the "Amount" column
-    //   // This ensures Excel recognizes the numbers for easy summing
-    //   sheet.getColumn('amount').numFmt = '#,##0.00';
-
-    //   // 5. Finalize UI (Freeze, Filter, Style)
-    //   finalizeSheet(sheet);
-    // }
-
     // --- SHEET 4: Витрати (Expenses) ---
     if (expenses) {
       const sheet = workbook.addWorksheet("Витрати");
@@ -558,100 +694,7 @@ tConst: (key: string) => string
 
 
 
-    
 
-
-    // 1. Initialize the storage object
-    const instructorStats: Record<string, any> = {};
-
-    // 2. Helper to format dates into "Month Year" (e.g., "Травень 2026")
-    const getMonthYear = (dateStr: string | null) => {
-      if (!dateStr) return "—";
-      const d = new Date(dateStr);
-      return `${UKRAINIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-    };
-
-    const initStat = (instId: string, month: string) => {
-      if (!instructorStats[instId]) instructorStats[instId] = {};
-      if (!instructorStats[instId][month]) {
-        instructorStats[instId][month] = {
-          revenue: 0,        // Actual Cash Received
-          contractValue: 0,  // Total Value of Signed Contracts
-          contracts: 0,   // Повні пакети
-          quickSales: 0,  // Разові заняття (Quick Creation)
-          hours: 0
-        };
-      }
-    };
-
-
-
-    
-    // Example of how your data fetch might look
-    const { data: lessons } = await supabase.from('lessons').select('*');
-    const { data: coursePackages } = await supabase.from('course_packages').select('*, instructors(profiles(*)), courses(*)');
-
-    // 1. Process Lessons (Hours)
-    // We only count completed lessons to get actual worked hours
-    if (lessons) {
-      lessons.forEach(l => {
-        if (l.status !== 'completed' || !l.instructor_id) return;
-        const month = getMonthYear(l.session_date);
-        initStat(l.instructor_id, month);
-        instructorStats[l.instructor_id][month].hours += Number(l.duration) || 0;
-      });
-    }
-
-    if (payments) {
-      payments.forEach(p => {
-        // Рахуємо лише фактично оплачені гроші
-        if (!p.is_paid || !p.course_packages?.instructor_id) return;
-    
-        // Find the instructor linked to the package this payment was for
-        const instId = p.course_packages?.instructor_id;
-        
-        if (!instId) return; // If payment isn't linked to a package, we can't credit an instructor
-        
-        const month = getMonthYear(p.created_at);
-        initStat(instId, month);
-        
-        // Add to "Каса"
-        instructorStats[instId][month].revenue += Number(p.amount) || 0;
-      });
-    }
-
-    // --- 1. Create a Lookup Map for Instructor Names ---
-    const instructorNameMap: Record<string, string> = {};
-
-    // 2. Обробка Пакетів (Контракти vs Разові)
-    if (coursePackages) {
-      coursePackages.forEach(cp => {
-        if (!cp.instructor_id) return;
-    
-        // Мапа імен
-        const inst = Array.isArray(cp.instructors) ? cp.instructors[0] : cp.instructors;
-        const prof = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
-        if (prof && !instructorNameMap[cp.instructor_id]) {
-          instructorNameMap[cp.instructor_id] = `${prof.last_name || ''} ${prof.first_name || ''}`.trim();
-        }
-    
-        const month = getMonthYear(cp.created_at);
-        initStat(cp.instructor_id, month);
-    
-        // ЛОГІКА РАЗОВИХ: перевіряємо прапорець у таблиці courses
-        const courseData = Array.isArray(cp.courses) ? cp.courses[0] : cp.courses;
-        const isQuick = courseData?.allow_quick_creation === true;
-    
-        if (isQuick) {
-          instructorStats[cp.instructor_id][month].quickSales += 1;
-        } else {
-          instructorStats[cp.instructor_id][month].contracts += 1;
-        }
-    
-        // Загальна вартість проданого (план)
-        instructorStats[cp.instructor_id][month].contractValue += Number(cp.contract_price) || 0;
-      });
-    }
 
     
     
@@ -669,40 +712,6 @@ tConst: (key: string) => string
       { header: "Години", key: "hours", width: 10 }
     ];
 
-
-    // Object.keys(instructorStats).forEach(instId => {
-    //   const instName = instructorNameMap[instId] || `ID: ${instId.substring(0, 5)}`;
-    //   const months = Object.keys(instructorStats[instId]).sort();
-
-    //   months.forEach(month => {
-    //     const data = instructorStats[instId][month];
-    //     instSheet.addRow({
-    //       name: instName,
-    //       period: month,
-    //       contractValue: data.contractValue,
-    //       revenue: data.revenue,
-    //       contracts: data.contracts,
-    //       quickSales: data.quickSales,
-    //       hours: data.hours
-    //     });
-    //   });
-
-    //   // Total Row
-    //   const totalRow = instSheet.addRow({
-    //     name: `РАЗОМ: ${instName}`,
-    //     contractValue: months.reduce((sum, m) => sum + instructorStats[instId][m].contractValue, 0),
-    //     revenue: months.reduce((sum, m) => sum + instructorStats[instId][m].revenue, 0),
-    //     contracts: months.reduce((sum, m) => sum + instructorStats[instId][m].contracts, 0),
-    //     quickSales: months.reduce((sum, m) => sum + instructorStats[instId][m].quickSales, 0),
-    //     hours: months.reduce((sum, m) => sum + instructorStats[instId][m].hours, 0)
-    //   });
-
-    //   totalRow.font = { bold: true };
-    //   totalRow.eachCell(cell => {
-    //     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
-    //   });
-    //   instSheet.addRow([]); 
-    // });
 
     Object.keys(instructorStats).forEach(instId => {
       const instName = instructorNameMap[instId] || `ID: ${instId.substring(0, 5)}`;
