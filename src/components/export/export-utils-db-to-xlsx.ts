@@ -140,7 +140,11 @@ tConst: (key: string) => string
             )
           ),
         course_packages(
-          courses(name)
+          instructor_id,
+          courses(
+            name,
+            allow_quick_creation
+          )
         )
       `).order('created_at', { ascending: true }),
       
