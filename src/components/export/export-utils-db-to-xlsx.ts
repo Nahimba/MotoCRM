@@ -83,6 +83,8 @@ tConst: (key: string) => string
 
     
 
+    
+
     // 1. DATA FETCHING (Parallel with Deep Joins)
     const [
       { data: studentsRaw , error: err1},
@@ -550,6 +552,169 @@ tConst: (key: string) => string
 
 
 
+
+
+    
+
+
+    // 1. Initialize the storage object
+    const instructorStats: Record<string, any> = {};
+
+    // 2. Helper to format dates into "Month Year" (e.g., "Травень 2026")
+    const getMonthYear = (dateStr: string | null) => {
+      if (!dateStr) return "—";
+      const d = new Date(dateStr);
+      return `${UKRAINIAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    };
+
+    const initStat = (instId: string, month: string) => {
+      if (!instructorStats[instId]) instructorStats[instId] = {};
+      if (!instructorStats[instId][month]) {
+        instructorStats[instId][month] = {
+          revenue: 0,        // Actual Cash Received
+          contractValue: 0,  // Total Value of Signed Contracts
+          contracts: 0,   // Повні пакети
+          quickSales: 0,  // Разові заняття (Quick Creation)
+          hours: 0
+        };
+      }
+    };
+
+
+
+    
+    // Example of how your data fetch might look
+    const { data: lessons } = await supabase.from('lessons').select('*');
+    const { data: coursePackages } = await supabase.from('course_packages').select('*, instructors(profiles(*)), courses(*)');
+
+    // 1. Process Lessons (Hours)
+    // We only count completed lessons to get actual worked hours
+    if (lessons) {
+      lessons.forEach(l => {
+        if (l.status !== 'completed' || !l.instructor_id) return;
+        const month = getMonthYear(l.session_date);
+        initStat(l.instructor_id, month);
+        instructorStats[l.instructor_id][month].hours += Number(l.duration) || 0;
+      });
+    }
+
+    // 2. Process Payments (Money)
+    // We link the payment to the instructor via the package assigned to it
+    // if (payments) {
+    //   payments.forEach(p => {
+    //     const instId = p.course_packages?.instructor_id;
+    //     if (!instId) return;
+    //     const month = getMonthYear(p.created_at);
+    //     initStat(instId, month);
+    //     instructorStats[instId][month].revenue += Number(p.amount) || 0;
+    //   });
+    // }
+
+    if (payments) {
+      payments.forEach(p => {
+        // Рахуємо лише фактично оплачені гроші
+        if (!p.is_paid || !p.course_packages?.instructor_id) return;
+    
+        // Find the instructor linked to the package this payment was for
+        const instId = p.course_packages?.instructor_id;
+        
+        if (!instId) return; // If payment isn't linked to a package, we can't credit an instructor
+        
+        const month = getMonthYear(p.created_at);
+        initStat(instId, month);
+        
+        // Add to "Каса"
+        instructorStats[instId][month].revenue += Number(p.amount) || 0;
+      });
+    }
+
+    // --- 1. Create a Lookup Map for Instructor Names ---
+    const instructorNameMap: Record<string, string> = {};
+
+    // 2. Обробка Пакетів (Контракти vs Разові)
+    if (coursePackages) {
+      coursePackages.forEach(cp => {
+        if (!cp.instructor_id) return;
+    
+        // Мапа імен
+        const inst = Array.isArray(cp.instructors) ? cp.instructors[0] : cp.instructors;
+        const prof = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
+        if (prof && !instructorNameMap[cp.instructor_id]) {
+          instructorNameMap[cp.instructor_id] = `${prof.last_name || ''} ${prof.first_name || ''}`.trim();
+        }
+    
+        const month = getMonthYear(cp.created_at);
+        initStat(cp.instructor_id, month);
+    
+        // ЛОГІКА РАЗОВИХ: перевіряємо прапорець у таблиці courses
+        const courseData = Array.isArray(cp.courses) ? cp.courses[0] : cp.courses;
+        const isQuick = courseData?.allow_quick_creation === true;
+    
+        if (isQuick) {
+          instructorStats[cp.instructor_id][month].quickSales += 1;
+        } else {
+          instructorStats[cp.instructor_id][month].contracts += 1;
+        }
+    
+        // Загальна вартість проданого (план)
+        instructorStats[cp.instructor_id][month].contractValue += Number(cp.contract_price) || 0;
+      });
+    }
+
+    
+    
+
+
+    // SHEET: Instructor_Summary
+    const instSheet = workbook.addWorksheet("Підсумок по інструкторам");
+    instSheet.columns = [
+      { header: "Інструктор", key: "name", width: 25 },
+      { header: "Період", key: "period", width: 15 },
+      { header: "Продано (грн)", key: "contractValue", width: 18 },
+      { header: "Каса (грн)", key: "revenue", width: 18 },
+      { header: "Контракти", key: "contracts", width: 12 },
+      { header: "Разові", key: "quickSales", width: 12 },
+      { header: "Години", key: "hours", width: 10 }
+    ];
+
+    Object.keys(instructorStats).forEach(instId => {
+      const instName = instructorNameMap[instId] || `ID: ${instId.substring(0, 5)}`;
+      const months = Object.keys(instructorStats[instId]).sort();
+
+      months.forEach(month => {
+        const data = instructorStats[instId][month];
+        instSheet.addRow({
+          name: instName,
+          period: month,
+          contractValue: data.contractValue,
+          revenue: data.revenue,
+          contracts: data.contracts,
+          quickSales: data.quickSales,
+          hours: data.hours
+        });
+      });
+
+      // Total Row
+      const totalRow = instSheet.addRow({
+        name: `РАЗОМ: ${instName}`,
+        contractValue: months.reduce((sum, m) => sum + instructorStats[instId][m].contractValue, 0),
+        revenue: months.reduce((sum, m) => sum + instructorStats[instId][m].revenue, 0),
+        contracts: months.reduce((sum, m) => sum + instructorStats[instId][m].contracts, 0),
+        quickSales: months.reduce((sum, m) => sum + instructorStats[instId][m].quickSales, 0),
+        hours: months.reduce((sum, m) => sum + instructorStats[instId][m].hours, 0)
+      });
+
+      totalRow.font = { bold: true };
+      totalRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      });
+      instSheet.addRow([]); 
+    });
+
+    instSheet.getColumn('contractValue').numFmt = '#,##0.00';
+    instSheet.getColumn('revenue').numFmt = '#,##0.00';
+
+    
 
     
 
