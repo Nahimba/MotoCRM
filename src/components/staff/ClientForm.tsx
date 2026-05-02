@@ -14,6 +14,8 @@ import { LEAD_SOURCES, STUDENT_STAGES, type LeadSource, type StudentStage } from
 
 import { AvatarModal } from "@/components/avatar/AvatarModal"
 
+import { formatFlexiblePhone, handlePhoneChange, preparePhoneForSave } from "@/lib/utils"
+
 export default function RiderForm({ initialData, id }: { initialData?: any, id?: string }) {
   const t = useTranslations("Clients")
   const tConst = useTranslations("Constants")
@@ -99,47 +101,55 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
   }
 
 
-  const formatFlexiblePhone = (value: string) => {
-    if (!value) return "";
+  // const formatFlexiblePhone = (value: string) => {
+  //   if (!value) return "";
     
-    // Preserve the plus if it's at the start
-    const hasPlus = value.startsWith("+");
-    const digits = value.replace(/\D/g, "");
+  //   // Preserve the plus if it's at the start
+  //   const hasPlus = value.startsWith("+");
+  //   const digits = value.replace(/\D/g, "");
     
-    let formatted = digits;
+  //   let formatted = digits;
   
-    if (digits.length > 0) {
-      if (digits.length <= 2) {
-        formatted = digits;
-      } else if (digits.length <= 5) {
-        formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
-      } else if (digits.length <= 8) {
-        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
-      } else if (digits.length <= 10) {
-        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
-      } else {
-        formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
-      }
-    }
+  //   if (digits.length > 0) {
+  //     if (digits.length <= 2) {
+  //       formatted = digits;
+  //     } else if (digits.length <= 5) {
+  //       formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
+  //     } else if (digits.length <= 8) {
+  //       formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
+  //     } else if (digits.length <= 10) {
+  //       formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
+  //     } else {
+  //       formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+  //     }
+  //   }
   
-    return hasPlus ? `+${formatted}` : formatted;
-  };
+  //   return hasPlus ? `+${formatted}` : formatted;
+  // };
 
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
+    
     // --- VALIDATION BLOCK ---
-    // Отримуємо чисті цифри для валідації та збереження
-    const rawPhone = formData.phone ? formData.phone.replace(/[^\d+]/g, "") : "";
-    const digitCount = rawPhone.replace(/\D/g, "").length;
-    // Валідуємо тільки якщо користувач щось ввів
-    if (rawPhone && (digitCount < 7 || digitCount > 15)) {
-      toast.error("Невірний номер телефону");
+    // // Отримуємо чисті цифри для валідації та збереження
+    // const rawPhone = formData.phone ? formData.phone.replace(/[^\d+]/g, "") : "";
+    // const digitCount = rawPhone.replace(/\D/g, "").length;
+    // // Валідуємо тільки якщо користувач щось ввів
+    // if (rawPhone && (digitCount < 7 || digitCount > 15)) {
+    //   toast.error("Невірний номер телефону");
+    //   return;
+    // }
+    // // Вирішуємо, що саме відправити в базу
+    // const phoneToSave = rawPhone || null;
+
+    const { isValid, phoneToSave, error } = preparePhoneForSave(formData.phone);
+  
+    if (!isValid) {
+      toast.error(error);
       return;
     }
-    // Вирішуємо, що саме відправити в базу
-    const phoneToSave = rawPhone || null;
 
     // 1. Define the Regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -335,17 +345,9 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                   type="tel"
                   value={formatFlexiblePhone(formData.phone)} 
                   onChange={e => {
-                    const input = e.target.value;
-                    // Allow only digits and a leading plus
-                    const rawValue = input.startsWith('+') 
-                      ? '+' + input.replace(/\D/g, "") 
-                      : input.replace(/\D/g, "");
-                    
-                    // Limit total digits to 15 (standard international max)
-                    if (rawValue.length <= 16) { 
-                      setFormData({...formData, phone: rawValue});
-                    }
-                  }} 
+                    const cleanValue = handlePhoneChange(e.target.value);
+                    setFormData({ ...formData, phone: cleanValue });
+                  }}
                   className={inputClass} 
                   placeholder="+38 (0XX) XXX XX XX" 
                 />

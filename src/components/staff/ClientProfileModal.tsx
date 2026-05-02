@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase"
 import { X, Phone, User, FileText, Mail, Clock, Loader2, ShieldCheck, MapPin } from "lucide-react"
 import { useTranslations } from "next-intl"
 
+import { formatFlexiblePhone} from "@/lib/utils"
+
 interface ClientProfileModalProps {
   client: any // Об'єкт уроку з розкладу
   onClose: () => void
@@ -148,16 +150,17 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
             
             {/* Training Stats - Focused on the current package */}
             <div className="grid grid-cols-1 gap-4 mt-8 mb-6">
+
               {/* Active Course Name */}
-              <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
+              {/* <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Активний контракт</p>
                 <div className="text-xl font-black uppercase italic text-primary relative z-10 truncate">
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (details?.active_course_name || "Навчальний Контракт")}
                 </div>
-              </div>
+              </div> */}
 
               {/* Remaining Hours */}
-              <div className="p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
+              {/* <div className="p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
                 <div className="flex justify-between items-center relative z-10">
                   <div>
                     <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Залишок часу</p>
@@ -167,17 +170,27 @@ export function ClientProfileModal({ client, onClose }: ClientProfileModalProps)
                   </div>
                   <Clock className="w-12 h-12 text-primary/20 rotate-12" />
                 </div>
-              </div>
+              </div> */}
+
             </div>
 
             {/* Contact Details */}
             <div className="space-y-3">
               <a 
-                href={profile?.phone ? `tel:${profile.phone}` : "#"} 
-                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${profile?.phone ? 'bg-white/5 border-white/5 hover:bg-primary hover:text-black hover:border-primary' : 'bg-white/5 border-white/5 opacity-40 cursor-not-allowed'}`}
+                // Якщо телефону немає, href взагалі можна не додавати або лишити undefined
+                href={profile?.phone ? `tel:${profile.phone.replace(/\s/g, '')}` : undefined} 
+                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all 
+                  ${profile?.phone 
+                    ? 'bg-white/5 border-white/5 hover:bg-primary hover:text-black hover:border-primary' 
+                    : 'bg-white/5 border-white/5 opacity-40 cursor-not-allowed pointer-events-none'
+                  }`}
               >
-                <div className="p-2 bg-black/20 rounded-lg"><Phone size={16} /></div>
-                <span className="text-sm font-black tabular-nums tracking-tight">{profile?.phone || 'НЕМАЄ ТЕЛЕФОНУ'}</span>
+                <div className="p-2 bg-black/20 rounded-lg">
+                  <Phone size={16} />
+                </div>
+                <span className="text-sm font-black tabular-nums tracking-tight">
+                  {profile?.phone ? formatFlexiblePhone(profile.phone) : 'НЕМАЄ ТЕЛЕФОНУ'}
+                </span>
               </a>
 
               <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl">
