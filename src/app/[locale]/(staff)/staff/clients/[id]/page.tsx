@@ -329,7 +329,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   // Filter: Only show full contracts (hide one-time/quick sessions from this list)
   const packages = allPackages
-    //.filter((pkg: any) => pkg.package_status === 'active' && !pkg.courses?.allow_quick_creation)
+    //.filter((pkg: any) => pkg.status === 'active' && !pkg.courses?.allow_quick_creation)
+    .filter((pkg: any) => pkg.status === 'active')
     //.filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
     //.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
