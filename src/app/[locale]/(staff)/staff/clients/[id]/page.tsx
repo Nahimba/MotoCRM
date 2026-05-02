@@ -4,10 +4,8 @@ import { useEffect, useState, use, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
-  ChevronLeft, Phone, Mail, 
-  MapPin, CreditCard, Clock, Bike, ShieldCheck,
-  CheckCircle2, Activity, FileText, RotateCcw, KeyRound,
-  Loader2, Plus
+  ChevronLeft, Phone, Mail, MapPin, CreditCard, Clock, Bike, 
+  ShieldCheck, FileText, RotateCcw, KeyRound, Loader2, Plus
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -248,23 +246,40 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const loadClientData = async () => {
     if (!id) return
     setLoading(true)
+    // const { data, error } = await supabase
+    //   .from('clients')
+    //   .select(`
+    //     *,
+    //     profiles:profile_id (*),
+    //     accounts (
+    //       id,
+    //       payments (*),
+    //       course_packages (
+    //         *,
+    //         courses!inner (name, allow_quick_creation),
+    //         lessons (duration, status, is_counted)
+    //       )
+    //     )
+    //   `)
+    //   .eq('id', id)
+    //   .single()
     const { data, error } = await supabase
-      .from('clients')
-      .select(`
-        *,
-        profiles:profile_id (*),
-        accounts (
-          id,
-          payments (*),
-          course_packages (
-            *,
-            courses!inner (name, allow_quick_creation),
-            lessons (duration, status, is_counted)
-          )
+    .from('clients')
+    .select(`
+      *,
+      profiles:profile_id (*),
+      accounts (
+        id,
+        payments (*),
+        course_packages (
+          *,
+          courses (*),
+          lessons (*)
         )
-      `)
-      .eq('id', id)
-      .single()
+      )
+    `)
+    .eq('id', id)
+    .single()
   
     if (error) {
       console.error("Fetch error:", error)
@@ -301,37 +316,72 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   )
   
   const profile = client?.profiles
-  const account = client?.accounts?.[0]
+  // Перевіряємо, чи користувач вже хоча б раз підтвердив пошту / залогінився
+  //const isConfirmed = profile?.is_confirmed || false;
+  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
+
+  const account = client?.accounts
+
+
+
+  // 1. Get and Sort Packages
+  const allPackages = account?.course_packages || [];
+
+  // Filter: Only show full contracts (hide one-time/quick sessions from this list)
+  const packages = allPackages
+    //.filter((pkg: any) => pkg.package_status === 'active' && !pkg.courses?.allow_quick_creation)
+    //.filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
+    //.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  const packageIds = packages.map((p: any) => p.id);
+
+  // 2. Hours Stats (Strictly for the filtered packages)
+  const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0);
+
+  const totalUsedHours = packages.reduce((sum: number, p: any) => {
+    const pUsed = p.lessons?.filter((l: any) => l.is_counted)
+                  .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0;
+    return sum + pUsed;
+  }, 0);
+
+  const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours);
+
+  // 3. Financial Standing (Strictly tied to the filtered package IDs)
+  const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0);
+
+  const totalPaid = account?.payments
+    ?.filter((p: any) => p.is_paid && packageIds.includes(p.course_package_id)) 
+    .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+
+  const totalDebt = totalContractValue - totalPaid;
+
 
   // const packages = account?.course_packages || []
-  // SORT and FILTER packages
-  const packages = (account?.course_packages || [])
-  .filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
-  .sort((a: any, b: any) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-  
-  // Перевіряємо, чи користувач вже хоча б раз підтвердив пошту / залогінився
-  const isConfirmed = profile?.is_confirmed || false;
-  
-  // 1. FILTERED AGGREGATED STATS
-  const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
-  
-  const totalUsedHours = packages.reduce((sum: number, p: any) => {
-    const pUsed = p.lessons?.filter((l: any) => l.is_counted === true) // Filter by is_counted
-                   .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0
-    return sum + pUsed
-  }, 0)
-  
-  const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours)
-  
-  // 2. FINANCIAL STANDING (Using is_paid)
-  const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0)
-  const totalPaid = account?.payments?.filter((p: any) => p.is_paid === true) // Filter by is_paid
-                             .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
-  const totalDebt = totalContractValue - totalPaid
 
-  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
+  // // // SORT and FILTER packages
+  // // const packages = (account?.course_packages || [])
+  // // .filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
+  // // .sort((a: any, b: any) => 
+  // //   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  // // );
+  
+  // // 1. FILTERED AGGREGATED STATS
+  // const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
+  
+  // const totalUsedHours = packages.reduce((sum: number, p: any) => {
+  //   const pUsed = p.lessons?.filter((l: any) => l.is_counted === true) // Filter by is_counted
+  //                  .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0
+  //   return sum + pUsed
+  // }, 0)
+  
+  // const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours)
+  
+  // // 2. FINANCIAL STANDING (Using is_paid)
+  // const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0)
+  // const totalPaid = account?.payments?.filter((p: any) => p.is_paid === true) // Filter by is_paid
+  //                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
+  // const totalDebt = totalContractValue - totalPaid
+
 
 
 
@@ -554,6 +604,12 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <div className="lg:col-span-2 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard 
+              label="Залишок часу" 
+              value={`${totalRemainingHours}H`} 
+              icon={<Clock size={18} className="text-primary" />} 
+              variant="default"
+            />
+            <StatCard 
               label="Баланс" 
               value={
                 totalDebt > 0 
@@ -563,12 +619,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               unit={totalDebt > 0 ? "₴" : ""}
               icon={<CreditCard size={18} className={totalDebt > 0 ? "text-red-500" : "text-green-400"} />} 
               variant={totalDebt > 0 ? "danger" : "success"}
-            />
-            <StatCard 
-              label="Залишок часу" 
-              value={`${totalRemainingHours}H`} 
-              icon={<Clock size={18} className="text-primary" />} 
-              variant="default"
             />
           </div>
 
@@ -591,8 +641,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               // Calculate paid amount for THIS specific package
               // We look into the parent account's payments and filter by this package's ID
               const pkgPaid = account?.payments
-                ?.filter((p: any) => p.course_package_id === pkg.id && p.status === 'completed')
+                ?.filter((p: any) => p.course_package_id === pkg.id && p.is_paid === true)
                 .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
+
+              
               
               return (
                 <div key={pkg.id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-6 sm:p-6 relative overflow-hidden group">
