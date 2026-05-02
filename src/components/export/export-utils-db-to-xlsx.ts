@@ -42,7 +42,8 @@ tConst: (key: string) => string
       headerRow.height = 30;
       headerRow.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        // Change FF0F172A (Navy) to FF475569 (Cool Gray) or FF333333 (Neutral Dark Gray)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF475569' } }; 
         cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
       });
     
@@ -315,109 +316,98 @@ tConst: (key: string) => string
   }
 
 
+  // SHEET: Revenue_Log
+  if (payments) {
+    const paySheet = workbook.addWorksheet("Оплати");
+    paySheet.columns = [
+      { header: "Дата", key: "date", width: 15 },
+      { header: "Учень", key: "fullName", width: 35 },
+      { header: "Сума", key: "amount", width: 15 },
+      { header: "Курс", key: "course", width: 25 },
+      { header: "Метод", key: "method", width: 20 },
+      { header: "План оплати", key: "plan", width: 20 },
+      { header: "Коментарі", key: "notes", width: 30 }
+    ];
 
-    // SHEET: Revenue_Log
-    if (payments) {
-      const paySheet = workbook.addWorksheet("Оплати");
-      paySheet.columns = [
-        { header: "Дата", key: "date", width: 15 },
-        { header: "Учень", key: "fullName", width: 35 },
-        { header: "Сума", key: "amount", width: 15 }, // Column C
-        { header: "Курс", key: "course", width: 25 },
-        { header: "Метод", key: "method", width: 20 },
-        { header: "План оплати", key: "plan", width: 20 },
-        { header: "Коментарі", key: "notes", width: 30 }
-      ];
+    let lastPayMonth = "";
+    let monthStartIndex = 2; 
+    let grandTotalRevenue = 0;
 
-      let lastPayMonth = "";
-      let monthStartIndex = 2; // Data starts at row 2 (under header)
-      let grandTotalRevenue = 0;
+    payments.forEach((p, index) => {
+      const dateObj = p.created_at ? new Date(p.created_at) : null;
+      const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
+      const amount = Number(p.amount) || 0;
+      grandTotalRevenue += amount;
 
-      payments.forEach((p, index) => {
-        const dateObj = p.created_at ? new Date(p.created_at) : null;
-        const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
-        const amount = Number(p.amount) || 0;
-        grandTotalRevenue += amount;
-
-        // 1. MONTHLY SEPARATOR & SUBTOTAL LOGIC
-        if (currentMonthYear !== lastPayMonth && currentMonthYear !== "") {
-          
-          // If we are switching months, add subtotal for the month that just ended
-          if (lastPayMonth !== "") {
-            const lastDataRow = paySheet.lastRow!.number;
-            const subtotalRow = paySheet.addRow({ 
-              fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
-              amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
-            });
-            subtotalRow.font = { bold: true, italic: true };
-            subtotalRow.getCell(3).numFmt = '#,##0.00';
-          }
-
-          // Add Month Header
-          const monthRow = paySheet.addRow({ date: currentMonthYear });
-          paySheet.mergeCells(monthRow.number, 1, monthRow.number, 7);
-          monthRow.getCell(1).font = { bold: true, size: 12 };
-          monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
-          monthRow.getCell(1).alignment = { horizontal: 'center' };
-          
-          lastPayMonth = currentMonthYear;
-          // Mark the first row of data for the new month
-          monthStartIndex = paySheet.lastRow!.number + 1;
+      // 1. MONTHLY SEPARATOR & SUBTOTAL LOGIC
+      if (currentMonthYear !== lastPayMonth && currentMonthYear !== "") {
+        if (lastPayMonth !== "") {
+          const lastDataRow = paySheet.lastRow!.number;
+          const subtotalRow = paySheet.addRow({ 
+            fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
+            amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
+          });
+          subtotalRow.font = { bold: true, italic: true, color: { argb: 'FF475569' } }; // Steel Gray
+          subtotalRow.getCell(3).numFmt = '#,##0.00';
         }
 
-        // 2. DATA EXTRACTION
-        const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
-        const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
-        const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
-        const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
-        const translatedMethod = method?.label_key ? t(method.label_key) : (method?.slug || '—');
-        const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
-        const translatedPlan = plan?.label_key ? t(plan.label_key) : (plan?.slug || '—');
-        const pkg = Array.isArray(p.course_packages) ? p.course_packages[0] : p.course_packages;
-        const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
-
-        // 3. ADD ROW
-        paySheet.addRow({
-          date: dateObj ? dateObj.toLocaleDateString() : '—',
-          fullName: prof 
-            ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
-            : '—',
-          amount: amount,
-          course: crs?.name || '—',
-          method: translatedMethod,
-          plan: translatedPlan,
-          notes: p.notes || ''
-        });
-      });
-
-      // 4. ADD FINAL MONTH SUBTOTAL
-      if (lastPayMonth !== "") {
-        const lastDataRow = paySheet.lastRow!.number;
-        const finalSubRow = paySheet.addRow({ 
-          fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
-          amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
-        });
-        finalSubRow.font = { bold: true, italic: true };
-        finalSubRow.getCell(3).numFmt = '#,##0.00';
+        const monthRow = paySheet.addRow({ date: currentMonthYear });
+        paySheet.mergeCells(monthRow.number, 1, monthRow.number, 7);
+        monthRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF1E293B' } };
+        monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } }; // Light Gray
+        monthRow.getCell(1).alignment = { horizontal: 'center' };
+        
+        lastPayMonth = currentMonthYear;
+        monthStartIndex = paySheet.lastRow!.number + 1;
       }
 
-      // 5. ADD GRAND TOTAL
-      paySheet.addRow([]); // Spacer
-      const totalRow = paySheet.addRow({
-        fullName: "ЗАГАЛЬНИЙ ДОХІД:",
-        amount: grandTotalRevenue
-      });
-      
-      totalRow.eachCell(cell => {
-        cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
-        cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-      });
+      // 2. DATA EXTRACTION (Simplified for brevity)
+      const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
+      const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
+      const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
+      const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
+      const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
+      const pkg = Array.isArray(p.course_packages) ? p.course_packages[0] : p.course_packages;
+      const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
 
-      paySheet.getColumn('amount').numFmt = '#,##0.00';
-      finalizeSheet(paySheet);
+      // 3. ADD ROW
+      paySheet.addRow({
+        date: dateObj ? dateObj.toLocaleDateString() : '—',
+        fullName: prof ? `${prof.last_name || ''} ${prof.first_name || ''}`.trim() : '—',
+        amount: amount,
+        course: crs?.name || '—',
+        method: method?.slug || '—',
+        plan: plan?.slug || '—',
+        notes: p.notes || ''
+      });
+    });
+
+    // 4. FINAL MONTH SUBTOTAL
+    if (lastPayMonth !== "") {
+      const lastDataRow = paySheet.lastRow!.number;
+      const finalSubRow = paySheet.addRow({ 
+        fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
+        amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
+      });
+      finalSubRow.font = { bold: true, italic: true, color: { argb: 'FF475569' } };
     }
 
+    // 5. GRAND TOTAL
+    paySheet.addRow([]); 
+    const totalRow = paySheet.addRow({
+      fullName: "ЗАГАЛЬНИЙ ДОХІД:",
+      amount: grandTotalRevenue
+    });
+    
+    totalRow.eachCell(cell => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }; // Slate Gray
+      cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    });
+
+    paySheet.getColumn('amount').numFmt = '#,##0.00';
+    finalizeSheet(paySheet);
+  }
 
 
     // // --- SHEET 4: Витрати ---
@@ -549,7 +539,8 @@ tConst: (key: string) => string
       
       totalRow.eachCell(cell => {
         cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+        // Change FF0F172A to FF334155 (Slate Gray)
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
         cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
       });
 
