@@ -199,70 +199,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   };
 
 
-  // useEffect(() => {
-  //   async function loadClientData() {
-  //     if (!id) return
-  //     const { data, error } = await supabase
-  //       .from('clients')
-  //       .select(`
-  //         *,
-  //         profiles:profile_id (*),
-  //         accounts (
-  //           id,
-  //           payments (*),
-  //           course_packages (
-  //             *,
-  //             courses (name),
-  //             lessons (duration, status, is_counted)
-  //           )
-  //         )
-  //       `)
-  //       .eq('id', id)
-  //       .single()
-
-  //     if (error) {
-  //       console.error("Fetch error:", error)
-  //       router.push('/staff/clients')
-  //     } else {
-  //       setClient(data)
-  //       const rawAvatar = data.profiles?.avatar_url
-  //       if (rawAvatar) {
-  //         if (rawAvatar.startsWith('http')) {
-  //           setAvatarPreview(rawAvatar)
-  //         } else {
-  //           const { data: urlData } = supabase.storage
-  //             .from('avatars')
-  //             .getPublicUrl(`avatars/${rawAvatar}`)
-  //           setAvatarPreview(urlData.publicUrl)
-  //         }
-  //       }
-  //     }
-  //     setLoading(false)
-  //   }
-  //   loadClientData()
-  //   refreshData()
-  // }, [id, router])
-
   const loadClientData = async () => {
     if (!id) return
     setLoading(true)
-    // const { data, error } = await supabase
-    //   .from('clients')
-    //   .select(`
-    //     *,
-    //     profiles:profile_id (*),
-    //     accounts (
-    //       id,
-    //       payments (*),
-    //       course_packages (
-    //         *,
-    //         courses!inner (name, allow_quick_creation),
-    //         lessons (duration, status, is_counted)
-    //       )
-    //     )
-    //   `)
-    //   .eq('id', id)
-    //   .single()
     const { data, error } = await supabase
     .from('clients')
     .select(`
@@ -357,51 +296,6 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const totalDebt = totalContractValue - totalPaid;
 
 
-  // const packages = account?.course_packages || []
-
-  // // // SORT and FILTER packages
-  // // const packages = (account?.course_packages || [])
-  // // .filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
-  // // .sort((a: any, b: any) => 
-  // //   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  // // );
-  
-  // // 1. FILTERED AGGREGATED STATS
-  // const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
-  
-  // const totalUsedHours = packages.reduce((sum: number, p: any) => {
-  //   const pUsed = p.lessons?.filter((l: any) => l.is_counted === true) // Filter by is_counted
-  //                  .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0
-  //   return sum + pUsed
-  // }, 0)
-  
-  // const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours)
-  
-  // // 2. FINANCIAL STANDING (Using is_paid)
-  // const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0)
-  // const totalPaid = account?.payments?.filter((p: any) => p.is_paid === true) // Filter by is_paid
-  //                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
-  // const totalDebt = totalContractValue - totalPaid
-
-
-
-
-  // const formatDisplayPhone = (value: string) => {
-  //   if (!value) return "";
-  //   const hasPlus = value.startsWith("+");
-  //   const digits = value.replace(/\D/g, "");
-    
-  //   let formatted = digits;
-  //   if (digits.length > 0) {
-  //     if (digits.length <= 2) formatted = digits;
-  //     else if (digits.length <= 5) formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
-  //     else if (digits.length <= 8) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
-  //     else if (digits.length <= 10) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
-  //     else formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
-  //   }
-  //   return hasPlus ? `+${formatted}` : formatted;
-  // };
-
   const formatDisplayPhone = (value: string) => {
     if (!value) return "";
     // Видаляємо все, крім цифр та плюса на початку
@@ -422,6 +316,28 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 14)}`;
     }
     return hasPlus ? `+${formatted.trim()}` : formatted.trim();
+  };
+
+
+  const STATUS_MAP: Record<string, { label: string, color: string }> = {
+    // submitted: { label: "Подано", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    // pending: { label: "Очікує", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+    not_required: { label: "Не потрібні", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    //pending: { label: "Спитати", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+    has_license: { label: "Має посвідчення", color: "bg-green-500/10 text-green-400 border-green-500/20" },
+    unknown: { label: "Невідомо", color: "bg-slate-500/10 text-slate-400 border-slate-500/20" },
+  };
+  
+  const updateDocumentStatus = async (newStatus: string | null) => {
+    const { error } = await supabase
+      .from('clients')
+      .update({ document_status: newStatus })
+      .eq('id', id);
+  
+    if (!error) {
+      setClient((prev: any) => ({ ...prev, document_status: newStatus }));
+      toast.success("Статус оновлено");
+    }
   };
 
 
@@ -597,7 +513,38 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <FileText size={16} />
             Документи {docCount > 0 && <span className="bg-primary text-black px-2 py-0.5 rounded-md ml-1">{docCount}</span>}
           </button>
-          
+
+
+          {/* <div className="pt-4 border-t border-white/5">
+            <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">
+              Статус оформлення
+            </p> */}
+            
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(STATUS_MAP).map(([key, info]) => (
+                <button
+                  key={key}
+                  onClick={() => updateDocumentStatus(key)}
+                  className={`px-3 py-3 rounded-2xl text-[10px] font-black uppercase border transition-all flex flex-col items-center justify-center gap-1 ${
+                    client?.document_status === key
+                      ? info.color.replace('bg-', 'bg-').replace('text-', 'text-').concat(' border-opacity-100 ring-1 ring-white/20')
+                      : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/20'
+                  }`}
+                >
+                  <span>{info.label}</span>
+                </button>
+              ))}
+              
+              {/* Option to clear status */}
+              {/* <button
+                onClick={() => updateDocumentStatus(null)}
+                className="col-span-2 mt-1 text-[9px] font-bold text-slate-600 hover:text-slate-400 uppercase tracking-tighter transition-colors"
+              >
+                Очистити статус (null)
+              </button> */}
+            {/* </div> */}
+          </div>
+
         </div>
 
 
@@ -913,3 +860,130 @@ function StatCard({ label, value, unit, icon, sub, variant }: any) {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+  // useEffect(() => {
+  //   async function loadClientData() {
+  //     if (!id) return
+  //     const { data, error } = await supabase
+  //       .from('clients')
+  //       .select(`
+  //         *,
+  //         profiles:profile_id (*),
+  //         accounts (
+  //           id,
+  //           payments (*),
+  //           course_packages (
+  //             *,
+  //             courses (name),
+  //             lessons (duration, status, is_counted)
+  //           )
+  //         )
+  //       `)
+  //       .eq('id', id)
+  //       .single()
+
+  //     if (error) {
+  //       console.error("Fetch error:", error)
+  //       router.push('/staff/clients')
+  //     } else {
+  //       setClient(data)
+  //       const rawAvatar = data.profiles?.avatar_url
+  //       if (rawAvatar) {
+  //         if (rawAvatar.startsWith('http')) {
+  //           setAvatarPreview(rawAvatar)
+  //         } else {
+  //           const { data: urlData } = supabase.storage
+  //             .from('avatars')
+  //             .getPublicUrl(`avatars/${rawAvatar}`)
+  //           setAvatarPreview(urlData.publicUrl)
+  //         }
+  //       }
+  //     }
+  //     setLoading(false)
+  //   }
+  //   loadClientData()
+  //   refreshData()
+  // }, [id, router])
+
+
+
+
+
+
+
+  
+    // const { data, error } = await supabase
+    //   .from('clients')
+    //   .select(`
+    //     *,
+    //     profiles:profile_id (*),
+    //     accounts (
+    //       id,
+    //       payments (*),
+    //       course_packages (
+    //         *,
+    //         courses!inner (name, allow_quick_creation),
+    //         lessons (duration, status, is_counted)
+    //       )
+    //     )
+    //   `)
+    //   .eq('id', id)
+    //   .single()
+
+
+
+
+    
+
+  // const packages = account?.course_packages || []
+
+  // // // SORT and FILTER packages
+  // // const packages = (account?.course_packages || [])
+  // // .filter((pkg: any) => pkg.courses?.allow_quick_creation === false)
+  // // .sort((a: any, b: any) => 
+  // //   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  // // );
+  
+  // // 1. FILTERED AGGREGATED STATS
+  // const totalHoursAll = packages.reduce((sum: number, p: any) => sum + (p.total_hours || 0), 0)
+  
+  // const totalUsedHours = packages.reduce((sum: number, p: any) => {
+  //   const pUsed = p.lessons?.filter((l: any) => l.is_counted === true) // Filter by is_counted
+  //                  .reduce((s: number, l: any) => s + Number(l.duration), 0) || 0
+  //   return sum + pUsed
+  // }, 0)
+  
+  // const totalRemainingHours = Math.max(0, totalHoursAll - totalUsedHours)
+  
+  // // 2. FINANCIAL STANDING (Using is_paid)
+  // const totalContractValue = packages.reduce((sum: number, p: any) => sum + (p.contract_price || 0), 0)
+  // const totalPaid = account?.payments?.filter((p: any) => p.is_paid === true) // Filter by is_paid
+  //                            .reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0
+  // const totalDebt = totalContractValue - totalPaid
+
+
+
+
+  // const formatDisplayPhone = (value: string) => {
+  //   if (!value) return "";
+  //   const hasPlus = value.startsWith("+");
+  //   const digits = value.replace(/\D/g, "");
+    
+  //   let formatted = digits;
+  //   if (digits.length > 0) {
+  //     if (digits.length <= 2) formatted = digits;
+  //     else if (digits.length <= 5) formatted = `${digits.slice(0, 2)} (${digits.slice(2)}`;
+  //     else if (digits.length <= 8) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5)}`;
+  //     else if (digits.length <= 10) formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8)}`;
+  //     else formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+  //   }
+  //   return hasPlus ? `+${formatted}` : formatted;
+  // };
