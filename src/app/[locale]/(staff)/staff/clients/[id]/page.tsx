@@ -671,6 +671,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
       </div>
+      
       <DocumentModal 
         clientId={id} 
         isOpen={isDocModalOpen} 

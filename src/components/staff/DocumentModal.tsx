@@ -153,7 +153,7 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
           </div>
 
           {/* FORM: ADD OR EDIT */}
-          <div className="space-y-4">
+          <div className="space-y-4 pb-safe-bottom-mobile">
             <div className="flex items-center justify-between px-2">
               <span className="text-[10px] font-black text-primary uppercase italic">
                 {editingDoc ? "Редагування документа" : "Додати новий документ"}
