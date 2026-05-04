@@ -444,8 +444,8 @@ tConst: (key: string) => string
             });
 
             // Стилізація типу для наочності
-            if (isMoto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
-            if (isAuto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+            if (isMoto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+            if (isAuto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
           });
         }
       });
@@ -593,8 +593,8 @@ tConst: (key: string) => string
       });
 
       // Цветовое выделение типа для быстрой навигации
-      if (isMoto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
-      if (isAuto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+      if (isMoto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+      if (isAuto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
     });
 
     // 4. FINAL MONTH SUBTOTAL
@@ -714,8 +714,8 @@ tConst: (key: string) => string
       });
 
       // Color coding for visual separation
-      if (rawType === 'moto') row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
-      if (rawType === 'auto') row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+      if (rawType === 'moto') row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+      if (rawType === 'auto') row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
       
     });
 
