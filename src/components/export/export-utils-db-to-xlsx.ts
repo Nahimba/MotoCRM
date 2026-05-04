@@ -102,7 +102,7 @@ tConst: (key: string) => string
         creator:profiles!clients_created_by_profile_id_fkey(first_name, last_name),
         accounts(
           course_packages(
-            courses(name),
+            courses(name, type),
             instructors(profiles(first_name, last_name))
           )
         )
@@ -143,7 +143,8 @@ tConst: (key: string) => string
           instructor_id,
           courses(
             name,
-            allow_quick_creation
+            allow_quick_creation,
+            type
           )
         )
       `).order('created_at', { ascending: true }),
@@ -357,17 +358,17 @@ tConst: (key: string) => string
 
 
     if (studentsRaw) {
-
       const sheet = workbook.addWorksheet("База клієнтів");
       sheet.columns = [
-        { header: "Дата", key: "date", width: 15 },
-        { header: "ПІБ", key: "fullName", width: 35 },
-        { header: "Номер телефону", key: "phone", width: 20 },
+        { header: "Дата", key: "date", width: 12 },
+        { header: "ПІБ", key: "fullName", width: 30 },
+        { header: "Номер телефону", key: "phone", width: 18 },
+        { header: "Напрямок", key: "type", width: 12 }, // Нова колонка
         { header: "Курс", key: "course", width: 25 },
-        { header: "Звідки клієнт", key: "source", width: 20 },
+        { header: "Звідки клієнт", key: "source", width: 18 },
         { header: "Інструктор", key: "instructor", width: 25 },
-        { header: "Документи", key: "docs", width: 20 },
-        { header: "Тип КПП", key: "gear", width: 15 },
+        { header: "Документи", key: "docs", width: 18 },
+        { header: "Тип КПП", key: "gear", width: 12 },
         { header: "Коментар", key: "comment", width: 40 }
       ];
     
@@ -377,17 +378,17 @@ tConst: (key: string) => string
         const dateObj = s.created_at ? new Date(s.created_at) : null;
         const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
     
-        // 1. INSERT MONTH SEPARATOR
+        // 1. ВСТАВКА РОЗДІЛЮВАЧА МІСЯЦЯ
         if (currentMonthYear !== lastMonthYear && currentMonthYear !== "") {
           const monthRow = sheet.addRow({ date: currentMonthYear });
-          sheet.mergeCells(monthRow.number, 1, monthRow.number, 9); // Merge across all columns
+          sheet.mergeCells(monthRow.number, 1, monthRow.number, 10); // Мерж на 10 колонок
           monthRow.getCell(1).font = { bold: true, size: 12 };
-          monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } }; // Slate-200
+          monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
           monthRow.getCell(1).alignment = { horizontal: 'center' };
           lastMonthYear = currentMonthYear;
         }
     
-        // 2. PREPARE CLIENT DATA
+        // 2. ПІДГОТОВКА ДАНИХ КЛІЄНТА
         const p = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles;
         const translatedGear = s.gear_type ? tConst(`gear_type.${s.gear_type}`) : '—';
         const translatedSource = s.lead_source ? tConst(`lead_sources.${s.lead_source}`) : '—';
@@ -396,7 +397,7 @@ tConst: (key: string) => string
         const creator = Array.isArray(s.creator) ? s.creator[0] : s.creator;
         const createdByInstructorName = creator ? `${creator.first_name || ''} ${creator.last_name || ''}`.trim() : '—';
     
-        // 3. HANDLE MULTIPLE PACKAGES
+        // 3. ОБРОБКА ПАКЕТІВ (КУРСІВ)
         const accounts = Array.isArray(s.accounts) ? s.accounts : (s.accounts ? [s.accounts] : []);
         let packages: any[] = [];
         
@@ -406,11 +407,11 @@ tConst: (key: string) => string
         });
     
         if (packages.length === 0) {
-          // No packages, just add the client row
           sheet.addRow({
             date: dateObj ? dateObj.toLocaleDateString() : '',
             fullName: `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim(),
             phone: p?.phone || '',
+            type: '—',
             course: '—',
             source: translatedSource,
             instructor: createdByInstructorName,
@@ -419,16 +420,21 @@ tConst: (key: string) => string
             comment: s.notes || ''
           });
         } else {
-          // Add a row for EACH package
           packages.forEach((pkg, index) => {
             const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
             const inst = Array.isArray(pkg?.instructors) ? pkg.instructors[0] : pkg?.instructors;
             const instP = Array.isArray(inst?.profiles) ? inst.profiles[0] : inst?.profiles;
+            
+            // Визначаємо тип Авто/Мото
+            const rawType = crs?.type?.toLowerCase() || crs?.category?.toLowerCase() || '';
+            const isMoto = rawType.includes('moto');
+            const isAuto = rawType.includes('auto');
     
-            sheet.addRow({
-              date: index === 0 ? (dateObj ? dateObj.toLocaleDateString() : '') : '', // Only show date on first row
-              fullName: index === 0 ? `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim() : '', // Only show name on first row
+            const row = sheet.addRow({
+              date: index === 0 ? (dateObj ? dateObj.toLocaleDateString() : '') : '', 
+              fullName: index === 0 ? `${p?.last_name || ''} ${p?.first_name || ''} ${p?.middle_name || ''}`.trim() : '', 
               phone: index === 0 ? (p?.phone || '') : '', 
+              type: isMoto ? 'Мото' : (isAuto ? 'Авто' : '—'),
               course: crs?.name || '—',
               source: index === 0 ? translatedSource : '',
               instructor: instP ? `${instP.first_name || ''} ${instP.last_name || ''}`.trim() : createdByInstructorName,
@@ -436,11 +442,14 @@ tConst: (key: string) => string
               gear: index === 0 ? translatedGear : '',
               comment: index === 0 ? (s.notes || '') : ''
             });
+
+            // Стилізація типу для наочності
+            if (isMoto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
+            if (isAuto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
           });
         }
       });
-
-      // Call the universal finalizer at the end
+    
       finalizeSheet(sheet);
     }
 
@@ -502,16 +511,22 @@ tConst: (key: string) => string
   }
 
 
+
+
+
   // SHEET: Revenue_Log
   if (payments) {
     const paySheet = workbook.addWorksheet("Оплати");
+    
+    // Добавляем колонку "Тип" (индекс 4 / D)
     paySheet.columns = [
-      { header: "Дата", key: "date", width: 15 },
-      { header: "Учень", key: "fullName", width: 35 },
+      { header: "Дата", key: "date", width: 12 },
+      { header: "Учень", key: "fullName", width: 30 },
       { header: "Сума", key: "amount", width: 15 },
+      { header: "Тип", key: "type", width: 12 }, // Новая колонка для Moto/Auto
       { header: "Курс", key: "course", width: 25 },
-      { header: "Метод", key: "method", width: 20 },
-      { header: "План оплати", key: "plan", width: 20 },
+      { header: "Метод", key: "method", width: 15 },
+      { header: "План оплати", key: "plan", width: 15 },
       { header: "Коментарі", key: "notes", width: 30 }
     ];
 
@@ -519,67 +534,92 @@ tConst: (key: string) => string
     let monthStartIndex = 2; 
     let grandTotalRevenue = 0;
 
-    payments.forEach((p, index) => {
+    // Объекты для сбора статистики по направлениям
+    const typeTotals: Record<string, number> = { moto: 0, auto: 0, other: 0 };
+
+    payments.forEach((p) => {
       const dateObj = p.created_at ? new Date(p.created_at) : null;
       const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
       const amount = Number(p.amount) || 0;
       grandTotalRevenue += amount;
 
-      // 1. MONTHLY SEPARATOR & SUBTOTAL LOGIC
+      // 1. Извлечение данных о курсе и его типе
+      const pkg = Array.isArray(p.course_packages) ? p.course_packages[0] : p.course_packages;
+      const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
+      
+      // Определяем тип (Moto/Auto/Other) на основе ваших данных из БД
+      const rawType = crs?.type?.toLowerCase() || crs?.category?.toLowerCase() || 'other';
+      const isMoto = rawType.includes('moto');
+      const isAuto = rawType.includes('auto');
+      const typeKey = isMoto ? 'moto' : (isAuto ? 'auto' : 'other');
+      
+      typeTotals[typeKey] += amount;
+
+      // 2. MONTHLY SEPARATOR & SUBTOTAL
       if (currentMonthYear !== lastPayMonth && currentMonthYear !== "") {
         if (lastPayMonth !== "") {
-          const lastDataRow = paySheet.lastRow!.number;
-          const subtotalRow = paySheet.addRow({ 
+          const lastRow = paySheet.lastRow!.number;
+          const subRow = paySheet.addRow({ 
             fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
-            amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
+            amount: { formula: `SUM(C${monthStartIndex}:C${lastRow})` } 
           });
-          subtotalRow.font = { bold: true, italic: true, color: { argb: 'FF475569' } }; // Steel Gray
-          subtotalRow.getCell(3).numFmt = '#,##0.00';
+          subRow.font = { bold: true, italic: true, color: { argb: 'FF475569' } };
         }
 
         const monthRow = paySheet.addRow({ date: currentMonthYear });
-        paySheet.mergeCells(monthRow.number, 1, monthRow.number, 7);
-        monthRow.getCell(1).font = { bold: true, size: 11, color: { argb: 'FF1E293B' } };
-        monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } }; // Light Gray
+        paySheet.mergeCells(monthRow.number, 1, monthRow.number, 8); // Расширили мерж до 8 колонок
+        monthRow.getCell(1).font = { bold: true, size: 11 };
+        monthRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         monthRow.getCell(1).alignment = { horizontal: 'center' };
         
         lastPayMonth = currentMonthYear;
         monthStartIndex = paySheet.lastRow!.number + 1;
       }
 
-      // 2. DATA EXTRACTION (Simplified for brevity)
+      // 3. Добавление строки данных
       const acc = Array.isArray(p.accounts) ? p.accounts[0] : p.accounts;
       const client = Array.isArray(acc?.clients) ? acc.clients[0] : acc?.clients;
       const prof = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles;
-      const method = Array.isArray(p.payment_methods) ? p.payment_methods[0] : p.payment_methods;
-      const plan = Array.isArray(p.payment_plans) ? p.payment_plans[0] : p.payment_plans;
-      const pkg = Array.isArray(p.course_packages) ? p.course_packages[0] : p.course_packages;
-      const crs = Array.isArray(pkg?.courses) ? pkg.courses[0] : pkg?.courses;
 
-      // 3. ADD ROW
-      paySheet.addRow({
+      const row = paySheet.addRow({
         date: dateObj ? dateObj.toLocaleDateString() : '—',
         fullName: prof ? `${prof.last_name || ''} ${prof.first_name || ''}`.trim() : '—',
         amount: amount,
+        type: isMoto ? 'Мото' : (isAuto ? 'Авто' : '—'),
         course: crs?.name || '—',
-        method: method?.slug || '—',
-        plan: plan?.slug || '—',
+        method: p.payment_methods?.slug || '—',
+        plan: p.payment_plans?.slug || '—',
         notes: p.notes || ''
       });
+
+      // Цветовое выделение типа для быстрой навигации
+      if (isMoto) row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
+      if (isAuto) row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
     });
 
     // 4. FINAL MONTH SUBTOTAL
     if (lastPayMonth !== "") {
-      const lastDataRow = paySheet.lastRow!.number;
-      const finalSubRow = paySheet.addRow({ 
+      const lastRow = paySheet.lastRow!.number;
+      paySheet.addRow({ 
         fullName: `Дохід за ${lastPayMonth.split(' ')[0]}:`, 
-        amount: { formula: `SUM(C${monthStartIndex}:C${lastDataRow})` } 
-      });
-      finalSubRow.font = { bold: true, italic: true, color: { argb: 'FF475569' } };
+        amount: { formula: `SUM(C${monthStartIndex}:C${lastRow})` } 
+      }).font = { bold: true, italic: true };
     }
 
-    // 5. GRAND TOTAL
+    // 5. ИТОГОВАЯ АНАЛИТИКА (Сводная таблица внизу)
     paySheet.addRow([]); 
+    paySheet.addRow(["ПІДСУМКИ"]).font = { bold: true, size: 12 };
+    
+    const motoTotalRow = paySheet.addRow({ fullName: "Мотошкола:", amount: typeTotals.moto });
+    const autoTotalRow = paySheet.addRow({ fullName: "Автошкола:", amount: typeTotals.auto });
+    
+    [motoTotalRow, autoTotalRow].forEach(r => {
+      r.getCell(2).font = { italic: true };
+      r.getCell(3).numFmt = '#,##0.00';
+    });
+
+    // 6. GRAND TOTAL
+    paySheet.addRow([]); // Spacer
     const totalRow = paySheet.addRow({
       fullName: "ЗАГАЛЬНИЙ ДОХІД:",
       amount: grandTotalRevenue
@@ -587,8 +627,7 @@ tConst: (key: string) => string
     
     totalRow.eachCell(cell => {
       cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }; // Slate Gray
-      cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
     });
 
     paySheet.getColumn('amount').numFmt = '#,##0.00';
@@ -596,100 +635,125 @@ tConst: (key: string) => string
   }
 
 
-    // --- SHEET 4: Витрати (Expenses) ---
-    if (expenses) {
-      const sheet = workbook.addWorksheet("Витрати");
 
-      sheet.columns = [
-        { header: "Дата", key: "date", width: 15 },
-        { header: "Хто створив", key: "createdBy", width: 25 },
-        { header: "Тип", key: "type", width: 15 },
-        { header: "Категорія", key: "category", width: 20 },
-        { header: "Сума", key: "amount", width: 15 }, // Column E (index 5)
-        { header: "Спосіб оплати", key: "method", width: 20 },
-        { header: "Опис", key: "desc", width: 40 }
-      ];
 
-      let lastMonthYear = ""; // Replaces lastPayMonth for this sheet
-      let monthStartIndex = 2; 
-      let grandTotalExpenses = 0;
 
-      expenses.forEach((e) => {
-        const dateObj = e.expense_date ? new Date(e.expense_date) : null;
-        const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
-        const amount = Number(e.amount) || 0;
-        grandTotalExpenses += amount;
 
-        // 1. MONTHLY SEPARATOR & SUBTOTAL
-        // Changed 'lastPayMonth' to 'lastMonthYear' here
-        if (currentMonthYear !== lastMonthYear && currentMonthYear !== "") {
-          
-          if (lastMonthYear !== "") {
-            const lastDataRow = sheet.lastRow!.number;
-            const subtotalRow = sheet.addRow({ 
-              category: `Всього за ${lastMonthYear.split(' ')[0]}:`, 
-              amount: { formula: `SUM(E${monthStartIndex}:E${lastDataRow})` } 
-            });
-            subtotalRow.font = { bold: true, italic: true };
-            subtotalRow.getCell(5).numFmt = '#,##0.00';
-          }
+  // --- SHEET 4: Витрати (Expenses) ---
+  if (expenses) {
+    const sheet = workbook.addWorksheet("Витрати");
 
-          const monthHeader = sheet.addRow({ date: currentMonthYear });
-          sheet.mergeCells(monthHeader.number, 1, monthHeader.number, 7);
-          monthHeader.getCell(1).font = { bold: true, size: 11 };
-          monthHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
-          monthHeader.getCell(1).alignment = { horizontal: 'center' };
-          
-          lastMonthYear = currentMonthYear;
-          monthStartIndex = sheet.lastRow!.number + 1;
-        }
+    sheet.columns = [
+      { header: "Дата", key: "date", width: 15 },
+      { header: "Хто створив", key: "createdBy", width: 25 },
+      { header: "Тип", key: "type", width: 15 },
+      { header: "Категорія", key: "category", width: 20 },
+      { header: "Сума", key: "amount", width: 15 }, // Column E
+      { header: "Спосіб оплати", key: "method", width: 20 },
+      { header: "Опис", key: "desc", width: 40 }
+    ];
 
-        // 2. DATA MAPPING
-        const prof = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
-        const creatorName = prof 
-          ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
-          : '—';
+    let lastMonthYear = "";
+    let monthStartIndex = 2;
+    let grandTotalExpenses = 0;
 
-        sheet.addRow({
-          date: dateObj ? dateObj.toLocaleDateString() : '—',
-          createdBy: creatorName,
-          type: e.type ? tConst(`expense_types.${e.type}`) : (e.type || '—'),
-          category: e.category ? tConst(`expense_categories.${e.category}`) : '—',
-          amount: amount,
-          method: e.payment_method ? tConst(`payment.method.${e.payment_method}`) : (e.payment_method || '—'),
-          desc: e.description || ''
-        });
-      });
+    // Track totals by business type
+    const typeTotals: Record<string, number> = { moto: 0, auto: 0, general: 0 };
 
-      // 3. FINAL MONTH SUBTOTAL
-      if (lastMonthYear !== "") {
-        const lastDataRow = sheet.lastRow!.number;
-        const finalSubRow = sheet.addRow({ 
-          category: `Всього за ${lastMonthYear.split(' ')[0]}:`, 
-          amount: { formula: `SUM(E${monthStartIndex}:E${lastDataRow})` } 
-        });
-        finalSubRow.font = { bold: true, italic: true };
-        finalSubRow.getCell(5).numFmt = '#,##0.00';
+    expenses.forEach((e) => {
+      const dateObj = e.expense_date ? new Date(e.expense_date) : null;
+      const currentMonthYear = dateObj ? `${UKRAINIAN_MONTHS[dateObj.getMonth()]} ${dateObj.getFullYear()}` : "";
+      const amount = Number(e.amount) || 0;
+      
+      grandTotalExpenses += amount;
+
+      // Accumulate category totals
+      const rawType = e.type?.toLowerCase() || 'general';
+      if (typeTotals.hasOwnProperty(rawType)) {
+        typeTotals[rawType] += amount;
+      } else {
+        typeTotals.general += amount;
       }
 
-      // 4. GRAND TOTAL
-      sheet.addRow([]); // Spacer
-      const totalRow = sheet.addRow({
-        category: "ЗАГАЛЬНІ ВИТРАТИ:",
-        amount: grandTotalExpenses
-      });
-      
-      totalRow.eachCell(cell => {
-        cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-        // Change FF0F172A to FF334155 (Slate Gray)
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
-        cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      // 1. MONTHLY SEPARATOR & SUBTOTAL
+      if (currentMonthYear !== lastMonthYear && currentMonthYear !== "") {
+        if (lastMonthYear !== "") {
+          const lastDataRow = sheet.lastRow!.number;
+          const subtotalRow = sheet.addRow({ 
+            category: `Всього за ${lastMonthYear.split(' ')[0]}:`, 
+            amount: { formula: `SUM(E${monthStartIndex}:E${lastDataRow})` } 
+          });
+          subtotalRow.font = { bold: true, italic: true };
+          subtotalRow.getCell(5).numFmt = '#,##0.00';
+        }
+
+        const monthHeader = sheet.addRow({ date: currentMonthYear });
+        sheet.mergeCells(monthHeader.number, 1, monthHeader.number, 7);
+        monthHeader.getCell(1).font = { bold: true, size: 11 };
+        monthHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        monthHeader.getCell(1).alignment = { horizontal: 'center' };
+        
+        lastMonthYear = currentMonthYear;
+        monthStartIndex = sheet.lastRow!.number + 1;
+      }
+
+      // 2. DATA MAPPING
+      const prof = Array.isArray(e.profiles) ? e.profiles[0] : e.profiles;
+      const creatorName = prof 
+        ? `${prof.last_name || ''} ${prof.first_name || ''} ${prof.middle_name || ''}`.trim() 
+        : '—';
+
+      const row = sheet.addRow({
+        date: dateObj ? dateObj.toLocaleDateString() : '—',
+        createdBy: creatorName,
+        type: e.type ? tConst(`expense_types.${e.type}`) : (e.type || '—'),
+        category: e.category ? tConst(`expense_categories.${e.category}`) : '—',
+        amount: amount,
+        method: e.payment_method ? tConst(`payment.method.${e.payment_method}`) : (e.payment_method || '—'),
+        desc: e.description || ''
       });
 
-      sheet.getColumn('amount').numFmt = '#,##0.00';
-      finalizeSheet(sheet);
+      // Color coding for visual separation
+      if (rawType === 'moto') row.getCell('type').font = { color: { argb: 'FF2563EB' }, bold: true };
+      if (rawType === 'auto') row.getCell('type').font = { color: { argb: 'FF059669' }, bold: true };
+      
+    });
+
+    // 3. FINAL MONTH SUBTOTAL
+    if (lastMonthYear !== "") {
+      const lastDataRow = sheet.lastRow!.number;
+      const finalSubRow = sheet.addRow({ 
+        category: `Всього за ${lastMonthYear.split(' ')[0]}:`, 
+        amount: { formula: `SUM(E${monthStartIndex}:E${lastDataRow})` } 
+      });
+      finalSubRow.font = { bold: true, italic: true };
+      finalSubRow.getCell(5).numFmt = '#,##0.00';
     }
 
+    // 4. SUMMARY BY TYPE (NEW)
+    sheet.addRow([]); // Spacer
+    sheet.addRow(["ПІДСУМКИ"]).font = { bold: true, size: 12 };
+    
+    sheet.addRow({ category: "Мотошкола:", amount: typeTotals.moto }).getCell(5).numFmt = '#,##0.00';
+    sheet.addRow({ category: "Автошкола:", amount: typeTotals.auto }).getCell(5).numFmt = '#,##0.00';
+    sheet.addRow({ category: "Загальні:", amount: typeTotals.general }).getCell(5).numFmt = '#,##0.00';
+
+    // 5. GRAND TOTAL
+    sheet.addRow([]); // Spacer
+    const totalRow = sheet.addRow({
+      category: "ЗАГАЛЬНІ ВИТРАТИ:",
+      amount: grandTotalExpenses
+    });
+    
+    totalRow.eachCell(cell => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    });
+
+    sheet.getColumn('amount').numFmt = '#,##0.00';
+    finalizeSheet(sheet);
+  }
 
 
 
@@ -753,6 +817,8 @@ tConst: (key: string) => string
         cell.border = { top: { style: 'thin' } };
       });
       instSheet.addRow([]); 
+
+      finalizeSheet(instSheet);
     });
 
 
