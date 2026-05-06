@@ -29,15 +29,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const router = useRouter()
 
-
-  const [isDocModalOpen, setIsDocModalOpen] = useState(false)
-  const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
-
   const [isPackageModalOpen, setIsPackageModalOpen] = useState(false)
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [selectedPackageForPayment, setSelectedPackageForPayment] = useState<string | undefined>(undefined)
 
+
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false)
+  const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
 
   const refreshData = async () => {
     const { count, error } = await supabase
@@ -59,10 +58,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   //   // and call it here.
   // }
 
-  const refreshClientData = async () => {
-    await loadClientData();
-    await refreshData(); // Updates doc count too
-  }
+  // const refreshClientData = async () => {
+  //   await loadClientData();
+  //   await refreshData(); // Updates doc count too
+  // }
 
   const [isLinking, setIsLinking] = useState(false);
 

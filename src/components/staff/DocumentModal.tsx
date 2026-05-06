@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { X, Plus, Trash2, ExternalLink, FileText, Link as LinkIcon, Pencil, List } from "lucide-react"
+import { dateUtils } from '@/lib/date-utils'
 
 interface DocumentModalProps {
   clientId: string
@@ -47,14 +48,19 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
     const form = e.currentTarget
     setIsUploading(true)
     const formData = new FormData(form)
+    
+    const rawSubDate = formData.get('submission_date') as string
+    const rawReadyDate = formData.get('ready_date_est') as string
 
     const payload = {
       client_id: clientId,
       title: formData.get('title'),
       status: formData.get('status'),
       url: formData.get('url'),
-      submission_date: formData.get('submission_date') || null,
-      ready_date_est: formData.get('ready_date_est') || null,
+      submission_date: rawSubDate || null,
+      ready_date_est: rawReadyDate || null,
+      // submission_date: formData.get('submission_date') || null,
+      // ready_date_est: formData.get('ready_date_est') || null,
     }
 
     let error;
@@ -210,7 +216,7 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                {/* <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Подано</label>
                     <input name="submission_date" type="date" defaultValue={editingDoc?.submission_date || ''} className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[10px] text-white outline-none" />
@@ -218,6 +224,27 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate }: DocumentM
                   <div className="space-y-1">
                     <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Готовність</label>
                     <input name="ready_date_est" type="date" defaultValue={editingDoc?.ready_date_est || ''} className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[10px] text-white outline-none" />
+                  </div>
+                </div> */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Подано</label>
+                    <input 
+                      name="submission_date" 
+                      type="date" 
+                      // Fallback to Kyiv today for new documents if desired
+                      defaultValue={editingDoc?.submission_date || dateUtils.getKyivToday()} 
+                      className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[10px] text-white outline-none focus:border-primary [color-scheme:dark]" 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Готовність</label>
+                    <input 
+                      name="ready_date_est" 
+                      type="date" 
+                      defaultValue={editingDoc?.ready_date_est || ''} 
+                      className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[10px] text-white outline-none focus:border-primary [color-scheme:dark]" 
+                    />
                   </div>
                 </div>
 

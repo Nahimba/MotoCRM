@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { format, parseISO } from "date-fns"
 import { 
   X, Check, Trash2, Calendar as CalendarIcon, 
   MapPin, FileText, Loader2, Contact2, ChevronDown, Clock, User
@@ -13,7 +12,9 @@ import { useAuth } from "@/context/AuthContext"
 import { LessonStatus } from "@/constants/constants"
 import { StudentSelectorPlus } from "./StudentSelectorPlus"
 
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
+// import { format } from "date-fns"
+// import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
+import { dateUtils } from '@/lib/date-utils'
 
 interface AddLessonModalProps {
   isOpen: boolean
@@ -46,7 +47,9 @@ export function AddLessonModal({
   const [locations, setLocations] = useState<any[]>([])
   const [selectedPackageId, setSelectedPackageId] = useState("")
   
-  const [lessonDate, setLessonDate] = useState(format(toZonedTime(initialDate, TZ), 'yyyy-MM-dd'))
+  //const [lessonDate, setLessonDate] = useState(format(toZonedTime(initialDate, TZ), 'yyyy-MM-dd'))
+  const [lessonDate, setLessonDate] = useState(dateUtils.getKyivToday());
+
   const [selectedHour, setSelectedHour] = useState("12")
   const [selectedMinute, setSelectedMinute] = useState("00")
   const [duration, setDuration] = useState("2") 
@@ -175,12 +178,16 @@ export function AddLessonModal({
 
       if (editLesson) {
 
-        // Convert the UTC database string specifically to Kyiv time for the form
-        const dateObj = toZonedTime(new Date(editLesson.session_date), TZ)
-        // Now these will always show the "Kyiv Clock" time
-        setLessonDate(format(dateObj, "yyyy-MM-dd"))
-        setSelectedHour(format(dateObj, "HH"))
-        setSelectedMinute(format(dateObj, "mm"))
+        // // Convert the UTC database string specifically to Kyiv time for the form
+        // const dateObj = toZonedTime(new Date(editLesson.session_date), TZ)
+        // // Now these will always show the "Kyiv Clock" time
+        // setLessonDate(format(dateObj, "yyyy-MM-dd"))
+        // setSelectedHour(format(dateObj, "HH"))
+        // setSelectedMinute(format(dateObj, "mm"))
+        const { date, hour, minute } = dateUtils.parseFromDb(editLesson.session_date);
+        setLessonDate(date);
+        setSelectedHour(hour);
+        setSelectedMinute(minute);
         
         // const pkgId = editLesson.course_package_id;
         setSelectedPackageId(editLesson.course_package_id)
@@ -404,7 +411,8 @@ export function AddLessonModal({
   
     // 2. Prepare Data
     const dateStr = `${lessonDate}T${selectedHour}:${selectedMinute}:00`;
-    const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+    //const session_date = formatInTimeZone(dateStr, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const session_date = dateUtils.toDbTimestamp(dateStr);
     const isCustom = locationId === "custom";
     const durationNum = parseFloat(duration);
   

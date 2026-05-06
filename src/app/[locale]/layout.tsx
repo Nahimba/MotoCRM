@@ -1,5 +1,6 @@
 import "@/app/globals.css"
 import { AuthProvider } from '@/context/AuthContext'
+import { NotificationProviderWrapper } from '@/context/NotificationContext'
 import { Toaster } from "sonner"
 import { ThemeScript } from "@/components/theme-script"
 import { NextIntlClientProvider } from 'next-intl'
@@ -65,7 +66,10 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages} locale={locale}>
           <Toaster position="top-center" theme="dark" />
           <AuthProvider>
-            {children}
+            {/* {children} */}
+            <NotificationProviderWrapper>
+              {children}
+            </NotificationProviderWrapper>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

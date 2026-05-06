@@ -7,11 +7,13 @@ import {
   User, Settings, FileSignature, 
   GraduationCap, Calendar, MoreHorizontal,
   LayoutDashboard, ClipboardList, ChevronUp, Wallet,
-  Package, Banknote, History, MapPin
+  Package, Banknote, History, MapPin, Bell, Dock
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 //import { supabase } from "@/lib/supabase" // Ensure this is imported
+
+import { useNotifications } from '@/context/NotificationContext';
 
 import { Saira } from 'next/font/google'
 const saira = Saira({ 
@@ -33,6 +35,8 @@ export default function Sidebar() {
     user?.app_metadata?.role || 
     'rider'
   ).toLowerCase();
+
+  const { unreadCount, markAsSeen } = useNotifications();
   
   const [showSettings, setShowSettings] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
@@ -127,6 +131,7 @@ export default function Sidebar() {
               <SidebarLink href="/admin/instructors" icon={<Users size={16}/>} label={t('staff')} active={pathname.startsWith('/admin/instructors')} />
               
               <SidebarLink href="/admin/audit_logs" icon={<History size={16}/>} label="Журнал аудиту" active={pathname.startsWith('/admin/audit_logs')} />
+            
             </>
           )}
 
@@ -149,6 +154,20 @@ export default function Sidebar() {
           {(role === 'instructor') && (
             <>
               <SidebarLink href="/staff/finances" icon={<Wallet size={16}/>} label={t('expences') || 'Expences'} active={pathname.startsWith('/staff/expences')} />
+            </>
+          )}
+
+          {(role === 'admin') && (
+            <>
+              <SidebarLink 
+                href="/staff/documents" 
+                icon={<Dock size={16}/>} 
+                label={"Документи"} 
+                active={pathname.startsWith('/staff/documents')}
+                badge={ unreadCount }
+                //badge={role === 'admin' ? unreadCount : 0} // Only show for admin
+                onClick={() => markAsSeen()}
+              />
             </>
           )}
 
@@ -235,6 +254,21 @@ export default function Sidebar() {
                 {(role === 'instructor') && (
                   <>
                     <MobileExtraLink href="/staff/finances" icon={<Wallet size={18}/>} label={t('expences')} />
+                  </>
+                )}
+
+                
+                {(role === 'admin') && (
+                  <>
+                    {role === 'admin' && (
+                      <MobileExtraLink 
+                        href="/staff/documents" 
+                        icon={<Dock size={18}/>} 
+                        label={"Документи"} 
+                        badge={unreadCount}
+                        onClick={() => markAsSeen()}
+                      />
+                    )}
                   </>
                 )}
 
@@ -331,14 +365,25 @@ export default function Sidebar() {
 }
 
 
-function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
-  return (
-    <Link href={href} prefetch={false} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-      {icon}
-      <span className="text-[13px] font-bold uppercase tracking-tight">{label}</span>
-    </Link>
-  );
-}
+// function SidebarLink({ href, icon, label, active }: { href: any; icon: React.ReactNode; label: string; active: boolean }) {
+//   return (
+//     <Link href={href} prefetch={false} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+//       {icon}
+//       <span className="text-[13px] font-bold uppercase tracking-tight">{label}</span>
+//     </Link>
+//   );
+// }
+
+
+// function MobileExtraLink({ href, icon, label }: { href: any, icon: React.ReactNode, label: string }) {
+//   return (
+//     <Link href={href} prefetch={false} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5">
+//       {icon}
+//       <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">{label}</span>
+//     </Link>
+//   )
+// }
+
 
 function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, active: boolean }) {
   return (
@@ -348,11 +393,85 @@ function MobileTab({ href, icon, active }: { href: any, icon: React.ReactNode, a
   )
 }
 
-function MobileExtraLink({ href, icon, label }: { href: any, icon: React.ReactNode, label: string }) {
+
+function SidebarLink({ 
+  href, 
+  icon, 
+  label, 
+  active, 
+  badge, 
+  onClick
+}: { 
+  href: any; 
+  icon: React.ReactNode; 
+  label: string; 
+  active: boolean;
+  badge?: number;
+  onClick?: () => void;
+}) {
   return (
-    <Link href={href} prefetch={false} className="flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5">
+    <Link 
+      href={href} 
+      prefetch={false} 
+      onClick={onClick}
+      className={`flex items-center justify-between px-4 py-2.5 rounded-xl transition-all ${
+        active ? 'bg-primary text-black italic' : 'text-slate-400 hover:text-white hover:bg-white/5'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        {icon}
+        <span className="text-[13px] font-bold uppercase tracking-tight">{label}</span>
+      </div>
+      
+      {/* Show badge if count > 0 */}
+      {badge && badge > 0 ? (
+        // <span className={`${active ? 'bg-black text-primary' : 'bg-red-500 text-white'} text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+        //   {badge}
+        // </span>
+        <span className={`${active ? 'bg-black text-primary' : 'bg-white text-black opacity-85'} text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center`}>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function MobileExtraLink({ 
+  href, 
+  icon, 
+  label, 
+  badge, 
+  onClick 
+}: { 
+  href: any, 
+  icon: React.ReactNode, 
+  label: string, 
+  badge?: number,
+  onClick?: () => void 
+}) {
+  return (
+    <Link 
+      href={href} 
+      prefetch={false} 
+      onClick={onClick}
+      className="relative flex flex-col items-center justify-center gap-1.5 p-4 rounded-3xl bg-white/5 text-slate-300 active:scale-95 transition-all border border-white/5"
+    >
+      {/* Icon and Label */}
       {icon}
-      <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">{label}</span>
+      <span className="text-[9px] font-black uppercase tracking-tight text-center leading-tight">
+        {label}
+      </span>
+
+      {/* Notification Badge */}
+      {badge !== undefined && badge > 0 && (
+        <span className="absolute top-2 right-2 flex h-4 w-4">
+          {/* Optional: Subtle pulse effect for mobile to catch the eye */}
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-white text-[8px] font-black text-black items-center justify-center">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        </span>
+      )}
     </Link>
   )
 }
