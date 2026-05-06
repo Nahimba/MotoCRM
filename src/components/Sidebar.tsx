@@ -96,6 +96,13 @@ export default function Sidebar() {
     setShowMobileMenu(false)
   }, [pathname])
 
+  // // 2. NEW effect: Clears notification badge if we are on the documents page
+  // useEffect(() => {
+  //   if (pathname.startsWith('/staff/documents') && unreadCount > 0) {
+  //     markAsSeen();
+  //   }
+  // }, [pathname, unreadCount, markAsSeen]);
+
   if (loading) return null;
   //const role = profile?.role || 'rider';
 
@@ -166,7 +173,7 @@ export default function Sidebar() {
                 active={pathname.startsWith('/staff/documents')}
                 badge={ unreadCount }
                 //badge={role === 'admin' ? unreadCount : 0} // Only show for admin
-                onClick={() => markAsSeen()}
+                onClick={() => unreadCount > 0 && markAsSeen()}
               />
             </>
           )}
@@ -266,7 +273,7 @@ export default function Sidebar() {
                         icon={<Dock size={18}/>} 
                         label={"Документи"} 
                         badge={unreadCount}
-                        onClick={() => markAsSeen()}
+                        onClick={() => unreadCount > 0 && markAsSeen()}
                       />
                     )}
                   </>

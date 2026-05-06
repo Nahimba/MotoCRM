@@ -7,11 +7,13 @@ import {
   PlusCircle, Calendar, ArrowUpRight, 
   BarChart3, ShieldCheck, GraduationCap, Loader2,
   Package, Database, FileSignature, Banknote, History, ClipboardList,
-  MapPin
+  MapPin, Dock
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useTranslations } from 'next-intl'
+
+import { useNotifications } from '@/context/NotificationContext'
 
 import { exportFullDatabase } from '@/components/export/export-utils-db-to-xlsx'; // Move the logic to a separate file
 import { exportDataBackup, exportSchemaBackup } from '@/components/export/backup-utils-db-to-sql';
@@ -26,6 +28,8 @@ export default function UnifiedDashboard() {
   const [exporting, setExporting] = useState(false)
   const [backingUp, setBackingUp] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const { unreadCount, markAsSeen } = useNotifications();
 
   async function fetchData() {
     setLoading(true)
@@ -184,7 +188,23 @@ export default function UnifiedDashboard() {
           href="/admin/audit_logs" 
           icon={<History size={20} className="text-amber-500" />} 
           label="Журнал аудиту" 
-          sub="Журнал аудиту"
+          sub="Дії користувачів"
+        />
+        <NavButton 
+          href="/admin/documents"
+          onClick={() => markAsSeen()}
+          icon={
+            <div className="relative">
+              <Dock size={20} className="text-amber-500" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-black text-[9px] font-black h-4 w-4 flex items-center justify-center rounded-full border border-black animate-pulse">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+          } 
+          label="Документи" 
+          sub="Документи студентів"
         />
       </div>
 
@@ -279,9 +299,9 @@ function StatCard({ label, value, icon, highlight }: any) {
   )
 }
 
-function NavButton({ href, icon, label, sub }: any) {
+function NavButton({ href, icon, label, sub, onClick }: any) {
   return (
-    <Link href={href} prefetch={false} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group text-center">
+    <Link href={href} prefetch={false} onClick={onClick} className="bg-[#111] border border-white/5 rounded-[2rem] p-6 flex flex-col items-center gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all group text-center">
       <div className="text-slate-500 group-hover:text-primary transition-colors">{icon}</div>
       <p className="text-[10px] font-black text-white uppercase tracking-widest mt-2">{label}</p>
       <p className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">{sub}</p>
