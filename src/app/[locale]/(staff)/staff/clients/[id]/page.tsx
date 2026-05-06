@@ -673,6 +673,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       
       <DocumentModal 
         clientId={id} 
+        first_name={profile?.first_name || ""}
+        middle_name={profile?.middle_name || ""}
+        last_name={profile?.last_name || ""}
         isOpen={isDocModalOpen} 
         onClose={() => setIsDocModalOpen(false)} 
         onUpdate={refreshData}

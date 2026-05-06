@@ -1,12 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
-import { X, Plus, Trash2, ExternalLink, FileText, Link as LinkIcon, Pencil, List, Loader2 } from "lucide-react"
+import { X, Plus, Trash2, ExternalLink, FileText, Link as LinkIcon, Pencil, List, Loader2, User } from "lucide-react"
 import { dateUtils } from '@/lib/date-utils'
 
 interface DocumentModalProps {
   clientId: string
+  first_name: string
+  middle_name: string
+  last_name: string
   isOpen: boolean
   onClose: () => void
   onUpdate: () => void
@@ -21,17 +24,22 @@ const statusTranslations: Record<string, string> = {
   not_needed: "Не потрібно",
 }
 
-export function DocumentModal({ clientId, isOpen, onClose, onUpdate, doc }: DocumentModalProps) {
+export function DocumentModal({ clientId, first_name, middle_name, last_name, isOpen, onClose, onUpdate, doc }: DocumentModalProps) {
   const [documents, setDocuments] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
   const [mobileTab, setMobileTab] = useState<'list' | 'form'>('list')
 
+
+  const studentFullName = useMemo(() => {
+    return `${last_name} ${first_name} ${middle_name}`.trim() || "Керування файлами"
+  }, [first_name, middle_name, last_name])
+
+
   useEffect(() => {
     if (isOpen) {
       fetchDocuments()
       if (doc) {
-        // If specific doc passed from registry, go straight to form
         setEditingDoc(doc)
         setMobileTab('form')
       } else {
@@ -83,7 +91,6 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate, doc }: Docu
       fetchDocuments()
       onUpdate()
       
-      // If we came from registry (doc prop exists), close modal on success
       if (doc) {
         onClose()
       } else {
@@ -117,7 +124,9 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate, doc }: Docu
               <h3 className="text-xl sm:text-2xl font-black italic uppercase text-white tracking-tighter leading-none">
                 {editingDoc ? "Редагувати" : "Документи"}
               </h3>
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Керування файлами</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                <User size={10} className="text-primary"/> {studentFullName}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-500 hover:text-white transition-colors bg-white/5 rounded-full">
@@ -126,27 +135,29 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate, doc }: Docu
         </div>
 
         {/* Mobile Navigation Tabs */}
-        <div className="flex sm:hidden border-b border-white/5 shrink-0">
-          <button 
-            onClick={() => setMobileTab('list')}
-            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${mobileTab === 'list' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}
-          >
-            <List size={14}/> Список
-          </button>
-          <button 
-            onClick={() => { setEditingDoc(null); setMobileTab('form'); }}
-            className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${mobileTab === 'form' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}
-          >
-            <Plus size={14}/> {editingDoc ? 'Редагувати' : 'Додати'}
-          </button>
-        </div>
+        {!doc && (
+          <div className="flex sm:hidden border-b border-white/5 shrink-0">
+            <button 
+              onClick={() => setMobileTab('list')}
+              className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${mobileTab === 'list' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}
+            >
+              <List size={14}/> Список
+            </button>
+            <button 
+              onClick={() => { setEditingDoc(null); setMobileTab('form'); }}
+              className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 ${mobileTab === 'form' ? 'text-primary border-b-2 border-primary' : 'text-slate-500'}`}
+            >
+              <Plus size={14}/> {editingDoc ? 'Редагувати' : 'Додати'}
+            </button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
-            {/* LEFT: LIST VIEW */}
-            <div className={`space-y-3 ${mobileTab === 'list' ? 'block' : 'hidden sm:block'}`}>
+            {/* LEFT: LIST VIEW (Hidden if we are editing a specific doc from Registry) */}
+            <div className={`space-y-3 ${doc ? 'hidden sm:block opacity-40 pointer-events-none' : (mobileTab === 'list' ? 'block' : 'hidden sm:block')}`}>
               <p className="text-[10px] font-black text-slate-500 uppercase italic px-2 mb-2">Наявні документи:</p>
               {documents.length === 0 ? (
                 <div className="py-20 flex flex-col items-center justify-center opacity-20 border border-dashed border-white/10 rounded-3xl">
@@ -190,7 +201,7 @@ export function DocumentModal({ clientId, isOpen, onClose, onUpdate, doc }: Docu
             </div>
 
             {/* RIGHT: FORM VIEW */}
-            <div className={`space-y-4 pb-10 sm:pb-0 ${mobileTab === 'form' ? 'block' : 'hidden sm:block'}`}>
+            <div className={`space-y-4 pb-10 sm:pb-0 ${mobileTab === 'form' ? 'block' : 'hidden sm:block'} ${doc ? 'md:col-span-1 md:translate-x-1/2' : ''}`}>
               <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-black text-primary uppercase italic">
                   {editingDoc ? "Редагування" : "Новий запис"}

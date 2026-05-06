@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { dateUtils } from '@/lib/date-utils';
 import { 
@@ -37,7 +37,7 @@ export default function AdminDocumentsPage() {
     setLoading(true);
     let query = supabase
       .from('client_documents')
-      .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name))`)
+      .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name, middle_name))`)
       .order('ready_date_est', { ascending: true });
 
     if (filter === 'today') {
@@ -174,8 +174,11 @@ export default function AdminDocumentsPage() {
 
       {/* DOCUMENT MODAL */}
       {selectedClientId && (
-        <DocumentModal 
-          clientId={selectedClientId} 
+        <DocumentModal  
+          clientId={selectedClientId}
+          first_name={selectedDoc?.clients?.profiles?.first_name || ""}
+          middle_name={selectedDoc?.clients?.profiles?.middle_name || ""}
+          last_name={selectedDoc?.clients?.profiles?.last_name || ""}
           doc={selectedDoc}
           isOpen={isDocModalOpen} 
           onClose={() => {
