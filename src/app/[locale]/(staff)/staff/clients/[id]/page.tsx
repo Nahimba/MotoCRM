@@ -320,7 +320,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const STATUS_MAP: Record<string, { label: string, color: string }> = {
     // submitted: { label: "Подано", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-    // pending: { label: "Очікує", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+    pending: { label: "Очікує", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
     not_required: { label: "Не потрібні", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
     //pending: { label: "Спитати", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
     has_license: { label: "Має посвідчення", color: "bg-green-500/10 text-green-400 border-green-500/20" },
