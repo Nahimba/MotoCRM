@@ -15,7 +15,7 @@ const statusStyles: Record<string, { color: string, icon: any, label: string, we
   submitted: { color: 'text-primary', icon: AlertCircle, label: 'Подано', weight: 2 },
   ready: { color: 'text-green-500', icon: CheckCircle2, label: 'Готово', weight: 3 },
   completed: { color: 'text-slate-500', icon: CheckCircle2, label: 'Видано', weight: 10 },
-  not_needed: { color: 'text-slate-600', icon: Clock, label: 'Не потрібно', weight: 11 },
+  // not_needed: { color: 'text-slate-600', icon: Clock, label: 'Не потрібно', weight: 11 },
 };
 
 export default function AdminDocumentsPage() {
@@ -43,7 +43,8 @@ export default function AdminDocumentsPage() {
     if (filter === 'today') {
       query = query
         .lte('ready_date_est', today)
-        .not('status', 'in', '("completed","not_needed")');
+        // .not('status', 'in', '("completed", "not_needed")');
+        .neq('status', 'completed');
     }
 
     const { data, error } = await query;
@@ -121,8 +122,10 @@ export default function AdminDocumentsPage() {
           <div className="grid gap-2">
             {filteredDocs.map((doc) => {
               const status = statusStyles[doc.status] || statusStyles.pending_collection;
-              const isOverdue = doc.ready_date_est < today && doc.status !== 'completed' && doc.status !== 'not_needed';
-              const isDone = doc.status === 'completed' || doc.status === 'not_needed';
+              //const isOverdue = doc.ready_date_est < today && doc.status !== 'completed' && doc.status !== 'not_needed';
+              //const isDone = doc.status === 'completed' || doc.status === 'not_needed';
+              const isOverdue = doc.ready_date_est < today && doc.status !== 'completed';
+              const isDone = doc.status === 'completed';
               const profile = doc.clients?.profiles;
 
               return (
