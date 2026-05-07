@@ -21,7 +21,7 @@ const statusTranslations: Record<string, string> = {
   submitted: "Подано",
   ready: "Готово",
   completed: "Видано",
-  not_needed: "Не потрібно",
+  // not_needed: "Не потрібно",
 }
 
 export function DocumentModal({ clientId, first_name, middle_name, last_name, isOpen, onClose, onUpdate, doc }: DocumentModalProps) {
