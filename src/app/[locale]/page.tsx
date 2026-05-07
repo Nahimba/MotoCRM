@@ -6,7 +6,7 @@ import { ChevronRight, Loader2, Mail, KeyRound } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { useTranslations } from "next-intl"
-import Link from "next/link"
+// import Link from "next/link"
 
 import { Saira } from 'next/font/google'
 const saira = Saira({ 
