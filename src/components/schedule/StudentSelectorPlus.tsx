@@ -388,7 +388,7 @@ export function StudentSelectorPlus({
 
         {/* Package/Course Dropdown */}
         <div className="relative" ref={packageRef}>
-          <label className="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1.5">Курс / Пакет</label>
+          <label className="text-[9px] font-bold text-slate-400 uppercase ml-1 block mb-1.5">Курс / Контракт</label>
 
           <div 
             onClick={() => selectedClientId && setIsPackageOpen(!isPackageOpen)}
@@ -462,7 +462,7 @@ export function StudentSelectorPlus({
                         <div className="flex flex-col">
                           <span className="text-[11px] font-black uppercase italic">+ {course.name}</span>
                           <span className="text-[8px] font-bold opacity-50 uppercase tracking-tighter">
-                            {course.price_type === 'hour' ? 'Погодинно' : 'Пакетно'}
+                            {course.price_type === 'hour' ? 'Погодинно' : 'За Курс'}
                           </span>
                         </div>
                         {course.discounted_price && (
@@ -522,7 +522,7 @@ export function StudentSelectorPlus({
             {selectedQuickCourse.base_price} ₴
           </span>
           <span className="text-[8px] font-medium text-slate-600 italic">
-            {selectedQuickCourse.price_type === 'hour' ? '/год' : '/пакет'}
+            {selectedQuickCourse.price_type === 'hour' ? '/год' : '/курс'}
           </span>
         </div>
       </div>
@@ -535,7 +535,7 @@ export function StudentSelectorPlus({
               {selectedQuickCourse.discounted_price} ₴
             </span>
             <span className="text-[8px] font-medium text-slate-500 italic">
-              {selectedQuickCourse.price_type === 'hour' ? '/год' : '/пакет'}
+              {selectedQuickCourse.price_type === 'hour' ? '/год' : '/курс'}
             </span>
           </div>
         </div>
@@ -547,7 +547,7 @@ export function StudentSelectorPlus({
       <div className="space-y-1.5">
         <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
           <div className="w-1 h-1 bg-primary rounded-full" /> 
-          {selectedQuickCourse.price_type === 'hour' ? 'Ціна за годину' : 'Ціна за пакет'}
+          {selectedQuickCourse.price_type === 'hour' ? 'Ціна за годину' : 'Ціна за курс'}
         </label>
         <div className="relative">
           <input 
