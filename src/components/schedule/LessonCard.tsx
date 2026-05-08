@@ -1,6 +1,8 @@
 "use client"
 
-import { MapPin, Phone, FileText, User, Bike, Car } from "lucide-react"
+import { MapPin, Phone, FileText, User, Bike, Car,
+  CheckCircle2, XCircle, AlertCircle, CalendarDays, Clock
+ } from "lucide-react"
 
 interface LessonCardProps {
   lesson: any
@@ -33,6 +35,24 @@ export function LessonCard({
   const isMoto = lesson.course_type?.toLowerCase() === 'moto'
   const instructorName = lesson.lesson_instructor_name || 'Unassigned';
 
+
+  // Logic for the Status Icon
+  const getStatusIcon = () => {
+    const iconSize = isWeek ? 12 : 16;
+    switch (lesson.status) {
+      case 'completed':
+        return <CheckCircle2 size={iconSize} className="text-emerald-400" />;
+      case 'cancelled':
+        return <XCircle size={iconSize} className="text-red-400" />;
+      case 'no_show':
+      case 'late_cancelled':
+        return <AlertCircle size={iconSize} className="text-orange-400" />;
+      case 'rescheduled':
+        return <CalendarDays size={iconSize} className="text-blue-400" />;
+      default:
+        return <Clock size={iconSize} className="text-slate-400" />;
+    }
+  }
   
 
   const getStatusStyles = () => {
@@ -40,23 +60,19 @@ export function LessonCard({
     if (lesson.status === 'cancelled') {
       return 'border-l-red-500 opacity-40 bg-[#230e0e] grayscale-[0.5]'
     }
-  
     // 2. Student didn't show or cancelled too late (Warning style)
     // We use a dim orange/amber to show it's "Done" but was a problem
     if (lesson.status === 'no_show' || lesson.status === 'late_cancelled') {
       return 'border-l-orange-500 bg-[#330a0a] opacity-80'
     }
-  
     // 3. Successfully Completed
     if (lesson.status === 'completed') {
       return 'border-l-emerald-500 bg-[#0d1b10]'
     }
-  
     // 4. Planned (Color depends on Moto vs Car)
     if (isMoto) {
       return 'border-l-fuchsia-500 bg-[#160e1e] shadow-lg shadow-fuchsia-500/5'
     }
-    
     return 'border-l-primary bg-[#0d1124]'
   }
 
@@ -81,6 +97,9 @@ export function LessonCard({
                <Bike size={12} className="text-fuchsia-400 shrink-0" /> : 
                <Car size={12} className="text-primary shrink-0" />
              }
+             <div className="ml-1 opacity-80">
+                {getStatusIcon()}
+             </div>
           </div>
           <h4 className={`font-black uppercase italic text-white group-hover:text-primary transition-colors truncate 
             ${isWeek ? 'text-[10px] leading-tight' : 'text-sm md:text-lg'}`}>
