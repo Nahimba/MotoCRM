@@ -214,7 +214,7 @@ export function AddLessonModal({
     const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
     // Using 3600000 because your duration seems to be in hours based on previous code
     const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
-
+ 
     // 3. Check Exceptions (Busy slots / All-day)
     exceptions.forEach(ex => {
       const exStart = toZonedTime(new Date(ex.start_at), TZ);
