@@ -249,33 +249,30 @@ export function AddLessonModal({
     //   }
     // });
     
-    // 4. Check Other Lessons
-// 4. Check Other Lessons
-// 4. Check Other Lessons
-lessons.forEach(other => {
-  if (currentLessonId && String(other.id) === String(currentLessonId)) return;
+    // 4. Check Other Lessons (THE FIX)
+    lessons.forEach(other => {
+      // Ignore the lesson we are currently editing
+      if (currentLessonId && other.id === currentLessonId) return;
 
-  // Force database string into a Kyiv date object
-  const otherStartObj = toZonedTime(new Date(other.session_date), TZ);
-  const otherStart = otherStartObj.getTime();
-  
-  // Use the numeric duration from your DB schema
-  const otherEnd = otherStart + (Number(other.duration) * 3600000);
-  
-  const myStart = lessonStart.getTime();
-  const myEnd = lessonEnd.getTime();
+      // Convert DB UTC string to Kyiv time object for comparison
+      const otherStartObj = toZonedTime(new Date(other.session_date), TZ);
+      const otherStart = otherStartObj.getTime();
+      
+      // Calculate end time using the numeric duration from the DB
+      const otherEnd = otherStart + (Number(other.duration) * 3600000);
+      
+      const myStart = lessonStart.getTime();
+      const myEnd = lessonEnd.getTime();
 
-  // Debug individual comparisons if it still shows 0
-  // console.log(`Comparing: ${format(lessonStart, 'HH:mm')} against ${format(otherStartObj, 'HH:mm')}`);
-
-  if (myStart < otherEnd && myEnd > otherStart) {
-    alerts.push({
-      id: other.id,
-      message: `Перетин з уроком (${format(otherStartObj, "HH:mm")} - ${format(new Date(otherEnd), "HH:mm")})`,
-      type: 'error'
+      // Overlap check: My Start < Their End AND My End > Their Start
+      if (myStart < otherEnd && myEnd > otherStart) {
+        alerts.push({
+          id: other.id,
+          message: `Перетин з уроком (${format(otherStartObj, "HH:mm")} - ${format(new Date(otherEnd), "HH:mm")})`,
+          type: 'error'
+        });
+      }
     });
-  }
-});
 
     // 5. Check Work Hours
     const dayOfWeek = lessonStart.getDay(); 
