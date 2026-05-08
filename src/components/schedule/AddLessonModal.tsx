@@ -12,9 +12,11 @@ import { useAuth } from "@/context/AuthContext"
 import { LessonStatus } from "@/constants/constants"
 import { StudentSelectorPlus } from "./StudentSelectorPlus"
 
+import { toZonedTime } from 'date-fns-tz';
+
 // calendar start
 import { uk } from "date-fns/locale"
-import { format, parseISO } from "date-fns"
+import { format, parseISO, startOfDay, endOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -119,151 +121,136 @@ export function AddLessonModal({
 
 
 
+
+  const TZ = 'Europe/Kyiv';
+
+
   
   // const getStatusWarning = () => {
-  //   if (!lessonDate || !workHours || !exceptions) return null;
-  
-  //   // 1. Перевірка винятків (відпустка, хвороба, зайнятість)
-  //   const holiday = exceptions.find(ex => {
-  //     const start = ex.start_at.split('T')[0];
-  //     const end = ex.end_at.split('T')[0];
-  //     return lessonDate >= start && lessonDate <= end;
+  //   if (!lessonDate || !selectedHour || !selectedMinute || !duration || !exceptions || !workHours) return null;
+
+  //   // 1. Precise Lesson Interval (Kyiv Time)
+  //   const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
+  //   const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
+
+  //   // 2. Check Exceptions (Catching ANY intersection)
+  //   const conflict = exceptions.find(ex => {
+  //     const exStart = toZonedTime(new Date(ex.start_at), TZ);
+  //     const exEnd = toZonedTime(new Date(ex.end_at), TZ);
+
+  //     // Standard Interval Overlap Formula:
+  //     // A conflict exists if (LessonStart < ExceptionEnd) AND (LessonEnd > ExceptionStart)
+  //     return lessonStart < exEnd && lessonEnd > exStart;
   //   });
-  
-  //   if (holiday) {
+
+  //   if (conflict) {
+  //     const zonedStart = toZonedTime(new Date(conflict.start_at), TZ);
+  //     const zonedEnd = toZonedTime(new Date(conflict.end_at), TZ);
+      
   //     return {
-  //       message: holiday.title || "Інструктор відсутній (відпустка/лікарняний)",
+  //       message: `${conflict.title} (${format(zonedStart, "HH:mm")} - ${format(zonedEnd, "HH:mm")})`,
   //       type: 'error'
   //     };
   //   }
-  
-  //   // 2. Перевірка робочих годин
-  //   const dateObj = parseISO(lessonDate);
-  //   const dayOfWeek = dateObj.getDay(); // 0 = Нд, 1 = Пн ... 6 = Сб
-  
-  //   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
-  
-  //   if (!schedule) {
-  //     return {
-  //       message: "Це неробочий день для цього інструктора",
-  //       type: 'warning'
-  //     };
-  //   }
-  
-  //   // 3. Перевірка конкретного часу (якщо вибрано годину та хвилини)
-  //   if (selectedHour && selectedMinute) {
-  //     const selectedTime = `${selectedHour}:${selectedMinute}:00`;
-      
-  //     // Порівняння часу: '08:00:00' < '09:00:00'
-  //     if (selectedTime < schedule.start_time || selectedTime > schedule.end_time) {
-  //       return {
-  //         message: `Поза робочим часом (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
-  //         type: 'warning'
-  //       };
-  //     }
-  //   }
-  
-  //   return null;
-  // };
-  
-  // const getStatusWarning = () => {
-  //   if (!lessonDate || !selectedHour || !selectedMinute || !exceptions || !workHours) return null;
-  
-  //   // 1. Construct the full Date object for the lesson being created
-  //   // This combines "2026-05-05" + "10:00" into a single Date object
-  //   const lessonFullDateTime = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
-  
-  //   // 2. Check Exceptions (Holidays AND partial hours)
-  //   const holiday = exceptions.find(ex => {
-  //     const start = new Date(ex.start_at);
-  //     const end = new Date(ex.end_at);
-      
-  //     // Check if the lesson falls anywhere inside this start/end range
-  //     return lessonFullDateTime >= start && lessonFullDateTime <= end;
-  //   });
-  
-  //   if (holiday) {
-  //     return {
-  //       message: holiday.title || "Інструктор зайнятий у цей час",
-  //       type: 'error' 
-  //     };
-  //   }
-  
+
   //   // 3. Check Work Hours (Day of week)
-  //   const dayOfWeek = lessonFullDateTime.getDay(); // 0=Нд, 1=Пн...
+  //   const dayOfWeek = lessonStart.getDay(); 
   //   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
-  
+
   //   if (!schedule) {
+  //     return { message: "Це неробочий день інструктора", type: 'warning' };
+  //   }
+
+  //   // 4. Check Work Hours (Time Bounds)
+  //   const lessonStartStr = format(lessonStart, "HH:mm");
+  //   const lessonEndStr = format(lessonEnd, "HH:mm");
+    
+  //   const workStartStr = schedule.start_time.slice(0, 5);
+  //   const workEndStr = schedule.end_time.slice(0, 5);
+
+  //   // Check if any part of the lesson falls outside the 09:00 - 18:00 window
+  //   const startsTooEarly = lessonStartStr < workStartStr;
+  //   const endsTooLate = lessonEndStr > workEndStr;
+
+  //   if (startsTooEarly || endsTooLate) {
   //     return {
-  //       message: "Це неробочий день для інструктора",
+  //       message: `Урок виходить за межі робочого часу (${workStartStr} - ${workEndStr})`,
   //       type: 'warning'
   //     };
   //   }
-  
-  //   // 4. Check Work Hours (Specific time range)
-  //   const selectedTime = `${selectedHour}:${selectedMinute}:00`;
-  //   if (selectedTime < schedule.start_time || selectedTime > schedule.end_time) {
-  //     return {
-  //       message: `Поза робочим часом (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
-  //       type: 'warning'
-  //     };
-  //   }
-  
+
   //   return null;
   // };
 
   const getStatusWarning = () => {
-    // duration comes from your form state (e.g., 60, 90, 120 minutes)
-    if (!lessonDate || !selectedHour || !selectedMinute || !duration) return null;
+    if (!lessonDate || !selectedHour || !selectedMinute || !duration || !exceptions || !workHours) return null;
   
-    // 1. Calculate Lesson Interval
+    // 1. Precise Lesson Interval (Kyiv Time)
+    // Convert minutes to milliseconds: duration * 60000
     const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
-    const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 60000);
+    const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
   
-    // Helper to format time for comparison (HH:mm:ss)
-    const formatTime = (date: Date) => format(date, "HH:mm:ss");
-    const lessonStartTimeStr = formatTime(lessonStart);
-    const lessonEndTimeStr = formatTime(lessonEnd);
+    // 2. Check Exceptions
+    const conflict = exceptions.find(ex => {
+      const exStart = toZonedTime(new Date(ex.start_at), TZ);
+      const exEnd = toZonedTime(new Date(ex.end_at), TZ);
   
-    // 2. Check Exceptions (Intersects with Busy/Holiday)
-    const holiday = exceptions.find(ex => {
-      const exStart = new Date(ex.start_at);
-      const exEnd = new Date(ex.end_at);
-      
-      // OVERLAP LOGIC: (StartA < EndB) AND (EndA > StartB)
+      if (ex.is_all_day) {
+        /**
+         * For All-Day: we normalize boundaries to the very start and very end of the days.
+         * This handles multi-day ranges correctly.
+         */
+        const rangeStart = startOfDay(exStart);
+        const rangeEnd = endOfDay(exEnd);
+  
+        return lessonStart < rangeEnd && lessonEnd > rangeStart;
+      }
+  
+      // Standard timed overlap
       return lessonStart < exEnd && lessonEnd > exStart;
     });
   
-    if (holiday) {
+    if (conflict) {
+      let timeRange = "";
+      if (!conflict.is_all_day) {
+        const zStart = toZonedTime(new Date(conflict.start_at), TZ);
+        const zEnd = toZonedTime(new Date(conflict.end_at), TZ);
+        timeRange = ` (${format(zStart, "HH:mm")} - ${format(zEnd, "HH:mm")})`;
+      } else {
+        timeRange = " (Весь день)";
+      }
+  
       return {
-        message: `${holiday.title} (${format(new Date(holiday.start_at), "HH:mm")} - ${format(new Date(holiday.end_at), "HH:mm")})`,
+        message: `${conflict.title}${timeRange}`,
         type: 'error'
       };
     }
   
-    // 3. Check Work Hours
-    const dayOfWeek = lessonStart.getDay();
+    // 3. Check Work Hours (Day of week)
+    const dayOfWeek = lessonStart.getDay(); 
     const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
   
     if (!schedule) {
       return { message: "Це неробочий день інструктора", type: 'warning' };
     }
   
-    // 4. Check if Lesson fits WITHIN Work Hours
-    // The lesson must start AFTER schedule.start AND end BEFORE schedule.end
-    const isOutsideBounds = 
-      lessonStartTimeStr < schedule.start_time || 
-      lessonEndTimeStr > schedule.end_time;
+    // 4. Check Work Hours (Time Bounds)
+    const lessonStartStr = format(lessonStart, "HH:mm");
+    const lessonEndStr = format(lessonEnd, "HH:mm");
+    
+    const workStartStr = schedule.start_time.slice(0, 5);
+    const workEndStr = schedule.end_time.slice(0, 5);
   
-    if (isOutsideBounds) {
+    if (lessonStartStr < workStartStr || lessonEndStr > workEndStr) {
       return {
-        message: `Виходить за межі робочого часу (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
+        message: `Поза межами робочого часу (${workStartStr} - ${workEndStr})`,
         type: 'warning'
       };
     }
   
     return null;
   };
+
 
   const warning = getStatusWarning();
 
