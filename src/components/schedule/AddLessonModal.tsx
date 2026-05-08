@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { 
   X, Check, Trash2, Calendar as CalendarIcon, 
-  MapPin, FileText, Loader2, Contact2, ChevronDown, Clock, User
+  MapPin, FileText, Loader2, Contact2, ChevronDown, Clock, User, AlertTriangle
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -38,12 +38,14 @@ interface AddLessonModalProps {
   onSuccess: () => void
   onOpenDossier: (client: any) => void
   editLesson: any | null
+  workHours: any[]     
+  exceptions: any[]
   // existingLessons: any[]
 }
 
 
 export function AddLessonModal({ 
-  isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson 
+  isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson, workHours, exceptions
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
   const tStatus = useTranslations("Constants.lesson_statuses")
@@ -113,6 +115,159 @@ export function AddLessonModal({
       }
     }
   }, [editLesson, packages]); // Re-runs as soon as packages array is filled
+
+
+
+
+  
+  // const getStatusWarning = () => {
+  //   if (!lessonDate || !workHours || !exceptions) return null;
+  
+  //   // 1. Перевірка винятків (відпустка, хвороба, зайнятість)
+  //   const holiday = exceptions.find(ex => {
+  //     const start = ex.start_at.split('T')[0];
+  //     const end = ex.end_at.split('T')[0];
+  //     return lessonDate >= start && lessonDate <= end;
+  //   });
+  
+  //   if (holiday) {
+  //     return {
+  //       message: holiday.title || "Інструктор відсутній (відпустка/лікарняний)",
+  //       type: 'error'
+  //     };
+  //   }
+  
+  //   // 2. Перевірка робочих годин
+  //   const dateObj = parseISO(lessonDate);
+  //   const dayOfWeek = dateObj.getDay(); // 0 = Нд, 1 = Пн ... 6 = Сб
+  
+  //   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+  
+  //   if (!schedule) {
+  //     return {
+  //       message: "Це неробочий день для цього інструктора",
+  //       type: 'warning'
+  //     };
+  //   }
+  
+  //   // 3. Перевірка конкретного часу (якщо вибрано годину та хвилини)
+  //   if (selectedHour && selectedMinute) {
+  //     const selectedTime = `${selectedHour}:${selectedMinute}:00`;
+      
+  //     // Порівняння часу: '08:00:00' < '09:00:00'
+  //     if (selectedTime < schedule.start_time || selectedTime > schedule.end_time) {
+  //       return {
+  //         message: `Поза робочим часом (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
+  //         type: 'warning'
+  //       };
+  //     }
+  //   }
+  
+  //   return null;
+  // };
+  
+  // const getStatusWarning = () => {
+  //   if (!lessonDate || !selectedHour || !selectedMinute || !exceptions || !workHours) return null;
+  
+  //   // 1. Construct the full Date object for the lesson being created
+  //   // This combines "2026-05-05" + "10:00" into a single Date object
+  //   const lessonFullDateTime = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
+  
+  //   // 2. Check Exceptions (Holidays AND partial hours)
+  //   const holiday = exceptions.find(ex => {
+  //     const start = new Date(ex.start_at);
+  //     const end = new Date(ex.end_at);
+      
+  //     // Check if the lesson falls anywhere inside this start/end range
+  //     return lessonFullDateTime >= start && lessonFullDateTime <= end;
+  //   });
+  
+  //   if (holiday) {
+  //     return {
+  //       message: holiday.title || "Інструктор зайнятий у цей час",
+  //       type: 'error' 
+  //     };
+  //   }
+  
+  //   // 3. Check Work Hours (Day of week)
+  //   const dayOfWeek = lessonFullDateTime.getDay(); // 0=Нд, 1=Пн...
+  //   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+  
+  //   if (!schedule) {
+  //     return {
+  //       message: "Це неробочий день для інструктора",
+  //       type: 'warning'
+  //     };
+  //   }
+  
+  //   // 4. Check Work Hours (Specific time range)
+  //   const selectedTime = `${selectedHour}:${selectedMinute}:00`;
+  //   if (selectedTime < schedule.start_time || selectedTime > schedule.end_time) {
+  //     return {
+  //       message: `Поза робочим часом (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
+  //       type: 'warning'
+  //     };
+  //   }
+  
+  //   return null;
+  // };
+
+  const getStatusWarning = () => {
+    // duration comes from your form state (e.g., 60, 90, 120 minutes)
+    if (!lessonDate || !selectedHour || !selectedMinute || !duration) return null;
+  
+    // 1. Calculate Lesson Interval
+    const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
+    const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 60000);
+  
+    // Helper to format time for comparison (HH:mm:ss)
+    const formatTime = (date: Date) => format(date, "HH:mm:ss");
+    const lessonStartTimeStr = formatTime(lessonStart);
+    const lessonEndTimeStr = formatTime(lessonEnd);
+  
+    // 2. Check Exceptions (Intersects with Busy/Holiday)
+    const holiday = exceptions.find(ex => {
+      const exStart = new Date(ex.start_at);
+      const exEnd = new Date(ex.end_at);
+      
+      // OVERLAP LOGIC: (StartA < EndB) AND (EndA > StartB)
+      return lessonStart < exEnd && lessonEnd > exStart;
+    });
+  
+    if (holiday) {
+      return {
+        message: `${holiday.title} (${format(new Date(holiday.start_at), "HH:mm")} - ${format(new Date(holiday.end_at), "HH:mm")})`,
+        type: 'error'
+      };
+    }
+  
+    // 3. Check Work Hours
+    const dayOfWeek = lessonStart.getDay();
+    const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+  
+    if (!schedule) {
+      return { message: "Це неробочий день інструктора", type: 'warning' };
+    }
+  
+    // 4. Check if Lesson fits WITHIN Work Hours
+    // The lesson must start AFTER schedule.start AND end BEFORE schedule.end
+    const isOutsideBounds = 
+      lessonStartTimeStr < schedule.start_time || 
+      lessonEndTimeStr > schedule.end_time;
+  
+    if (isOutsideBounds) {
+      return {
+        message: `Виходить за межі робочого часу (${schedule.start_time.slice(0, 5)} - ${schedule.end_time.slice(0, 5)})`,
+        type: 'warning'
+      };
+    }
+  
+    return null;
+  };
+
+  const warning = getStatusWarning();
+
+
 
 
   useEffect(() => {
@@ -756,10 +911,25 @@ export function AddLessonModal({
                   />
                 </PopoverContent>
               </Popover>
+
+              {/* NEW: Warning Logic Display */}
+              {warning && (
+                <div className={cn(
+                  "mt-4 flex items-center gap-3 p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2",
+                  warning.type === 'error' 
+                    ? "bg-red-500/10 border-red-500/20 text-red-200" 
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+                )}>
+                  <AlertTriangle size={16} className={warning.type === 'error' ? "text-red-500" : "text-amber-500"} />
+                  <p className="text-[11px] leading-tight font-medium">
+                    <strong className="uppercase mr-1">Увага:</strong> {warning.message}
+                  </p>
+                </div>
+              )}
             </div>
 
             
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('time')} (24H)</label>
               <div className="flex gap-2">
                 <select value={selectedHour} onChange={(e) => setSelectedHour(e.target.value)} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none text-center font-black">
@@ -774,8 +944,72 @@ export function AddLessonModal({
                   ))}
                 </select>
               </div>
+            </div> */}
+
+            {/* TIME PICKER COLUMN */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  Час (24H)
+                </label>
+                {/* Optional: Show "Вибрано" status */}
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  {selectedHour}:{selectedMinute}
+                </span>
+              </div>
+              
+              <div className="flex gap-2 h-[58px]">
+                <div className="relative flex-1">
+                  <select 
+                    value={selectedHour} 
+                    onChange={(e) => setSelectedHour(e.target.value)} 
+                    className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const h = i.toString().padStart(2, '0');
+                      return <option key={i} value={h} className="bg-[#09090b]">{h}</option>
+                    })}
+                  </select>
+                  {/* Subtle label inside the select for better UX */}
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">год</span>
+                </div>
+
+                <div className="flex items-center text-primary font-black animate-pulse">:</div>
+
+                <div className="relative flex-1">
+                  <select 
+                    value={selectedMinute} 
+                    onChange={(e) => setSelectedMinute(e.target.value)} 
+                    className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
+                  >
+                    {["00", "15", "30", "45"].map((m) => (
+                      <option key={m} value={m} className="bg-[#09090b]">{m}</option>
+                    ))}
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">хв</span>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Warning Notification Block */}
+          {warning && (
+            <div className={cn(
+              "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-2",
+              warning.type === 'error' 
+                ? "bg-red-500/10 border-red-500/20 text-red-400" 
+                : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+            )}>
+              <div className={cn(
+                "w-2 h-2 rounded-full animate-pulse",
+                warning.type === 'error' ? "bg-red-500" : "bg-amber-500"
+              )} />
+              <span className="text-xs font-medium">
+                {warning.message}
+              </span>
+            </div>
+          )}
+
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
