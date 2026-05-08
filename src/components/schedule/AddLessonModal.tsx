@@ -209,6 +209,8 @@ export function AddLessonModal({
     const currentLessonId = editLesson?.id; 
 
     // 2. Precise Lesson Interval
+    // Combine form date/time and treat as Kyiv local time
+    //const lessonStart = toZonedTime(parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`), TZ);
     const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
     // Using 3600000 because your duration seems to be in hours based on previous code
     const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
