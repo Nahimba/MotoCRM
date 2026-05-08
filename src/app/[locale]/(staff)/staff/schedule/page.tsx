@@ -732,6 +732,7 @@ export default function SchedulePage() {
         editLesson={editingLesson} 
         workHours={workHours} 
         exceptions={exceptions}
+        lessons={lessons}
         // ВАЖНО: Передаем ID клиента и ID пакета для правильной загрузки досье
         onOpenDossier={(client) => setSelectedClient({ 
           id: client.id, 

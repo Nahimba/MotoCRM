@@ -42,12 +42,13 @@ interface AddLessonModalProps {
   editLesson: any | null
   workHours: any[]     
   exceptions: any[]
+  lessons: any[]
   // existingLessons: any[]
 }
 
 
 export function AddLessonModal({ 
-  isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson, workHours, exceptions
+  isOpen, onClose, instructorId, instructors, initialDate, onSuccess, onOpenDossier, editLesson, workHours, exceptions, lessons
 }: AddLessonModalProps) {
   const t = useTranslations("Schedule")
   const tStatus = useTranslations("Constants.lesson_statuses")
@@ -125,134 +126,153 @@ export function AddLessonModal({
   const TZ = 'Europe/Kyiv';
 
 
-  
+
   // const getStatusWarning = () => {
   //   if (!lessonDate || !selectedHour || !selectedMinute || !duration || !exceptions || !workHours) return null;
-
+  
   //   // 1. Precise Lesson Interval (Kyiv Time)
+  //   // Convert minutes to milliseconds: duration * 60000
   //   const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
   //   const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
-
-  //   // 2. Check Exceptions (Catching ANY intersection)
+  
+  //   // 2. Check Exceptions
   //   const conflict = exceptions.find(ex => {
   //     const exStart = toZonedTime(new Date(ex.start_at), TZ);
   //     const exEnd = toZonedTime(new Date(ex.end_at), TZ);
-
-  //     // Standard Interval Overlap Formula:
-  //     // A conflict exists if (LessonStart < ExceptionEnd) AND (LessonEnd > ExceptionStart)
+  
+  //     if (ex.is_all_day) {
+  //       /**
+  //        * For All-Day: we normalize boundaries to the very start and very end of the days.
+  //        * This handles multi-day ranges correctly.
+  //        */
+  //       const rangeStart = startOfDay(exStart);
+  //       const rangeEnd = endOfDay(exEnd);
+  
+  //       return lessonStart < rangeEnd && lessonEnd > rangeStart;
+  //     }
+  
+  //     // Standard timed overlap
   //     return lessonStart < exEnd && lessonEnd > exStart;
   //   });
-
+  
   //   if (conflict) {
-  //     const zonedStart = toZonedTime(new Date(conflict.start_at), TZ);
-  //     const zonedEnd = toZonedTime(new Date(conflict.end_at), TZ);
-      
+  //     let timeRange = "";
+  //     if (!conflict.is_all_day) {
+  //       const zStart = toZonedTime(new Date(conflict.start_at), TZ);
+  //       const zEnd = toZonedTime(new Date(conflict.end_at), TZ);
+  //       timeRange = ` (${format(zStart, "HH:mm")} - ${format(zEnd, "HH:mm")})`;
+  //     } else {
+  //       timeRange = " (Весь день)";
+  //     }
+  
   //     return {
-  //       message: `${conflict.title} (${format(zonedStart, "HH:mm")} - ${format(zonedEnd, "HH:mm")})`,
+  //       message: `${conflict.title}${timeRange}`,
   //       type: 'error'
   //     };
   //   }
-
+  
   //   // 3. Check Work Hours (Day of week)
   //   const dayOfWeek = lessonStart.getDay(); 
   //   const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
-
+  
   //   if (!schedule) {
   //     return { message: "Це неробочий день інструктора", type: 'warning' };
   //   }
-
+  
   //   // 4. Check Work Hours (Time Bounds)
   //   const lessonStartStr = format(lessonStart, "HH:mm");
   //   const lessonEndStr = format(lessonEnd, "HH:mm");
     
   //   const workStartStr = schedule.start_time.slice(0, 5);
   //   const workEndStr = schedule.end_time.slice(0, 5);
-
-  //   // Check if any part of the lesson falls outside the 09:00 - 18:00 window
-  //   const startsTooEarly = lessonStartStr < workStartStr;
-  //   const endsTooLate = lessonEndStr > workEndStr;
-
-  //   if (startsTooEarly || endsTooLate) {
+  
+  //   if (lessonStartStr < workStartStr || lessonEndStr > workEndStr) {
   //     return {
-  //       message: `Урок виходить за межі робочого часу (${workStartStr} - ${workEndStr})`,
+  //       message: `Поза межами робочого часу (${workStartStr} - ${workEndStr})`,
   //       type: 'warning'
   //     };
   //   }
-
+  
   //   return null;
   // };
+  
+  //const warnings = getStatusWarnings();
 
-  const getStatusWarning = () => {
-    if (!lessonDate || !selectedHour || !selectedMinute || !duration || !exceptions || !workHours) return null;
+
   
-    // 1. Precise Lesson Interval (Kyiv Time)
-    // Convert minutes to milliseconds: duration * 60000
+  // 1. Memoize the warnings so they update as the user types
+  const warnings = useMemo(() => {
+    // 1. Basic validation
+    if (!lessonDate || !selectedHour || !selectedMinute || !duration || !exceptions || !workHours || !lessons) return [];
+
+    const alerts = [];
+    const currentLessonId = editLesson?.id; 
+
+    // 2. Precise Lesson Interval
     const lessonStart = parseISO(`${lessonDate}T${selectedHour}:${selectedMinute}:00`);
+    // Using 3600000 because your duration seems to be in hours based on previous code
     const lessonEnd = new Date(lessonStart.getTime() + Number(duration) * 3600000);
-  
-    // 2. Check Exceptions
-    const conflict = exceptions.find(ex => {
+
+    // 3. Check Exceptions (Busy slots / All-day)
+    exceptions.forEach(ex => {
       const exStart = toZonedTime(new Date(ex.start_at), TZ);
       const exEnd = toZonedTime(new Date(ex.end_at), TZ);
-  
+
+      let isConflict = false;
       if (ex.is_all_day) {
-        /**
-         * For All-Day: we normalize boundaries to the very start and very end of the days.
-         * This handles multi-day ranges correctly.
-         */
         const rangeStart = startOfDay(exStart);
         const rangeEnd = endOfDay(exEnd);
-  
-        return lessonStart < rangeEnd && lessonEnd > rangeStart;
-      }
-  
-      // Standard timed overlap
-      return lessonStart < exEnd && lessonEnd > exStart;
-    });
-  
-    if (conflict) {
-      let timeRange = "";
-      if (!conflict.is_all_day) {
-        const zStart = toZonedTime(new Date(conflict.start_at), TZ);
-        const zEnd = toZonedTime(new Date(conflict.end_at), TZ);
-        timeRange = ` (${format(zStart, "HH:mm")} - ${format(zEnd, "HH:mm")})`;
+        isConflict = lessonStart < rangeEnd && lessonEnd > rangeStart;
       } else {
-        timeRange = " (Весь день)";
+        isConflict = lessonStart < exEnd && lessonEnd > exStart;
       }
-  
-      return {
-        message: `${conflict.title}${timeRange}`,
-        type: 'error'
-      };
-    }
-  
-    // 3. Check Work Hours (Day of week)
+
+      if (isConflict) {
+        const timeRange = ex.is_all_day ? " (Весь день)" : ` (${format(exStart, "HH:mm")} - ${format(exEnd, "HH:mm")})`;
+        alerts.push({ id: ex.id, message: `${ex.title}${timeRange}`, type: 'error' });
+      }
+    });
+
+    // 4. Check Other Lessons
+    lessons.forEach(other => {
+      if (currentLessonId && other.id === currentLessonId) return;
+
+      const otherStart = toZonedTime(new Date(other.start_at), TZ);
+      const otherEnd = toZonedTime(new Date(other.end_at), TZ);
+
+      if (lessonStart < otherEnd && lessonEnd > otherStart) {
+        alerts.push({
+          id: other.id,
+          message: `Перетин з іншим уроком (${format(otherStart, "HH:mm")} - ${format(otherEnd, "HH:mm")})`,
+          type: 'error'
+        });
+      }
+    });
+
+    // 5. Check Work Hours
     const dayOfWeek = lessonStart.getDay(); 
     const schedule = workHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
-  
+
     if (!schedule) {
-      return { message: "Це неробочий день інструктора", type: 'warning' };
-    }
-  
-    // 4. Check Work Hours (Time Bounds)
-    const lessonStartStr = format(lessonStart, "HH:mm");
-    const lessonEndStr = format(lessonEnd, "HH:mm");
-    
-    const workStartStr = schedule.start_time.slice(0, 5);
-    const workEndStr = schedule.end_time.slice(0, 5);
-  
-    if (lessonStartStr < workStartStr || lessonEndStr > workEndStr) {
-      return {
-        message: `Поза межами робочого часу (${workStartStr} - ${workEndStr})`,
-        type: 'warning'
-      };
-    }
-  
-    return null;
-  };
+      alerts.push({ id: 'work-day', message: "Це неробочий день інструктора", type: 'warning' });
+    } else {
+      const lessonStartStr = format(lessonStart, "HH:mm");
+      const lessonEndStr = format(lessonEnd, "HH:mm");
+      const workStartStr = schedule.start_time.slice(0, 5);
+      const workEndStr = schedule.end_time.slice(0, 5);
 
+      if (lessonStartStr < workStartStr || lessonEndStr > workEndStr) {
+        alerts.push({
+          id: 'work-hours',
+          message: `Поза межами робочого часу (${workStartStr} - ${workEndStr})`,
+          type: 'warning'
+        });
+      }
+    }
 
-  const warning = getStatusWarning();
+    return alerts;
+  }, [lessonDate, selectedHour, selectedMinute, duration, exceptions, workHours, lessons, editLesson]);
+
 
 
 
@@ -900,7 +920,7 @@ export function AddLessonModal({
               </Popover>
 
               {/* NEW: Warning Logic Display */}
-              {warning && (
+              {/* {warning && (
                 <div className={cn(
                   "mt-4 flex items-center gap-3 p-4 rounded-2xl border transition-all animate-in fade-in slide-in-from-top-2",
                   warning.type === 'error' 
@@ -912,7 +932,34 @@ export function AddLessonModal({
                     <strong className="uppercase mr-1">Увага:</strong> {warning.message}
                   </p>
                 </div>
-              )}
+              )} */}
+              {/* NEW: Warning Logic Display (Stacks multiple alerts) */}
+              {/* {warnings.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {warnings.map((alert) => (
+                    <div 
+                      key={alert.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-1",
+                        alert.type === 'error' 
+                          ? "bg-red-500/10 border-red-500/20 text-red-200" 
+                          : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+                      )}
+                    >
+                      <AlertTriangle 
+                        size={14} 
+                        className={cn("shrink-0", alert.type === 'error' ? "text-red-500" : "text-amber-500")} 
+                      />
+                      <p className="text-[11px] leading-tight font-medium">
+                        <strong className="uppercase mr-1 text-[10px] opacity-70">
+                          {alert.type === 'error' ? 'Заборонено' : 'Увага'}:
+                        </strong> 
+                        {alert.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )} */}
             </div>
 
             
@@ -980,20 +1027,32 @@ export function AddLessonModal({
           </div>
 
           {/* Warning Notification Block */}
-          {warning && (
-            <div className={cn(
-              "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-2",
-              warning.type === 'error' 
-                ? "bg-red-500/10 border-red-500/20 text-red-400" 
-                : "bg-amber-500/10 border-amber-500/20 text-amber-400"
-            )}>
-              <div className={cn(
-                "w-2 h-2 rounded-full animate-pulse",
-                warning.type === 'error' ? "bg-red-500" : "bg-amber-500"
-              )} />
-              <span className="text-xs font-medium">
-                {warning.message}
-              </span>
+          {warnings.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {warnings.map((alert) => (
+                <div 
+                  key={alert.id}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-1",
+                    alert.type === 'error' 
+                      ? "bg-red-500/10 border-red-500/20 text-red-200" 
+                      : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+                  )}
+                >
+                  {/* Visual Indicator (The pulsing dot or icon) */}
+                  <div className={cn(
+                    "w-2 h-2 rounded-full shrink-0 animate-pulse",
+                    alert.type === 'error' ? "bg-red-500" : "bg-amber-500"
+                  )} />
+                  
+                  <p className="text-[11px] leading-tight font-medium">
+                    <strong className="uppercase mr-1 text-[10px] opacity-70">
+                      {alert.type === 'error' ? 'Заборонено' : 'Увага'}:
+                    </strong> 
+                    {alert.message}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
 
