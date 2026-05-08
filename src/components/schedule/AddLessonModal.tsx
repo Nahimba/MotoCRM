@@ -1075,7 +1075,7 @@ export function AddLessonModal({
                   
                   <p className="text-[11px] leading-tight font-medium">
                     <strong className="uppercase mr-1 text-[10px] opacity-70">
-                      {alert.type === 'error' ? 'Заборонено' : 'Увага'}:
+                      {alert.type === 'error' ? 'Увага' : 'Увага'}:
                     </strong> 
                     {alert.message}
                   </p>
