@@ -50,5 +50,9 @@ export const dateUtils = {
      */
     toDisplay: (utcDate: string | Date, pattern = 'MMM dd, HH:mm') => {
       return format(toZonedTime(new Date(utcDate), TZ), pattern);
-    }
+    },
+
+    // toDisplay: (utcDate: string | Date, pattern = 'dd.MM.yyyy, HH:mm') => {
+    //     return format(toZonedTime(new Date(utcDate), TZ), pattern);
+    // },
   };

@@ -12,6 +12,19 @@ import { useAuth } from "@/context/AuthContext"
 import { LessonStatus } from "@/constants/constants"
 import { StudentSelectorPlus } from "./StudentSelectorPlus"
 
+// calendar start
+import { uk } from "date-fns/locale"
+import { format, parseISO } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+// calendar end
+
 // import { format } from "date-fns"
 // import { toZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { dateUtils } from '@/lib/date-utils'
@@ -35,8 +48,7 @@ export function AddLessonModal({
   const t = useTranslations("Schedule")
   const tStatus = useTranslations("Constants.lesson_statuses")
 
-  const TZ = 'Europe/Kyiv'
-  
+  //const TZ = 'Europe/Kyiv'
   //const { profile: authProfile } = useAuth()
   const { profile } = useAuth()
 
@@ -658,7 +670,7 @@ export function AddLessonModal({
                 className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer ${
                   status === 'planned' ? 'text-blue-400' : 
                   status === 'completed' ? 'text-green-400' :
-                  status === 'no_show' || status === 'late_cancelled' ? 'text-orange-400' : // Add this
+                  status === 'no_show' || status === 'late_cancelled' ? 'text-orange-400' :
                   status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
                   'text-red-500'
                 }`}
@@ -674,13 +686,78 @@ export function AddLessonModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('date')}</label>
               <div className="relative">
                 <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary [color-scheme:dark]" value={lessonDate} onChange={e => setLessonDate(e.target.value)} />
                 <CalendarIcon size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
               </div>
+            </div> */}
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  {t('date')}
+                </label>
+                
+                {lessonDate && (
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                    {format(parseISO(lessonDate), "LLLL", { locale: uk }).charAt(0).toUpperCase() + 
+                    format(parseISO(lessonDate), "LLLL", { locale: uk }).slice(1)}
+                  </span>
+                )}
+              </div>
+              
+              <Popover modal={true}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[58px] text-white justify-start font-normal hover:bg-white/10 hover:border-white/20 transition-all outline-none",
+                      !lessonDate && "text-slate-500"
+                    )}
+                  >
+                    <CalendarIcon size={16} className="mr-3 text-slate-500" />
+                    {lessonDate ? (
+                      format(parseISO(lessonDate), "dd.MM.yyyy", { locale: uk })
+                    ) : (
+                      <span>{t('select_date')}</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                
+                <PopoverContent 
+                  className="w-auto p-0 border-white/10 bg-[#09090b] shadow-2xl z-[9999]" 
+                  align="start"
+                  sideOffset={8}
+                >
+                  <Calendar
+                    mode="single"
+                    locale={uk}
+                    selected={lessonDate ? parseISO(lessonDate) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setLessonDate(format(date, "yyyy-MM-dd"))
+                      }
+                    }}
+                    autoFocus
+                    // --- User Friendly Options ---
+                    showOutsideDays={true} // Shows grayed out days from prev/next month
+                    fixedWeeks={true}      // Always shows 6 rows so the modal doesn't jump in height
+                    className="rounded-md border border-white/5"
+                    
+                    // Customizing how "Today" looks
+                    modifiers={{
+                      today: new Date()
+                    }}
+                    modifiersClassNames={{
+                      today: "border border-primary text-primary font-bold" 
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
+
             
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('time')} (24H)</label>
