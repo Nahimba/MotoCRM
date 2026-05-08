@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext"
 import { 
   format, addDays, subDays, startOfDay, 
   eachHourOfInterval, setHours, startOfWeek, getDay, isSameDay,
-  isBefore, isAfter, endOfDay, isWithinInterval, differenceInDays 
+  isBefore, isAfter, endOfDay, isWithinInterval, differenceInDays, isSameWeek
 } from "date-fns"
 import { uk,  enUS } from "date-fns/locale"
 import { useTranslations, useLocale } from "next-intl"
@@ -130,14 +130,36 @@ export default function SchedulePage() {
     // const start = (viewMode === 'day' ? startOfDay(selectedDate) : startOfWeek(selectedDate, { weekStartsOn: 1 })).toISOString()
     // const end = addDays(new Date(start), viewMode === 'day' ? 1 : 7).toISOString()
 
-    // Define the boundaries in Kyiv time
+
+
+
+    // // Define the boundaries in Kyiv time
+    // const zonedStart = toZonedTime(selectedDate, TZ);
+    // const start = (viewMode === 'day' 
+    //   ? startOfDay(zonedStart) 
+    //   : startOfWeek(zonedStart, { weekStartsOn: 1 })
+    // );
+    
+    // const end = addDays(start, viewMode === 'day' ? 1 : 7);
+
+
+
+
+    // Instead of 1 or 7 days, fetch a ±14 day buffer
+    const bufferDays = 14;
     const zonedStart = toZonedTime(selectedDate, TZ);
-    const start = (viewMode === 'day' 
+    const baseStart = (viewMode === 'day' 
       ? startOfDay(zonedStart) 
       : startOfWeek(zonedStart, { weekStartsOn: 1 })
     );
+
+    // Fetch from 14 days before start to 14 days after end
+    const start = addDays(baseStart, -bufferDays);
+    const end = addDays(baseStart, (viewMode === 'day' ? 1 : 7) + bufferDays);
+
+
     
-    const end = addDays(start, viewMode === 'day' ? 1 : 7);
+
 
     // Use formatInTimeZone to get the exact UTC string for these Kyiv moments
     const startISO = formatInTimeZone(start, TZ, "yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -299,7 +321,6 @@ export default function SchedulePage() {
     // const dayLessons = lessons.filter(l => isSameDay(new Date(l.session_date), date));
 
 
-    const TZ = 'Europe/Kyiv';
     // Convert UTC session_date to a Kyiv Date object
     const date = toZonedTime(new Date(lesson.session_date), TZ);
     const duration = Number(lesson.duration) || 1;
@@ -583,132 +604,160 @@ export default function SchedulePage() {
               </div>
 
 
-                {/* Background Grid with Stripe Effect for Non-working hours */}
-                {/* <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
-                  {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, dayIdx) => (
-                    <div key={dayIdx} className="border-r border-white/5 h-full">
+              {/* Background Grid with Stripe Effect for Non-working hours */}
+              {/* <div className={`absolute inset-0 grid ${viewMode === 'day' ? 'grid-cols-1' : 'grid-cols-7'} pointer-events-none z-10`}>
+                {Array.from({ length: viewMode === 'day' ? 1 : 7 }).map((_, dayIdx) => (
+                  <div key={dayIdx} className="border-r border-white/5 h-full">
+                    {HOURS.map(h => {
+                      const currentHourDate = viewMode === 'day' ? setHours(selectedDate, h.getHours()) : setHours(weekDays[dayIdx], h.getHours());
+                      return (
+                        <div 
+                          key={h.toString()} 
+                          style={{ height: `${hourHeight}px` }} 
+                          className={`border-b border-white/[0.03] transition-colors ${isNonWorkingHour(currentHourDate) ? 'bg-white/[0.02] stripe-bg opacity-40' : ''}`} 
+                        />
+                      )
+                    })}
+                  </div>
+                ))}
+              </div> */}
+
+              <div 
+                className="absolute inset-0 grid pointer-events-none z-10" 
+                style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+              >
+                {Array.from({ length: gridColumns }).map((_, colIdx) => {
+                  // Визначаємо інструктора для цієї колонки (тільки для Team View)
+                  const colInstructorId = isTeamView ? instructors[colIdx]?.id : targetInstructorId;
+                  // Визначаємо дату для цієї колонки (тільки для Week View)
+                  const colDate = viewMode === 'week' ? weekDays[colIdx] : selectedDate;
+
+                  return (
+                    <div key={colIdx} className="border-r border-white/5 h-full relative">
                       {HOURS.map(h => {
-                        const currentHourDate = viewMode === 'day' ? setHours(selectedDate, h.getHours()) : setHours(weekDays[dayIdx], h.getHours());
+                        // Очищаємо час від зайвих хвилин/секунд selectedDate
+                        const currentHourDate = setHours(startOfDay(colDate), h.getHours());
+                        
                         return (
                           <div 
                             key={h.toString()} 
                             style={{ height: `${hourHeight}px` }} 
-                            className={`border-b border-white/[0.03] transition-colors ${isNonWorkingHour(currentHourDate) ? 'bg-white/[0.02] stripe-bg opacity-40' : ''}`} 
+                            className={`border-b border-white/[0.03] transition-colors ${
+                              isNonWorkingHour(currentHourDate, colInstructorId) 
+                                ? 'bg-white/[0.02] stripe-bg opacity-40' 
+                                : ''
+                            }`} 
                           />
-                        )
+                        );
                       })}
                     </div>
-                  ))}
-                </div> */}
-
-                <div 
-                  className="absolute inset-0 grid pointer-events-none z-10" 
-                  style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-                >
-                  {Array.from({ length: gridColumns }).map((_, colIdx) => {
-                    // Визначаємо інструктора для цієї колонки (тільки для Team View)
-                    const colInstructorId = isTeamView ? instructors[colIdx]?.id : targetInstructorId;
-                    // Визначаємо дату для цієї колонки (тільки для Week View)
-                    const colDate = viewMode === 'week' ? weekDays[colIdx] : selectedDate;
-
-                    return (
-                      <div key={colIdx} className="border-r border-white/5 h-full relative">
-                        {HOURS.map(h => {
-                          // Очищаємо час від зайвих хвилин/секунд selectedDate
-                          const currentHourDate = setHours(startOfDay(colDate), h.getHours());
-                          
-                          return (
-                            <div 
-                              key={h.toString()} 
-                              style={{ height: `${hourHeight}px` }} 
-                              className={`border-b border-white/[0.03] transition-colors ${
-                                isNonWorkingHour(currentHourDate, colInstructorId) 
-                                  ? 'bg-white/[0.02] stripe-bg opacity-40' 
-                                  : ''
-                              }`} 
-                            />
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
+                  );
+                })}
+              </div>
 
 
 
-                {/* Exceptions / Blocked Slots */}
-                {(viewMode === 'week' ? weekDays : [selectedDate]).map((currentDay) => (
-                  <div key={currentDay.toString()}>
-                    {/* {exceptions
-                      .filter(ex => {
-                        const start = new Date(ex.start_at)
-                        const end = new Date(ex.end_at)
-                        // Перевіряємо, чи поточний день потрапляє в інтервал відпустки
-                        return isWithinInterval(currentDay, { 
-                          start: startOfDay(start), 
-                          end: endOfDay(end) 
-                        })
-                      }) */}
-                    {exceptions
-                      .filter(ex => {
-                        // BUG FIX: Don't use new Date(ex.start_at). Use toZonedTime!
-                        const start = toZonedTime(new Date(ex.start_at), TZ)
-                        const end = toZonedTime(new Date(ex.end_at), TZ)
-                        
-                        // Now 'start' correctly reflects the date in Kyiv
-                        return isWithinInterval(currentDay, { 
-                          start: startOfDay(start), 
-                          end: endOfDay(end) 
-                        })
+              {/* Exceptions / Blocked Slots */}
+              {(viewMode === 'week' ? weekDays : [selectedDate]).map((currentDay) => (
+                <div key={currentDay.toString()}>
+                  {/* {exceptions
+                    .filter(ex => {
+                      const start = new Date(ex.start_at)
+                      const end = new Date(ex.end_at)
+                      // Перевіряємо, чи поточний день потрапляє в інтервал відпустки
+                      return isWithinInterval(currentDay, { 
+                        start: startOfDay(start), 
+                        end: endOfDay(end) 
                       })
-                      .map(ex => (
-                        <div 
-                          key={`${ex.id}-${currentDay}`} 
-                          onClick={() => {
-                            setEditingException(ex)
-                            setIsExceptionModalOpen(true)
-                          }}
-                          style={getExceptionStyles(ex, currentDay)} 
-                          className={`cursor-pointer rounded-lg border-l-4 flex flex-col p-2 overflow-hidden transition-all hover:brightness-110 z-40 ${
-                            ex.type === 'vacation' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 
-                            ex.type === 'sick' ? 'bg-red-500/10 border-red-500 text-red-400' : 
-                            'bg-slate-500/10 border-slate-500 text-slate-400'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            {ex.type === 'vacation' ? <Palmtree size={12}/> : ex.type === 'busy' ? <Coffee size={12}/> : <ShieldAlert size={12}/>}
-                            <span className="text-[10px] font-black uppercase truncate">{ex.title}</span>
-                          </div>
-                          
-                          {/* Показуємо мітку "Весь день", якщо це all_day або триває довше 24 годин */}
-                          {/* {(ex.is_all_day || differenceInDays(new Date(ex.end_at), new Date(ex.start_at)) > 0) && (
-                            <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>
-                          )} */}
-                          {/* Use zoned dates for the label check too */}
-                          {(() => {
-                            const zStart = toZonedTime(new Date(ex.start_at), TZ);
-                            const zEnd = toZonedTime(new Date(ex.end_at), TZ);
-                            
-                            if (ex.is_all_day || differenceInDays(zEnd, zStart) > 0) {
-                              return <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>;
-                            }
-                            return null;
-                          })()}
+                    }) */}
+                  {exceptions
+                    .filter(ex => {
+                      // BUG FIX: Don't use new Date(ex.start_at). Use toZonedTime!
+                      const start = toZonedTime(new Date(ex.start_at), TZ)
+                      const end = toZonedTime(new Date(ex.end_at), TZ)
+                      
+                      // Now 'start' correctly reflects the date in Kyiv
+                      return isWithinInterval(currentDay, { 
+                        start: startOfDay(start), 
+                        end: endOfDay(end) 
+                      })
+                    })
+                    .map(ex => (
+                      <div 
+                        key={`${ex.id}-${currentDay}`} 
+                        onClick={() => {
+                          setEditingException(ex)
+                          setIsExceptionModalOpen(true)
+                        }}
+                        style={getExceptionStyles(ex, currentDay)} 
+                        className={`cursor-pointer rounded-lg border-l-4 flex flex-col p-2 overflow-hidden transition-all hover:brightness-110 z-40 ${
+                          ex.type === 'vacation' ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 
+                          ex.type === 'sick' ? 'bg-red-500/10 border-red-500 text-red-400' : 
+                          'bg-slate-500/10 border-slate-500 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {ex.type === 'vacation' ? <Palmtree size={12}/> : ex.type === 'busy' ? <Coffee size={12}/> : <ShieldAlert size={12}/>}
+                          <span className="text-[10px] font-black uppercase truncate">{ex.title}</span>
                         </div>
-                      ))}
-                  </div>
+                        
+                        {/* Показуємо мітку "Весь день", якщо це all_day або триває довше 24 годин */}
+                        {/* {(ex.is_all_day || differenceInDays(new Date(ex.end_at), new Date(ex.start_at)) > 0) && (
+                          <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>
+                        )} */}
+                        {/* Use zoned dates for the label check too */}
+                        {(() => {
+                          const zStart = toZonedTime(new Date(ex.start_at), TZ);
+                          const zEnd = toZonedTime(new Date(ex.end_at), TZ);
+                          
+                          if (ex.is_all_day || differenceInDays(zEnd, zStart) > 0) {
+                            return <span className="text-[9px] font-bold opacity-60 uppercase italic">Весь день</span>;
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    ))}
+                </div>
+              ))}
+
+
+              {/* <div className="absolute inset-0 z-50 pointer-events-none">
+                {!loading && lessons.map(l => (
+                  <LessonCard 
+                    key={l.id} 
+                    lesson={l}
+                    viewMode={viewMode} 
+                    hourHeight={hourHeight}
+                    getStyles={() => getLessonStyles(l)}
+                    onEdit={(lesson: any) => { setEditingLesson(lesson); setIsModalOpen(true); }} 
+                  />
                 ))}
+              </div> */}
 
-
-                <div className="absolute inset-0 z-50 pointer-events-none">
-                  {!loading && lessons.map(l => (
+              <div className="absolute inset-0 z-50 pointer-events-none">
+                {!loading && lessons
+                  .filter(l => {
+                    const lessonDate = new Date(l.session_date);
+                    
+                    if (viewMode === 'day') {
+                      // Only show lessons for the specific selected day
+                      return isSameDay(lessonDate, selectedDate);
+                    }
+                    
+                    // Only show lessons for the current week
+                    return isSameWeek(lessonDate, selectedDate, { weekStartsOn: 1 });
+                  })
+                  .map(l => (
                     <LessonCard 
                       key={l.id} 
                       lesson={l}
                       viewMode={viewMode} 
                       hourHeight={hourHeight}
                       getStyles={() => getLessonStyles(l)}
-                      onEdit={(lesson: any) => { setEditingLesson(lesson); setIsModalOpen(true); }} 
+                      onEdit={(lesson: any) => { 
+                        setEditingLesson(lesson); 
+                        setIsModalOpen(true); 
+                      }} 
                     />
                   ))}
               </div>

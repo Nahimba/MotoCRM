@@ -233,21 +233,49 @@ export function AddLessonModal({
       }
     });
 
+    // // 4. Check Other Lessons
+    // lessons.forEach(other => {
+    //   if (currentLessonId && other.id === currentLessonId) return;
+
+    //   const otherStart = toZonedTime(new Date(other.start_at), TZ);
+    //   const otherEnd = toZonedTime(new Date(other.end_at), TZ);
+
+    //   if (lessonStart < otherEnd && lessonEnd > otherStart) {
+    //     alerts.push({
+    //       id: other.id,
+    //       message: `Перетин з іншим уроком (${format(otherStart, "HH:mm")} - ${format(otherEnd, "HH:mm")})`,
+    //       type: 'error'
+    //     });
+    //   }
+    // });
+    
     // 4. Check Other Lessons
-    lessons.forEach(other => {
-      if (currentLessonId && other.id === currentLessonId) return;
+// 4. Check Other Lessons
+// 4. Check Other Lessons
+lessons.forEach(other => {
+  if (currentLessonId && String(other.id) === String(currentLessonId)) return;
 
-      const otherStart = toZonedTime(new Date(other.start_at), TZ);
-      const otherEnd = toZonedTime(new Date(other.end_at), TZ);
+  // Force database string into a Kyiv date object
+  const otherStartObj = toZonedTime(new Date(other.session_date), TZ);
+  const otherStart = otherStartObj.getTime();
+  
+  // Use the numeric duration from your DB schema
+  const otherEnd = otherStart + (Number(other.duration) * 3600000);
+  
+  const myStart = lessonStart.getTime();
+  const myEnd = lessonEnd.getTime();
 
-      if (lessonStart < otherEnd && lessonEnd > otherStart) {
-        alerts.push({
-          id: other.id,
-          message: `Перетин з іншим уроком (${format(otherStart, "HH:mm")} - ${format(otherEnd, "HH:mm")})`,
-          type: 'error'
-        });
-      }
+  // Debug individual comparisons if it still shows 0
+  // console.log(`Comparing: ${format(lessonStart, 'HH:mm')} against ${format(otherStartObj, 'HH:mm')}`);
+
+  if (myStart < otherEnd && myEnd > otherStart) {
+    alerts.push({
+      id: other.id,
+      message: `Перетин з уроком (${format(otherStartObj, "HH:mm")} - ${format(new Date(otherEnd), "HH:mm")})`,
+      type: 'error'
     });
+  }
+});
 
     // 5. Check Work Hours
     const dayOfWeek = lessonStart.getDay(); 
@@ -269,7 +297,8 @@ export function AddLessonModal({
         });
       }
     }
-
+    
+    console.log("Total lessons checked:", lessons.length, "Conflicts found:", alerts.filter(a => a.type === 'error').length);
     return alerts;
   }, [lessonDate, selectedHour, selectedMinute, duration, exceptions, workHours, lessons, editLesson]);
 
