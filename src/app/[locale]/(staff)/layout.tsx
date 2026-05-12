@@ -5,9 +5,13 @@ import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 import { usePathname } from "next/navigation"
 
+import { cn} from "@/lib/utils"
+
 export default function StaffLayout({ children }: { children: ReactNode }) {
   
   const pathname = usePathname();
+
+  const isSchedule = pathname?.endsWith('/staff/schedule');
 
   return (
     <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
@@ -28,7 +32,16 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
         </main> */}
-        <main key={pathname} className="flex-1 transition-all">
+        <main 
+          key={pathname} 
+          className={cn(
+            "flex-1 pb-[calc(env(safe-area-inset-bottom))] transition-all",
+            // Если это расписание — минимум отступов
+            isSchedule 
+              ? "pb-[calc(env(safe-area-inset-bottom))]" 
+              : "p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8"
+          )}
+        >
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

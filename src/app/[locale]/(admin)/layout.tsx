@@ -30,7 +30,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         */}
         <main
         key={pathname}
-        className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        // className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        className="flex-1 pb-[calc(env(safe-area-inset-bottom))] transition-all">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

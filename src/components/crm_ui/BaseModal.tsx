@@ -35,7 +35,7 @@ export function BaseModal({ isOpen, onClose, title, icon, children, footer, clas
     )}>
       {/* Backdrop - Separate div to ensure clicks on background trigger onClose */}
       <div 
-        className="absolute inset-0 bg-black/90 backdrop-blur-md" 
+        className="absolute inset-0 bg-[#050505]/70 backdrop-blur-sm" 
         onClick={onClose} 
       />
       
