@@ -16,7 +16,6 @@ export default function UnifiedDashboard() {
   const [activeRidersCount, setActiveRidersCount] = useState(0)
 
   
-
   return (
     <div className="space-y-10 pb-20 px-4 pt-6 max-w-7xl mx-auto">
       {/* HEADER */}
