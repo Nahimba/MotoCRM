@@ -14,7 +14,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
   const isSchedule = pathname?.endsWith('/staff/schedule');
 
   return (
-    <div className="flex min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="flex bg-black text-white min-w-0">
       {/* Universal Sidebar (Desktop Left / Mobile Bottom) */}
       <Sidebar />
 

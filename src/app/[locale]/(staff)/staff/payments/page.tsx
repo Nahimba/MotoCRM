@@ -86,7 +86,7 @@ export default function PaymentsPage() {
   })
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white p-4 md:p-10 pb-24">
+    <div className="flex flex-col bg-black text-white p-4 md:p-10 pb-24 min-w-0">
       
       {/* HEADER: COMMAND CENTER */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
@@ -98,9 +98,6 @@ export default function PaymentsPage() {
             <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
               {t('title')}
             </h1>
-            {/* <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
-              Financial Registry / {profile?.role}
-            </p> */}
           </div>
         </div>
 
@@ -131,7 +128,7 @@ export default function PaymentsPage() {
       <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         
         {/* DESKTOP VIEW */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.01]">
@@ -162,7 +159,7 @@ export default function PaymentsPage() {
                 filteredPayments.map((p) => (
                   <tr key={p.payment_id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-8 py-6">
-                      <p className="font-black text-sm uppercase italic truncate">
+                      <p className="font-black text-sm uppercase italic truncate max-w-[200px]">
                         {p.client_name} {p.client_last_name}
                       </p>
                     </td>
@@ -214,59 +211,243 @@ export default function PaymentsPage() {
         {/* MOBILE VIEW: TACTICAL CARDS */}
         <div className="md:hidden divide-y divide-white/5">
           {loading ? (
-            <div className="p-10 text-center uppercase font-black text-[10px] text-slate-500 animate-pulse">Syncing...</div>
-          ) : filteredPayments.map((p) => (
-            <div 
-              key={p.payment_id} 
-              onClick={() => { setSelectedPayment({ ...p, id: p.payment_id }); setIsModalOpen(true); }}
-              className="p-5 flex items-center justify-between active:bg-white/5 transition-all"
-            >
-              <div className="flex flex-col gap-1">
-                <p className="font-black text-xs uppercase italic leading-none text-white">
-                  {p.client_name} {p.client_last_name}
-                </p>
-                <div className="flex items-center gap-2">
-                  <p className="text-[9px] text-slate-500 font-bold">
-                    {format(new Date(p.created_at), 'dd MMM', { locale: dateLocale })}
+            <div className="p-10 text-center uppercase font-black text-[10px] text-slate-500 animate-pulse italic">Syncing...</div>
+          ) : filteredPayments.length > 0 ? (
+            filteredPayments.map((p) => (
+              <div 
+                key={p.payment_id} 
+                onClick={() => { setSelectedPayment({ ...p, id: p.payment_id }); setIsModalOpen(true); }}
+                className="p-5 flex items-center justify-between active:bg-white/5 transition-all"
+              >
+                <div className="flex flex-col gap-1">
+                  <p className="font-black text-xs uppercase italic leading-none text-white">
+                    {p.client_name} {p.client_last_name}
                   </p>
-                  <span className="text-[9px] text-primary/40 font-black italic uppercase">
-                    • {t(p.method_localization_key) || p.method_slug}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[9px] text-slate-500 font-bold">
+                      {format(new Date(p.created_at), 'dd MMM', { locale: dateLocale })}
+                    </p>
+                    <span className="text-[9px] text-primary/40 font-black italic uppercase">
+                      • {t(p.method_localization_key) || p.method_slug}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right flex flex-col items-end gap-2">
+                  <p className="font-black text-sm text-primary italic leading-none">
+                    {p.amount.toLocaleString()} UAH
+                  </p>
+                  <StatusBadge status={p.status} t={t} mobile />
                 </div>
               </div>
-              <div className="text-right flex flex-col items-end gap-2">
-                <p className="font-black text-sm text-primary italic leading-none">
-                  {p.amount.toLocaleString()} UAH
-                </p>
-                <StatusBadge status={p.status} t={t} mobile />
-              </div>
+            ))
+          ) : (
+            <div className="p-10 text-center text-slate-600 font-black uppercase italic text-[10px]">
+              No records
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* LEDGER MODAL */}
-      {/* <PaymentModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchPayments}
-        editPayment={selectedPayment}
-        instructorId={targetInstructorId}
-      /> */}
+      {/* LEDGER MODAL: RE-ENGINEERED TO USE BASEMODAL */}
       <PaymentModal 
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setSelectedPayment(null); // Clean up state on close
+          setSelectedPayment(null);
         }}
         onSuccess={() => {
-          fetchPayments(); // Refresh the ledger
+          fetchPayments();
         }}
         editPayment={selectedPayment}
-        instructorId={targetInstructorId} // null for admins, UUID for instructors
+        instructorId={targetInstructorId}
       />
     </div>
   )
+
+  // return (
+  //   <div className="flex flex-col min-h-screen bg-black text-white p-4 md:p-10 pb-24">
+      
+  //     {/* HEADER: COMMAND CENTER */}
+  //     <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
+  //       <div className="flex items-center gap-4 self-start">
+  //         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
+  //           <Wallet size={24} />
+  //         </div>
+  //         <div>
+  //           <h1 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
+  //             {t('title')}
+  //           </h1>
+  //           {/* <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+  //             Financial Registry / {profile?.role}
+  //           </p> */}
+  //         </div>
+  //       </div>
+
+  //       <button 
+  //         onClick={() => { setSelectedPayment(null); setIsModalOpen(true); }}
+  //         className="w-full md:w-auto bg-primary text-black px-8 py-4 rounded-2xl font-black uppercase text-xs flex items-center justify-center gap-2 hover:bg-white transition-all active:scale-95 shadow-lg shadow-primary/20"
+  //       >
+  //         <Plus size={18} strokeWidth={4} />
+  //         {t('addPayment')}
+  //       </button>
+  //     </div>
+
+  //     {/* TACTICAL SEARCH */}
+  //     <div className="flex gap-3 mb-8">
+  //       <div className="relative flex-1 group">
+  //         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors" size={18} />
+  //         <input 
+  //           type="text"
+  //           placeholder={t('searchStudent')}
+  //           className="w-full bg-[#0A0A0A] border border-white/10 rounded-2xl py-5 pl-14 pr-4 text-sm font-bold outline-none focus:border-primary transition-all shadow-inner placeholder:text-slate-700"
+  //           value={searchQuery}
+  //           onChange={(e) => setSearchQuery(e.target.value)}
+  //         />
+  //       </div>
+  //     </div>
+
+  //     {/* DATA AREA: LEDGER TABLE */}
+  //     <div className="bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+        
+  //       {/* DESKTOP VIEW */}
+  //       <div className="hidden md:block overflow-x-auto">
+  //         <table className="w-full text-left border-collapse">
+  //           <thead>
+  //             <tr className="border-b border-white/5 bg-white/[0.01]">
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic">
+  //                 {t('columnStudent')}
+  //               </th>
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic">
+  //                 {t('columnAmount')}
+  //               </th>
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic">
+  //                 {t('columnMethodPlan')}
+  //               </th>
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic">
+  //                 {t('columnDate')}
+  //               </th>
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic text-center">
+  //                 {t('columnStatus')}
+  //               </th>
+  //               <th className="px-8 py-6 text-[10px] font-black uppercase text-slate-500 tracking-widest italic text-right">
+  //                 {t('columnEdit')}
+  //               </th>
+  //             </tr>
+  //           </thead>
+  //           <tbody className="divide-y divide-white/[0.03]">
+  //             {loading ? (
+  //               <LoadingRow />
+  //             ) : filteredPayments.length > 0 ? (
+  //               filteredPayments.map((p) => (
+  //                 <tr key={p.payment_id} className="hover:bg-white/[0.02] transition-colors group">
+  //                   <td className="px-8 py-6">
+  //                     <p className="font-black text-sm uppercase italic truncate">
+  //                       {p.client_name} {p.client_last_name}
+  //                     </p>
+  //                   </td>
+  //                   <td className="px-8 py-6">
+  //                     <span className="font-black text-base text-primary tabular-nums italic">
+  //                       {p.amount.toLocaleString()} UAH
+  //                     </span>
+  //                   </td>
+  //                   <td className="px-8 py-6">
+  //                     <div className="flex flex-col gap-1">
+  //                       <span className="text-[10px] font-black uppercase text-white/70 italic leading-none">
+  //                         {t(p.method_localization_key) || p.method_slug}
+  //                       </span>
+  //                       <span className="text-[9px] font-bold text-slate-600 uppercase">
+  //                         {t(p.plan_localization_key) || p.plan_slug}
+  //                       </span>
+  //                     </div>
+  //                   </td>
+  //                   <td className="px-8 py-6 text-[11px] font-bold text-slate-400 tabular-nums">
+  //                     {format(new Date(p.created_at), 'dd.MM.yyyy', { locale: dateLocale })}
+  //                   </td>
+  //                   <td className="px-8 py-6 text-center">
+  //                     <StatusBadge status={p.status} t={t} />
+  //                   </td>
+  //                   <td className="px-8 py-6 text-right">
+  //                     <button 
+  //                       onClick={() => { 
+  //                         setSelectedPayment({ ...p, id: p.payment_id }); 
+  //                         setIsModalOpen(true); 
+  //                       }}
+  //                       className="p-3 bg-white/5 hover:bg-primary hover:text-black rounded-xl text-slate-500 transition-all active:scale-90"
+  //                     >
+  //                       <Edit2 size={16} />
+  //                     </button>
+  //                   </td>
+  //                 </tr>
+  //               ))
+  //             ) : (
+  //               <tr>
+  //                  <td colSpan={6} className="py-20 text-center text-slate-600 font-black uppercase italic text-xs">
+  //                   No matching records found.
+  //                 </td>
+  //               </tr>
+  //             )}
+  //           </tbody>
+  //         </table>
+  //       </div>
+
+  //       {/* MOBILE VIEW: TACTICAL CARDS */}
+  //       <div className="md:hidden divide-y divide-white/5">
+  //         {loading ? (
+  //           <div className="p-10 text-center uppercase font-black text-[10px] text-slate-500 animate-pulse">Syncing...</div>
+  //         ) : filteredPayments.map((p) => (
+  //           <div 
+  //             key={p.payment_id} 
+  //             onClick={() => { setSelectedPayment({ ...p, id: p.payment_id }); setIsModalOpen(true); }}
+  //             className="p-5 flex items-center justify-between active:bg-white/5 transition-all"
+  //           >
+  //             <div className="flex flex-col gap-1">
+  //               <p className="font-black text-xs uppercase italic leading-none text-white">
+  //                 {p.client_name} {p.client_last_name}
+  //               </p>
+  //               <div className="flex items-center gap-2">
+  //                 <p className="text-[9px] text-slate-500 font-bold">
+  //                   {format(new Date(p.created_at), 'dd MMM', { locale: dateLocale })}
+  //                 </p>
+  //                 <span className="text-[9px] text-primary/40 font-black italic uppercase">
+  //                   • {t(p.method_localization_key) || p.method_slug}
+  //                 </span>
+  //               </div>
+  //             </div>
+  //             <div className="text-right flex flex-col items-end gap-2">
+  //               <p className="font-black text-sm text-primary italic leading-none">
+  //                 {p.amount.toLocaleString()} UAH
+  //               </p>
+  //               <StatusBadge status={p.status} t={t} mobile />
+  //             </div>
+  //           </div>
+  //         ))}
+  //       </div>
+  //     </div>
+
+  //     {/* LEDGER MODAL */}
+  //     {/* <PaymentModal 
+  //       isOpen={isModalOpen}
+  //       onClose={() => setIsModalOpen(false)}
+  //       onSuccess={fetchPayments}
+  //       editPayment={selectedPayment}
+  //       instructorId={targetInstructorId}
+  //     /> */}
+  //     <PaymentModal 
+  //       isOpen={isModalOpen}
+  //       onClose={() => {
+  //         setIsModalOpen(false);
+  //         setSelectedPayment(null); // Clean up state on close
+  //       }}
+  //       onSuccess={() => {
+  //         fetchPayments(); // Refresh the ledger
+  //       }}
+  //       editPayment={selectedPayment}
+  //       instructorId={targetInstructorId} // null for admins, UUID for instructors
+  //     />
+  //   </div>
+  // )
+
+
 }
 
 /**

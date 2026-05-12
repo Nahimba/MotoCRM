@@ -15,7 +15,7 @@ export default function Header() {
 
   // Added "hidden md:flex" to the className
   return (
-    <header className="hidden md:flex h-16 border-b border-white/5 bg-[#0a0a0a]/50 backdrop-blur-md items-center px-8 justify-between shrink-0 z-10">
+    <header className="hidden md:flex h-16 border-b border-white/5 bg-[#0a0a0a]/50 backdrop-blur-md items-center px-8 justify-between shrink-0 z-[80]">
       <div className="flex items-center gap-4">
         {/* ROLE INDICATOR */}
         <div className="px-2 py-1 rounded bg-primary/10 border border-primary/20 flex items-center gap-2">

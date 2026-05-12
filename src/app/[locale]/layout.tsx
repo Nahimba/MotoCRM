@@ -136,7 +136,7 @@ export default async function RootLayout({
           <AuthProvider>
             <NotificationProviderWrapper>
               {/* Основний контейнер для структури сторінки */}
-              <div className="relative flex min-h-screen flex-col">
+              <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden">
                 {children}
               </div>
             </NotificationProviderWrapper>

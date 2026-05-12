@@ -102,7 +102,7 @@ export default function PackagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="bg-[#050505] text-white p-4 md:p-8 space-y-6 max-w-7xl mx-auto pb-24">
       
       {/* HEADER SECTION */}
       <div className="flex items-center justify-between gap-4">
@@ -110,14 +110,11 @@ export default function PackagesPage() {
           <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none">
             {t("title")} <span className="text-primary">{t("subtitle")}</span>
           </h1>
-          {/* <p className="text-slate-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] hidden sm:block">
-            {profile?.role === 'admin' ? "Global Fleet Management" : t("description")}
-          </p> */}
         </div>
 
         <button 
           onClick={handleCreateNew}
-          className="flex-shrink-0 flex items-center justify-center gap-2 bg-primary text-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-white transition-all active:scale-95"
+          className="flex-shrink-0 flex items-center justify-center gap-2 bg-primary text-black px-4 py-2.5 md:px-8 md:py-4 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest hover:bg-white transition-all active:scale-95 shadow-lg shadow-primary/10"
         >
           <Plus size={18} strokeWidth={4} /> 
           <span className="hidden sm:inline">{t("newPackage")}</span>
@@ -125,53 +122,8 @@ export default function PackagesPage() {
       </div>
 
       {/* COMPACT FILTER BAR */}
-      {/* <div className="flex flex-col md:flex-row gap-3">
-        <div className="relative flex-grow group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-primary transition-colors" size={16} />
-          <Input 
-            placeholder={t("searchPlaceholder")} 
-            className="w-full pl-11 bg-[#0A0A0A] border-white/5 h-12 text-[10px] font-bold uppercase tracking-widest focus:border-primary/40 focus:ring-0 rounded-xl"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {profile?.role === 'admin' && (
-            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
-              {(['mine', 'all'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setFilterType(type)}
-                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
-                >
-                  {t(`filters.${type}`)}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
-            <button 
-              onClick={() => setStatusFilter("active")} 
-              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
-            >
-              {t("filters.active")}
-            </button>
-            <button 
-              onClick={() => setStatusFilter("inactive")} 
-              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
-            >
-              {t("filters.archived")}
-            </button>
-          </div>
-
-        </div>
-      </div> */}
-
-      {/* COMPACT FILTER BAR */}
       <div className="flex flex-col gap-4">
-        {/* Пошук */}
+        {/* SEARCH AREA */}
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-primary transition-colors" size={16} />
           <Input 
@@ -182,12 +134,12 @@ export default function PackagesPage() {
           />
         </div>
 
-        {/* Фільтри: flex-wrap ensures they stack on small screens */}
-        <div className="flex flex-wrap items-center gap-3 md:gap-2">
+        {/* FILTERS TOOLBAR */}
+        <div className="flex flex-wrap items-center gap-3">
           
-          {/* Адмін-фільтр (Мій/Всі) */}
+          {/* ADMIN TOGGLE */}
           {profile?.role === 'admin' && (
-            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl overflow-x-auto no-scrollbar">
               {(['mine', 'all'] as const).map((type) => (
                 <button
                   key={type}
@@ -200,26 +152,24 @@ export default function PackagesPage() {
             </div>
           )}
 
-          {/* ГРУПА 1: СТАТУС */}
-          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+          {/* STATUS FILTERS */}
+          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl overflow-x-auto no-scrollbar">
             <button 
               onClick={() => setStatusFilter("active")} 
               className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
             >
-              {/* {t("filters.active")} */}
               Активні
             </button>
             <button 
               onClick={() => setStatusFilter("inactive")} 
               className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
             >
-              {/* {t("filters.archived")} */}
               Архів
             </button>
           </div>
 
-          {/* ГРУПА 2: ТИП — will wrap to next line on small screens automatically */}
-          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+          {/* CONTRACT TYPE FILTERS */}
+          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl overflow-x-auto no-scrollbar">
             <button 
               onClick={() => setContractType("all")} 
               className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter whitespace-nowrap transition-all ${contractType === "all" ? "bg-white/10 text-white" : "text-slate-500"}`}
@@ -239,10 +189,8 @@ export default function PackagesPage() {
               Разові
             </button>
           </div>
-          
         </div>
       </div>
-
 
       {/* LIST SECTION */}
       <div className="space-y-2">
@@ -257,19 +205,14 @@ export default function PackagesPage() {
             const isFullyPaid = pkg.total_paid >= pkg.contract_price;
 
             return (
-              // <div 
-              //   key={pkg.id} 
-              //   onClick={() => handleEdit(pkg.id)}
-              //   className="bg-[#0A0A0A] border border-white/5 rounded-xl p-3 md:px-8 md:py-5 hover:bg-white/[0.02] transition-all cursor-pointer group"
-              // >
               <div 
                 key={pkg.id} 
                 onClick={() => handleEdit(pkg.id)}
                 className={`
                   bg-[#0A0A0A] border rounded-xl p-3 md:px-8 md:py-5 transition-all cursor-pointer group
                   ${pkg.allow_quick_creation 
-                    ? 'border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)]' 
-                    : 'border-white/5'
+                    ? 'border-primary/30 shadow-[0_0_15px_rgba(var(--primary-rgb),0.05)] hover:border-primary/50' 
+                    : 'border-white/5 hover:border-white/10 hover:bg-white/[0.02]'
                   }
                 `}
               >
@@ -298,7 +241,6 @@ export default function PackagesPage() {
 
                   {/* 2. Usage & Payment Grouped */}
                   <div className="flex items-center gap-4 md:gap-12">
-                    
                     {/* Usage */}
                     <div className="flex flex-col items-end md:items-start md:border-l border-white/5 md:pl-8 min-w-[60px]">
                       <div className="flex items-center gap-1 text-slate-600 mb-0.5">
@@ -349,8 +291,6 @@ export default function PackagesPage() {
       <PackageFormModal 
         isOpen={isModalOpen}
         packageId={selectedPackageId}
-        
-        //accountId={null} 
         onClose={() => {
           setIsModalOpen(false)
           setSelectedPackageId(null)
@@ -360,3 +300,54 @@ export default function PackagesPage() {
     </div>
   )
 }
+
+
+
+
+
+
+
+      {/* COMPACT FILTER BAR */}
+      {/* <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-grow group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-primary transition-colors" size={16} />
+          <Input 
+            placeholder={t("searchPlaceholder")} 
+            className="w-full pl-11 bg-[#0A0A0A] border-white/5 h-12 text-[10px] font-bold uppercase tracking-widest focus:border-primary/40 focus:ring-0 rounded-xl"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {profile?.role === 'admin' && (
+            <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+              {(['mine', 'all'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${filterType === type ? "bg-white/10 text-primary" : "text-slate-500"}`}
+                >
+                  {t(`filters.${type}`)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex bg-[#0A0A0A] border border-white/5 p-1 rounded-xl">
+            <button 
+              onClick={() => setStatusFilter("active")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "active" ? "bg-emerald-500/10 text-emerald-500" : "text-slate-500"}`}
+            >
+              {t("filters.active")}
+            </button>
+            <button 
+              onClick={() => setStatusFilter("inactive")} 
+              className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${statusFilter === "inactive" ? "bg-orange-500/10 text-orange-500" : "text-slate-500"}`}
+            >
+              {t("filters.archived")}
+            </button>
+          </div>
+
+        </div>
+      </div> */}

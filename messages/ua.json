@@ -337,7 +337,7 @@
     "notesLabel": "Примітки",
     "notesPlaceholder": "Внутрішня інформація...",
     "confirmDelete": "Ви впевнені, що хочете видалити цю транзакцію?",
-    "btnUpdate": "Оновити журнал",
+    "btnUpdate": "Зберегти зміни",
     "btnConfirm": "Підтвердити оплату",
     "statusPaid": "ОПЛАЧЕНО",
     "statusPending": "В ОЧІКУВАННІ",
