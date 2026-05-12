@@ -427,7 +427,8 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
+    // <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
 
 
       <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
@@ -464,7 +465,7 @@ export default function SchedulePage() {
                     if (val === 'all') { setShowAllInstructors(true); } 
                     else { setShowAllInstructors(false); setTargetInstructorId(val); }
                   }}
-                  className="bg-transparent text-white text-[10px] font-black uppercase py-2 outline-none cursor-pointer appearance-none pr-4"
+                  className="bg-transparent text-white text-[16px] font-black py-2 outline-none cursor-pointer appearance-none pr-4"
                 >
                   {viewMode === 'day' && profile?.role === 'admin' && (
                     <option value="all" className="bg-[#0A0A0A] font-black text-primary">{t('allLessons')} (TEAM)</option>
@@ -525,7 +526,15 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
+
+      <div 
+          className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased touch-auto"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain'
+          }}
+        >
+          
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
             <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70] h-fit items-center">
@@ -576,7 +585,7 @@ export default function SchedulePage() {
 
           <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
             {/* Часова шкала (Таймлайн) */}
-            <div className="left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
+            <div className="sticky will-change-transform isolate left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black">
               {/* {HOURS.map(h => (
                 <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                   {format(h, 'HH:mm')}
