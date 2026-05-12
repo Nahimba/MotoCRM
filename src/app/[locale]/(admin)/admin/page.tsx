@@ -191,7 +191,7 @@ export default function UnifiedDashboard() {
           sub="Дії користувачів"
         />
         <NavButton 
-          href="/admin/documents"
+          href="/staff/documents"
           onClick={() => markAsSeen()}
           icon={
             <div className="relative">
