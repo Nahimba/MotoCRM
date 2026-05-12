@@ -1,7 +1,7 @@
 {
-    "id": "raceway-crm-v1",
+    "id": "raceway-crm",
     "name": "RaceWay CRM — Управління Авто та Мотошколою",
-    "short_name": "RaceWay CRM",
+    "short_name": "RaceWay",
     "description": "Система управління для шкіл водіння RaceWay.",
     "icons": [
       {
