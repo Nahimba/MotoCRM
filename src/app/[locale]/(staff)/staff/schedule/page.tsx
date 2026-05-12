@@ -428,7 +428,9 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
-      <header className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] z-[70] shrink-0">
+
+
+      <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
         {/* Updated: Added flex-wrap and gap-2 for mobile, kept md:flex-nowrap to stay 1-line on desktop */}
         <div className="flex flex-wrap md:flex-nowrap items-center w-full relative px-2 md:px-0 gap-2">
           
@@ -521,12 +523,12 @@ export default function SchedulePage() {
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar">
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
-            <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70]">
+            <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70] h-fit items-center">
               {viewMode === 'week' ? (
                 // weekDays.map((day, i) => (
                 //   <div key={i} className={`flex-1 py-3 text-center border-r border-white/5 ${isSameDay(day, new Date()) ? 'bg-primary/5' : ''}`}>
@@ -766,7 +768,11 @@ export default function SchedulePage() {
             </div>
           </div>
         </div>
+
+        <div className="h-24 md:hidden" />
+
       </div>
+
 
 
       <AddLessonModal 

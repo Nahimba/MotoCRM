@@ -23,7 +23,12 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
             3. Removed overflow-y-auto to prevent "double scrollbars" and allow 
                the mobile browser to hide its own UI bars naturally.
         */}
-        <main key={pathname} className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+        {/* <main key={pathname} className="flex-1 p-4 md:p-8 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-8 transition-all">
+          <div className="max-w-7xl mx-auto h-full">
+            {children}
+          </div>
+        </main> */}
+        <main key={pathname} className=" transition-all">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

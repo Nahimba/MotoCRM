@@ -105,7 +105,7 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
       isOpen={isOpen}
       onClose={onClose}
       // Pass a higher z-index to ensure it stacks above LessonModal
-      className="z-[300]" 
+      className="z-[400]" 
       showCloseButton={false} // We'll use your custom absolute close button
     >
       {/* Absolute Close Button - Overlays the decorative header */}
