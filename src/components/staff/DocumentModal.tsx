@@ -21,7 +21,6 @@ const statusTranslations: Record<string, string> = {
   submitted: "Подано",
   ready: "Готово",
   completed: "Видано",
-  // not_needed: "Не потрібно",
 }
 
 export function DocumentModal({ clientId, first_name, middle_name, last_name, isOpen, onClose, onUpdate, doc }: DocumentModalProps) {
@@ -30,11 +29,9 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
   const [mobileTab, setMobileTab] = useState<'list' | 'form'>('list')
 
-
   const studentFullName = useMemo(() => {
     return `${last_name} ${first_name} ${middle_name}`.trim() || "Керування файлами"
   }, [first_name, middle_name, last_name])
-
 
   useEffect(() => {
     if (isOpen) {
@@ -113,8 +110,8 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl sm:p-4">
-      <div className="bg-[#0a0a0a] border-white/10 w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[3rem] sm:border relative shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl sm:p-4 overflow-hidden">
+      <div className="bg-[#0a0a0a] border-white/10 w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[3rem] sm:border relative shadow-2xl flex flex-col overflow-hidden mx-auto">
         
         {/* Header */}
         <div className="p-6 sm:p-8 flex items-center justify-between border-b border-white/5 shrink-0">
@@ -154,54 +151,57 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Use grid-cols-1 if doc is present to center the form, else md:grid-cols-2 for side-by-side */}
+          <div className={`grid gap-8 ${doc ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-1 md:grid-cols-2'}`}>
 
-            {/* LEFT: LIST VIEW (Hidden if we are editing a specific doc from Registry) */}
-            <div className={`space-y-3 ${doc ? 'hidden sm:block opacity-40 pointer-events-none' : (mobileTab === 'list' ? 'block' : 'hidden sm:block')}`}>
-              <p className="text-[10px] font-black text-slate-500 uppercase italic px-2 mb-2">Наявні документи:</p>
-              {documents.length === 0 ? (
-                <div className="py-20 flex flex-col items-center justify-center opacity-20 border border-dashed border-white/10 rounded-3xl">
-                  <FileText size={40} />
-                  <p className="text-[10px] font-black uppercase mt-2 text-center">Список порожній</p>
-                </div>
-              ) : (
-                documents.map((d) => (
-                  <div key={d.id} className={`bg-white/5 border ${editingDoc?.id === d.id ? 'border-primary/50' : 'border-white/5'} p-4 rounded-2xl flex justify-between items-center transition-all`}>
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-black text-white uppercase truncate pr-4">{d.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                         <span className={`w-1.5 h-1.5 rounded-full ${(d.status === 'ready' || d.status === 'completed' ) ? 'bg-green-500' : 'bg-primary'}`} />
-                         <p className="text-[9px] font-black text-slate-500 uppercase">
-                           {statusTranslations[d.status] || d.status}
-                         </p>
+            {/* LEFT: LIST VIEW */}
+            {!doc && (
+              <div className={`space-y-3 ${mobileTab === 'list' ? 'block' : 'hidden sm:block'}`}>
+                <p className="text-[10px] font-black text-slate-500 uppercase italic px-2 mb-2">Наявні документи:</p>
+                {documents.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center opacity-20 border border-dashed border-white/10 rounded-3xl">
+                    <FileText size={40} />
+                    <p className="text-[10px] font-black uppercase mt-2 text-center">Список порожній</p>
+                  </div>
+                ) : (
+                  documents.map((d) => (
+                    <div key={d.id} className={`bg-white/5 border ${editingDoc?.id === d.id ? 'border-primary/50' : 'border-white/5'} p-4 rounded-2xl flex justify-between items-center transition-all`}>
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-black text-white uppercase truncate pr-4">{d.title}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className={`w-1.5 h-1.5 rounded-full ${(d.status === 'ready' || d.status === 'completed' ) ? 'bg-green-500' : 'bg-primary'}`} />
+                           <p className="text-[9px] font-black text-slate-500 uppercase">
+                             {statusTranslations[d.status] || d.status}
+                           </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button 
+                          onClick={() => { setEditingDoc(d); setMobileTab('form'); }}
+                          className="p-3 bg-white/5 rounded-xl text-slate-400 active:text-amber-500 transition-colors"
+                        >
+                          <Pencil size={14}/>
+                        </button>
+                        {d.url && (
+                          <a href={d.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl text-slate-400 active:text-primary transition-colors">
+                            <ExternalLink size={14}/>
+                          </a>
+                        )}
+                        <button 
+                          onClick={() => handleDelete(d.id)} 
+                          className="p-3 bg-red-500/10 rounded-xl text-red-500 active:bg-red-500 transition-all"
+                        >
+                          <Trash2 size={14}/>
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button 
-                        onClick={() => { setEditingDoc(d); setMobileTab('form'); }}
-                        className="p-3 bg-white/5 rounded-xl text-slate-400 active:text-amber-500 transition-colors"
-                      >
-                        <Pencil size={14}/>
-                      </button>
-                      {d.url && (
-                        <a href={d.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl text-slate-400 active:text-primary transition-colors">
-                          <ExternalLink size={14}/>
-                        </a>
-                      )}
-                      <button 
-                        onClick={() => handleDelete(d.id)} 
-                        className="p-3 bg-red-500/10 rounded-xl text-red-500 active:bg-red-500 transition-all"
-                      >
-                        <Trash2 size={14}/>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {/* RIGHT: FORM VIEW */}
-            <div className={`space-y-4 pb-10 sm:pb-0 ${mobileTab === 'form' ? 'block' : 'hidden sm:block'} ${doc ? 'md:col-span-1 md:translate-x-1/2' : ''}`}>
+            <div className={`space-y-4 pb-10 sm:pb-0 ${mobileTab === 'form' ? 'block' : 'hidden sm:block'} ${doc ? 'w-full' : ''}`}>
               <div className="flex items-center justify-between px-2">
                 <span className="text-[10px] font-black text-primary uppercase italic">
                   {editingDoc ? "Редагування" : "Новий запис"}
@@ -276,7 +276,6 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
     </div>
   )
 }
-
 
 
 
