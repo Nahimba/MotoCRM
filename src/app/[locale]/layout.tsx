@@ -52,7 +52,9 @@ export async function generateMetadata({
     // Посилання на іконки (мають бути у папці /public)
     icons: {
       icon: [
-        { url: '/favicon.ico' },
+        // { url: '/favicon.ico' },
+        { url: '/favicon.png', 
+          type: 'image/png' },
         // {
         //   url: '/icon.svg',
         //   type: 'image/svg+xml',
