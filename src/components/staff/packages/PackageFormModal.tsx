@@ -316,7 +316,6 @@ export default function PackageFormModal({ isOpen, packageId, accountId, onClose
   isOpen={isOpen}
   onClose={onClose}
   title={packageId ? t("edit") : t("new")}
-  className="max-w-2xl" // Соответствует твоему max-w-2xl
 >
   <div className="p-8 md:p-12">
     {/* 1. Дополнительная информация под заголовком (Locked status) */}
