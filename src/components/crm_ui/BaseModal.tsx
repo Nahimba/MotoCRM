@@ -49,6 +49,7 @@ export function BaseModal({ isOpen, onClose, title, icon, children, footer, clas
         // 2. Добавляем will-change-transform для плавности на iOS
         "animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 ease-out will-change-transform"
       )}>
+
         
         {/* Mobile Handle Bar */}
         <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
