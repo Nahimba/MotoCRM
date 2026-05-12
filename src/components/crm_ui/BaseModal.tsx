@@ -30,16 +30,25 @@ export function BaseModal({ isOpen, onClose, title, icon, children, footer, clas
   return (
     // Merged className here so z-index overrides work
     <div className={cn(
-      "fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200",
+      "fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity",
+      // Используем только прозрачность для главного контейнера
+      "animate-in fade-in duration-100 ease-out",
       className 
     )}>
       {/* Backdrop - Separate div to ensure clicks on background trigger onClose */}
       <div 
-        className="absolute inset-0 bg-[#050505]/70 backdrop-blur-sm" 
+        className="absolute inset-0 bg-[#050505]/70 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose} 
       />
       
-      <div className="relative flex flex-col w-full max-w-2xl bg-[#0D0D0D] border-t sm:border border-white/10 rounded-t-[2rem] sm:rounded-3xl shadow-2xl h-[92dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
+      <div className={cn(
+        "relative flex flex-col w-full max-w-2xl bg-[#0D0D0D] border-t sm:border border-white/10",
+        "rounded-t-[2rem] sm:rounded-3xl shadow-2xl h-[92dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden",
+        // ОПТИМИЗИРОВАННАЯ АНИМАЦИЯ:
+        // 1. Уменьшаем дистанцию slide-in (вместо дефолтной используем slide-in-from-bottom-4)
+        // 2. Добавляем will-change-transform для плавности на iOS
+        "animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 ease-out will-change-transform"
+      )}>
         
         {/* Mobile Handle Bar */}
         <div className="w-12 h-1 bg-white/10 rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
