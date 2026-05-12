@@ -44,6 +44,30 @@
 
 
 
+/* iOS Fixes */
+/* 1. Убирает серый блик при клике на ссылки в iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 2. Запрещает Safari менять размер текста при повороте экрана */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 3. Делает скролл на iOS плавным (уже не так критично для новых версий, но полезно) */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 4. Фикс для input: убирает внутренние тени и закругления по умолчанию */
+input, textarea {
+  -webkit-appearance: none;
+  border-radius: 0;
+}
+/* iOS Fixes */
+
+
 
 /* Fix for the mobile scroll 'jump' START*/
 html, body {
