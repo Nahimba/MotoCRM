@@ -205,27 +205,28 @@ export async function proxy(request: NextRequest) {
 
   
   // ЦЕ ВИПРАВЛЯЄ ПОМИЛКИ БЕЗПЕКИ НА ANDROID
-  // response.headers.set('Content-Security-Policy', 'upgrade-insecure-requests');
-  // response.headers.set('X-Content-Type-Options', 'nosniff');
-  // response.headers.set('X-XSS-Protection', '1; mode=block');
-  // response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('Content-Security-Policy', 'upgrade-insecure-requests');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
   return response;
 }
 
-export const config = {
-  matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
-};
+// export const config = {
+//   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+// };
 
   // ЦЕ ВИПРАВЛЯЄ ПОМИЛКИ БЕЗПЕКИ НА ANDROID
-// export const config = {
-//   matcher: [
-//     /*
-//      * Виключаємо маніфест і сервіс-воркер, щоб Chrome бачив їх без проксі
-//      */
-//     '/((?!api|_next|_static|_vercel|manifest|site\\.webmanifest|sw\\.js|.*\\.\\w+).*)'
-//   ]
-// };
+export const config = {
+  matcher: [
+    /*
+     * Виключаємо маніфест і сервіс-воркер, щоб Chrome бачив їх без проксі
+     */
+    '/((?!api|_next|_static|_vercel|manifest|site\\.webmanifest|sw\\.js|.*\\.\\w+).*)'
+  ]
+};
 
 
 
