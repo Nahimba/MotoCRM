@@ -195,7 +195,7 @@ export default function StaffLandingPage() {
         )}
       </div>
 
-      {selectedClient && <ClientProfileModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
+      {selectedClient && <ClientProfileModal client={selectedClient} isOpen = {!!selectedClient} onClose={() => setSelectedClient(null)} />}
     </div>
   )
 }
