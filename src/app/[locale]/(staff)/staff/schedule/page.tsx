@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, ChevronRight, Plus, 
@@ -123,6 +123,19 @@ export default function SchedulePage() {
   const [editingException, setEditingException] = useState<any | null>(null)
   const [isWorkHoursModalOpen, setIsWorkHoursModalOpen] = useState(false)
 
+
+  const visibleLessons = useMemo(() => {
+    if (loading) return []; // Hide everything while fetching new data
+    
+    return lessons.filter(l => {
+      const lessonDate = new Date(l.session_date);
+      return viewMode === 'day' 
+        ? isSameDay(lessonDate, selectedDate)
+        : isSameWeek(lessonDate, selectedDate, { weekStartsOn: 1 });
+    });
+  }, [lessons, loading, selectedDate, viewMode]);
+
+
   // 2. Загрузка всех данных (Уроки, График, Исключения) через Promise.all
   const fetchAllData = useCallback(async () => {
     
@@ -221,7 +234,19 @@ export default function SchedulePage() {
     }
   }, [selectedDate, targetInstructorId, viewMode, showAllInstructors, profile])
 
-  useEffect(() => { fetchAllData() }, [fetchAllData])
+
+  // useEffect(() => { fetchAllData() }, [fetchAllData])
+  useEffect(() => {
+    const controller = new AbortController();
+    
+    // Optional: Pass controller.signal to fetchAllData if you want to 
+    // actually cancel the network request in Supabase.
+    fetchAllData();
+  
+    return () => {
+      controller.abort();
+    };
+  }, [fetchAllData]);
 
 
 // 3. Проверка рабочего времени
@@ -401,6 +426,9 @@ export default function SchedulePage() {
   };
 
   const navigate = (direction: 'prev' | 'next' | 'today') => {
+    // 1. Instant UI cleanup
+    setLessons([]); 
+    setLoading(true);
     if (direction === 'today') return setSelectedDate(new Date())
     const amount = viewMode === 'day' ? 1 : 7
     setSelectedDate(prev => direction === 'next' ? addDays(prev, amount) : subDays(prev, amount))
@@ -431,100 +459,104 @@ export default function SchedulePage() {
     <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
 
 
-      <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
-        {/* Updated: Added flex-wrap and gap-2 for mobile, kept md:flex-nowrap to stay 1-line on desktop */}
-        <div className="flex flex-wrap md:flex-nowrap items-center w-full relative px-2 md:px-0 gap-2">
-          
-          {/* View Mode Switcher */}
-          <div className="flex items-center gap-1 z-10">
-            <div className="flex bg-white/5 p-0.5 rounded-xl border border-white/10">
-              <button 
-                onClick={() => setViewMode('day')} 
-                className={`p-2 md:px-4 md:py-2 rounded-lg transition-all flex items-center justify-center ${viewMode === 'day' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
-              >
-                <Maximize2 size={16}/>
-                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('day')}</span>
-              </button>
-              <button 
-                onClick={() => setViewMode('week')} 
-                className={`p-2 md:px-4 md:py-2 rounded-lg transition-all flex items-center justify-center ${viewMode === 'week' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
-              >
-                <LayoutGrid size={16}/>
-                <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('week')}</span>
-              </button>
-            </div>
+    <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
+      {/* Added flex-wrap and gap-2 for mobile, kept md:flex-nowrap for desktop */}
+      <div className="flex flex-wrap md:flex-nowrap items-center w-full relative px-2 md:px-0 gap-2">
+        
+        {/* View Mode Switcher & Instructor Selector Container */}
+        <div className="flex items-center gap-1 z-10">
+          <div className="flex bg-white/5 p-0.5 rounded-xl border border-white/10">
+            <button 
+              onClick={() => setViewMode('day')} 
+              className={`p-2 md:px-4 md:py-2 h-10 md:h-auto rounded-lg transition-all flex items-center justify-center ${viewMode === 'day' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
+            >
+              <Maximize2 size={16}/>
+              <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('day')}</span>
+            </button>
+            <button 
+              onClick={() => setViewMode('week')} 
+              className={`p-2 md:px-4 md:py-2 h-10 md:h-auto rounded-lg transition-all flex items-center justify-center ${viewMode === 'week' ? 'bg-primary text-black' : 'text-slate-500 hover:text-white'}`}
+            >
+              <LayoutGrid size={16}/>
+              <span className="hidden md:inline ml-2 text-[10px] font-black uppercase">{t('week')}</span>
+            </button>
+          </div>
 
-            {/* Instructor Selector */}
-            {instructors.length > 0 && (
-              <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-2 group hover:bg-white/10 transition-all cursor-pointer">
-                <Users size={14} className="text-slate-500 mr-2" />
-                <select
-                  value={showAllInstructors && viewMode === 'day' ? 'all' : (targetInstructorId || '')}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'all') { setShowAllInstructors(true); } 
-                    else { setShowAllInstructors(false); setTargetInstructorId(val); }
-                  }}
-                  className="bg-transparent text-white text-[16px] font-black py-2 outline-none cursor-pointer appearance-none pr-4"
-                >
-                  {viewMode === 'day' && profile?.role === 'admin' && (
-                    <option value="all" className="bg-[#0A0A0A] font-black text-primary">{t('allLessons')} (TEAM)</option>
-                  )}
-                  {instructors.map((ins) => (
-                    <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
-                      {ins.profiles?.first_name} {ins.profiles?.last_name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-2 pointer-events-none text-slate-500">
-                  <ChevronLeft size={10} className="-rotate-90" />
-                </div>
+          {/* Instructor Selector - Updated font-size to 16px for iOS to prevent "Freeze" on zoom */}
+          {instructors.length > 0 && (
+            <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl px-2 group hover:bg-white/10 transition-all cursor-pointer h-11 md:h-auto">
+              <Users size={14} className="text-slate-500 mr-2" />
+              <select
+                value={showAllInstructors && viewMode === 'day' ? 'all' : (targetInstructorId || '')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'all') { setShowAllInstructors(true); } 
+                  else { setShowAllInstructors(false); setTargetInstructorId(val); }
+                }}
+                className="bg-transparent text-white text-[16px] md:text-[12px] font-black py-2 outline-none cursor-pointer appearance-none pr-4 min-w-[80px]"
+              >
+                {viewMode === 'day' && profile?.role === 'admin' && (
+                  <option value="all" className="bg-[#0A0A0A] font-black text-primary">{t('allLessons')} (TEAM)</option>
+                )}
+                {instructors.map((ins) => (
+                  <option key={ins.id} value={ins.id} className="bg-[#0A0A0A]">
+                    {ins.profiles?.first_name} {ins.profiles?.last_name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-2 pointer-events-none text-slate-500">
+                <ChevronLeft size={10} className="-rotate-90" />
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Date Navigation */}
+        <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5 mx-auto md:mx-0 h-11 md:h-auto">
+          <button onClick={() => navigate('prev')} className="p-2 text-slate-400 hover:text-primary transition-colors">
+            <ChevronLeft size={18} strokeWidth={3} />
+          </button>
+          <div className="flex flex-col items-center px-0 min-w-[75px] md:min-w-[120px]">
+            <span className="text-[12px] md:text-[14px] font-black uppercase text-white leading-tight">
+              {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
+            </span>
+            {viewMode === 'week' && (
+              <span className="text-[11px] md:text-[14px] font-black text-primary uppercase italic leading-none">
+                {format(weekDays[0], 'dd.MM')}-{format(weekDays[6], 'dd.MM')}
+              </span>
             )}
           </div>
+          <button onClick={() => navigate('next')} className="p-2 text-slate-400 hover:text-primary transition-colors">
+            <ChevronRight size={18} strokeWidth={3} />
+          </button>
+        </div>
 
-          {/* Date Navigation - Updated: order-last or flex-1 to push around on mobile */}
-          <div className="flex items-center bg-white/5 rounded-xl border border-white/10 p-0.5 mx-auto md:mx-0">
-            <button onClick={() => navigate('prev')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
-              <ChevronLeft size={18} strokeWidth={3} />
-            </button>
-            <div className="flex flex-col items-center px-0 min-w-[65px] md:min-w-[120px]">
-              <span className="text-[12px] md:text-[14px] font-black uppercase text-white">
-                {viewMode === 'day' ? format(selectedDate, 'dd MMM') : ''} 
-              </span>
-              {viewMode === 'week' && (
-                <span className="text-[12px] md:text-[14px] font-black text-primary uppercase italic leading-none">
-                  {format(weekDays[0], 'dd.MM')}-{format(weekDays[6], 'dd.MM')}
-                </span>
-              )}
-            </div>
-            <button onClick={() => navigate('next')} className="p-1 md:p-2 text-slate-400 hover:text-primary transition-colors">
-              <ChevronRight size={18} strokeWidth={3} />
-            </button>
-          </div>
+        {/* Action Buttons - Increased mobile height to 11 (44px) for reliable touch */}
+        <div className="ml-auto flex gap-2">
+          <button 
+            onClick={() => { setEditingLesson(null); setIsModalOpen(true); }} 
+            className="bg-primary text-black h-11 px-4 md:h-11 md:px-6 rounded-xl font-black flex items-center justify-center shadow-lg hover:bg-white transition-all active:scale-95"
+          >
+            <Plus size={18} strokeWidth={4} />
+            <span className="hidden sm:inline ml-2 text-[10px] md:text-xs uppercase">{t('addLesson')}</span>
+          </button>
 
+          <button 
+            onClick={() => setIsExceptionModalOpen(true)} 
+            className="bg-white/5 text-slate-400 h-11 w-11 rounded-xl flex items-center justify-center border border-white/10 active:bg-white/10"
+          >
+            <ShieldAlert size={18} />
+          </button>
 
-
-          {/* Action Buttons - Updated: ml-auto md:ml-auto ensures it sticks right on desktop */}
-          <div className="ml-auto flex gap-2">
-            <button 
-              onClick={() => { setEditingLesson(null); setIsModalOpen(true); }} 
-              className="bg-primary text-black h-9 px-3 md:h-11 md:px-6 rounded-xl font-black flex items-center justify-center shadow-lg hover:bg-white transition-all"
-            >
-              <Plus size={18} strokeWidth={4} />
-              <span className="hidden sm:inline ml-2 text-[10px] md:text-xs uppercase">{t('addLesson')}</span>
-            </button>
-
-            <button onClick={() => setIsExceptionModalOpen(true)} className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10">
-              <ShieldAlert size={18} />
-            </button>
-
-            <button onClick={() => setIsWorkHoursModalOpen(true)} className="bg-white/5 text-slate-400 h-9 w-9 md:h-11 md:w-11 rounded-xl flex items-center justify-center border border-white/10">
-              <Calendar size={18} />
-            </button>
-          </div>
+          <button 
+            onClick={() => setIsWorkHoursModalOpen(true)} 
+            className="bg-white/5 text-slate-400 h-11 w-11 rounded-xl flex items-center justify-center border border-white/10 active:bg-white/10"
+          >
+            <Calendar size={18} />
+          </button>
         </div>
       </div>
+    </div>
 
 
       <div 
@@ -534,7 +566,7 @@ export default function SchedulePage() {
             overscrollBehavior: 'contain'
           }}
         >
-          
+
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
             <div className="flex ml-10 bg-[#0A0A0A] border-b border-white/10 sticky top-0 z-[70] h-fit items-center">
@@ -747,7 +779,7 @@ export default function SchedulePage() {
                 ))}
               </div> */}
 
-              <div className="absolute inset-0 z-50 pointer-events-none">
+              {/* <div className="absolute inset-0 z-50 pointer-events-none">
                 {!loading && lessons
                   .filter(l => {
                     const lessonDate = new Date(l.session_date);
@@ -773,7 +805,26 @@ export default function SchedulePage() {
                       }} 
                     />
                   ))}
+              </div> */}
+
+              
+              <div className="absolute inset-0 z-50 pointer-events-none">
+                  {visibleLessons.map(l => (
+                    <LessonCard 
+                      key={l.id} 
+                      lesson={l}
+                      viewMode={viewMode} 
+                      hourHeight={hourHeight}
+                      getStyles={() => getLessonStyles(l)}
+                      onEdit={(lesson: any) => { 
+                        setEditingLesson(lesson); 
+                        setIsModalOpen(true); 
+                      }} 
+                    />
+                  ))}
               </div>
+
+
             </div>
           </div>
         </div>
