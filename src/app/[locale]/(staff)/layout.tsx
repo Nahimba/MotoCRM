@@ -28,7 +28,7 @@ export default function StaffLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
         </main> */}
-        <main key={pathname} className=" transition-all">
+        <main key={pathname} className="flex-1 transition-all">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>

@@ -576,7 +576,7 @@ export default function SchedulePage() {
 
           <div className="relative" style={{ height: `${HOURS.length * hourHeight}px` }}>
             {/* Часова шкала (Таймлайн) */}
-            <div className="absolute left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
+            <div className="left-0 top-0 w-10 h-full border-r border-white/10 z-[60] bg-black sticky left-0">
               {/* {HOURS.map(h => (
                 <div key={h.toString()} style={{ height: `${hourHeight}px` }} className="pt-2 text-center text-[10px] font-black text-slate-600 border-b border-white/[0.02] tabular-nums">
                   {format(h, 'HH:mm')}
@@ -769,7 +769,7 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        <div className="h-24 md:hidden" />
+        <div className="h-32 md:hidden" aria-hidden="true" />
 
       </div>
 
