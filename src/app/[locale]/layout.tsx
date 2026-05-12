@@ -59,25 +59,25 @@ export async function generateMetadata({
         //   url: '/icon.svg',
         //   type: 'image/svg+xml',
         // },
-        
-        // Основна велика іконка для Android
-        { 
-          url: '/icon-512.png', 
-          sizes: '512x512', 
-          type: 'image/png' 
-        },
-        // Запасна для середніх екранів
-        { 
-          url: '/icon-192.png', 
-          sizes: '192x192', 
-          type: 'image/png' 
-        },
+
         // Маленька для вкладки браузера
         { 
           url: '/favicon.png', 
           sizes: '32x32', 
           type: 'image/png' 
         },
+        // // Запасна для середніх екранів
+        // { 
+        //   url: '/icon-192.png', 
+        //   sizes: '192x192', 
+        //   type: 'image/png' 
+        // },
+        // // Основна велика іконка для Android
+        // { 
+        //   url: '/icon-512.png', 
+        //   sizes: '512x512', 
+        //   type: 'image/png' 
+        // },
       ],
       apple: [
         { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
