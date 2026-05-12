@@ -14,6 +14,8 @@ import { StudentSelectorPlus } from "./StudentSelectorPlus"
 
 import { toZonedTime } from 'date-fns-tz';
 
+import { BaseModal } from "@/components/crm_ui/BaseModal"
+
 // calendar start
 import { uk } from "date-fns/locale"
 import { format, parseISO, startOfDay, endOfDay } from "date-fns"
@@ -742,211 +744,668 @@ export function AddLessonModal({
 
   const allStatuses: LessonStatus[] = ['planned', 'completed', 'cancelled', 'rescheduled', 'no_show', 'late_cancelled'];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4">
-      <div className="bg-[#0A0A0A] border-t md:border border-white/10 w-full max-w-lg rounded-t-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh] animate-in slide-in-from-bottom md:zoom-in-95 duration-300">
-        
-        <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden" />
 
-        <div className="px-6 py-4 md:px-8 md:py-6 border-b border-white/5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-               <CalendarIcon size={20} />
-            </div>
-            <h2 className="text-lg md:text-xl font-black uppercase italic tracking-tighter text-white leading-none">
-              {editLesson ? t('editLesson') : t('scheduleLesson')}
-            </h2>
-          </div>
-          <button onClick={onClose} className="p-2 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10">
-            <X size={24} />
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editLesson ? t('editLesson') : t('scheduleLesson')}
+      // The fixed footer handles the buttons at the bottom of the modal
+      footer={
+        <div className="flex gap-3 w-full">
+          {editLesson && (profile?.role === 'admin') && (
+            <button 
+              type="button" 
+              onClick={handleDelete} 
+              className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all active:scale-95"
+            >
+              <Trash2 size={22} />
+            </button>
+          )}
+          <button 
+            onClick={handleSubmit} 
+            disabled={loading} 
+            className="flex-1 py-5 bg-primary text-black font-black uppercase rounded-2xl hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <Check size={20} strokeWidth={4} />}
+            {editLesson ? t('update') : t('confirm')}
           </button>
         </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Instructor Selection */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+            Інструктор
+          </label>
+          <div className="relative">
+            <select 
+              value={selectedInstructorId}
+              onChange={(e) => setSelectedInstructorId(e.target.value)}
+              className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black text-white outline-none focus:border-primary transition-all cursor-pointer"
+            >
+              {instructors.map((ins) => (
+                <option key={ins.id} value={ins.id} className="bg-[#121212]">
+                  {ins.profiles?.first_name} {ins.profiles?.last_name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          </div>
+        </div>
 
-        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
+        <StudentSelectorPlus 
+          isOpen={isOpen}
+          packages={packages}
+          selectedPackageId={selectedPackageId}
+          selectedClientId={selectedClientId}
+          setSelectedClientId={handleSetSelectedClient}
+          setSelectedPackageId={(id) => {
+            setSelectedPackageId(id);
+            setIsQuickCreationMode(false);
+          }}
+          onSelectQuickMode={handleSelectQuickMode}
+          currentInstructorId={selectedInstructorId}
+          duration={duration}
+          isEditMode={!!editLesson}
+        />
+
+        {/* Client Profile Card */}
+        {displayClient && (
+          <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
+                  {displayClient.avatar_url ? (
+                    <img 
+                      src={displayClient.avatar_url.startsWith('http') 
+                        ? displayClient.avatar_url 
+                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${displayClient.avatar_url}`} 
+                      className="w-full h-full object-cover" 
+                      alt=""
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-primary/40"><User size={20} /></div>
+                  )}
+                </div>
+                <div className="leading-tight">
+                  <h3 className="text-sm font-black text-white uppercase italic">
+                    {displayClient.name} {displayClient.last_name}
+                  </h3>
+                  {!isQuickCreationMode && selectedPkg && (
+                    <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
+                      <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenDossier(displayClient)} 
+                className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
+              >
+                <Contact2 size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Status Picker */}
+        <div className="relative">
+          <select 
+            value={status} 
+            onChange={(e) => setStatus(e.target.value as LessonStatus)}
+            className={cn(
+              "w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer",
+              status === 'planned' && "text-blue-400",
+              status === 'completed' && "text-green-400",
+              (status === 'no_show' || status === 'late_cancelled') && "text-orange-400",
+              (status === 'cancelled' || status === 'rescheduled') && "text-slate-500"
+            )}
+          >
+            {allStatuses.map((s) => (
+              <option key={s} value={s} className="bg-[#121212] text-white">
+                {tStatus(s)}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+        </div>
+
+        {/* DateTime Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date Picker */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                {t('date')}
+              </label>
+              {lessonDate && (
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  {format(parseISO(lessonDate), "LLLL", { locale: uk })}
+                </span>
+              )}
+            </div>
+            
+            <Popover modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[58px] text-white justify-start font-normal hover:bg-white/10 hover:border-white/20 transition-all outline-none",
+                    !lessonDate && "text-slate-500"
+                  )}
+                >
+                  <CalendarIcon size={16} className="mr-3 text-slate-500" />
+                  {lessonDate ? format(parseISO(lessonDate), "dd.MM.yyyy", { locale: uk }) : t('select_date')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-white/10 bg-[#09090b] shadow-2xl z-[9999]" align="start">
+                <Calendar
+                  mode="single"
+                  locale={uk}
+                  selected={lessonDate ? parseISO(lessonDate) : undefined}
+                  onSelect={(date) => date && setLessonDate(format(date, "yyyy-MM-dd"))}
+                  showOutsideDays
+                  fixedWeeks
+                  modifiers={{ today: new Date() }}
+                  modifiersClassNames={{ today: "border border-primary text-primary font-bold" }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Time Picker */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Час</label>
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{selectedHour}:{selectedMinute}</span>
+            </div>
+            <div className="flex gap-2 h-[58px]">
+              <div className="relative flex-1">
+                <select 
+                  value={selectedHour} 
+                  onChange={(e) => setSelectedHour(e.target.value)} 
+                  className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer"
+                >
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, '0')} className="bg-[#09090b]">{i.toString().padStart(2, '0')}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center text-primary font-black animate-pulse">:</div>
+              <div className="relative flex-1">
+                <select 
+                  value={selectedMinute} 
+                  onChange={(e) => setSelectedMinute(e.target.value)} 
+                  className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer"
+                >
+                  {["00", "15", "30", "45"].map((m) => (
+                    <option key={m} value={m} className="bg-[#09090b]">{m}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Warnings */}
+        {warnings.length > 0 && (
+          <div className="space-y-2">
+            {warnings.map((alert) => (
+              <div key={alert.id} className={cn(
+                "flex items-center gap-3 p-3 rounded-xl border animate-in fade-in slide-in-from-top-1",
+                alert.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-200" : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+              )}>
+                <div className={cn("w-2 h-2 rounded-full shrink-0 animate-pulse", alert.type === 'error' ? "bg-red-500" : "bg-amber-500")} />
+                <p className="text-[11px] leading-tight font-medium">
+                  <strong className="uppercase mr-1 opacity-70">Увага:</strong> {alert.message}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Duration Selection */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
+          <div className="grid grid-cols-4 gap-2">
+            {["1", "2", "3", "4"].map((val) => (
+              <button 
+                key={val} 
+                type="button" 
+                onClick={() => setDuration(val)} 
+                className={cn(
+                  "py-3 rounded-xl font-black text-xs border transition-all",
+                  duration === val ? 'bg-primary text-black border-primary shadow-lg scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                )}
+              >
+                {val}год
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Location & Address */}
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
+            <div className="relative">
+              <select 
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none" 
+                value={locationId} 
+                onChange={(e) => setLocationId(e.target.value)}
+              >
+                <option value="custom" className="bg-black text-primary font-black italic">✦ Адреса</option>
+                {filteredLocations.map(loc => (
+                  <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40"><MapPin size={18} /></div>
+            <input 
+              type="text"
+              placeholder="Адреса..."
+              readOnly={locationId !== "custom"}
+              value={displayAddress}
+              onChange={(e) => setCustomAddress(e.target.value)}
+              className={cn(
+                "w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none",
+                locationId === "custom" ? "border-primary/30 text-white focus:border-primary" : "border-white/5 text-slate-500 opacity-60 grayscale cursor-not-allowed"
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="relative">
+          <textarea 
+            placeholder={t('notesPlaceholder')} 
+            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[80px] resize-none" 
+            value={summary} 
+            onChange={(e) => setSummary(e.target.value)} 
+          />
+          <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
+        </div>
+      </div>
+    </BaseModal>
+  )
+
+
+
+  // return (
+  //   <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4">
+  //     <div className="bg-[#0A0A0A] border-t md:border border-white/10 w-full max-w-lg rounded-t-[2rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[95vh] animate-in slide-in-from-bottom md:zoom-in-95 duration-300">
+        
+  //       <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden" />
+
+  //       <div className="px-6 py-4 md:px-8 md:py-6 border-b border-white/5 flex justify-between items-center">
+  //         <div className="flex items-center gap-3">
+  //           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+  //              <CalendarIcon size={20} />
+  //           </div>
+  //           <h2 className="text-lg md:text-xl font-black uppercase italic tracking-tighter text-white leading-none">
+  //             {editLesson ? t('editLesson') : t('scheduleLesson')}
+  //           </h2>
+  //         </div>
+  //         <button onClick={onClose} className="p-2 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10">
+  //           <X size={24} />
+  //         </button>
+  //       </div>
+
+  //       <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar">
           
 
-          {/* Вибір Інструктора*/}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-              Інструктор
-            </label>
-            <div className="relative">
-              <select 
-                value={selectedInstructorId}
-                onChange={(e) => setSelectedInstructorId(e.target.value)}
-                className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black text-white outline-none focus:border-primary transition-all cursor-pointer"
-              >
-                {instructors.map((ins) => (
-                  <option key={ins.id} value={ins.id} className="bg-[#121212]">
-                    {ins.profiles?.first_name} {ins.profiles?.last_name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-            </div>
-          </div>
+  //         {/* Вибір Інструктора*/}
+  //         <div className="space-y-2">
+  //           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+  //             Інструктор
+  //           </label>
+  //           <div className="relative">
+  //             <select 
+  //               value={selectedInstructorId}
+  //               onChange={(e) => setSelectedInstructorId(e.target.value)}
+  //               className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black text-white outline-none focus:border-primary transition-all cursor-pointer"
+  //             >
+  //               {instructors.map((ins) => (
+  //                 <option key={ins.id} value={ins.id} className="bg-[#121212]">
+  //                   {ins.profiles?.first_name} {ins.profiles?.last_name}
+  //                 </option>
+  //               ))}
+  //             </select>
+  //             <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+  //           </div>
+  //         </div>
 
 
-          <StudentSelectorPlus 
-            isOpen={isOpen}
-            packages={packages}
-            selectedPackageId={selectedPackageId}
-            selectedClientId={selectedClientId}
-            setSelectedClientId={handleSetSelectedClient}
-            setSelectedPackageId={(id) => {
-              setSelectedPackageId(id);
-              setIsQuickCreationMode(false); // Disable quick mode if a standard package is picked
-            }}
-            onSelectQuickMode={handleSelectQuickMode}
-            currentInstructorId={selectedInstructorId} // Use the instructor currently selected in the modal
-            duration = {duration}
-            isEditMode = {!!editLesson}
-          />
+  //         <StudentSelectorPlus 
+  //           isOpen={isOpen}
+  //           packages={packages}
+  //           selectedPackageId={selectedPackageId}
+  //           selectedClientId={selectedClientId}
+  //           setSelectedClientId={handleSetSelectedClient}
+  //           setSelectedPackageId={(id) => {
+  //             setSelectedPackageId(id);
+  //             setIsQuickCreationMode(false); // Disable quick mode if a standard package is picked
+  //           }}
+  //           onSelectQuickMode={handleSelectQuickMode}
+  //           currentInstructorId={selectedInstructorId} // Use the instructor currently selected in the modal
+  //           duration = {duration}
+  //           isEditMode = {!!editLesson}
+  //         />
 
 
 
-          {displayClient && (
-            <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
-                    {displayClient.avatar_url ? (
-                      <img 
-                        src={displayClient.avatar_url.startsWith('http') 
-                          ? displayClient.avatar_url 
-                          : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${displayClient.avatar_url}`} 
-                        className="w-full h-full object-cover" 
-                        alt=""
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-primary/40"><User size={20} /></div>
-                    )}
-                  </div>
-                  <div className="leading-tight">
-                    <h3 className="text-sm font-black text-white uppercase italic">
-                      {displayClient.name} {displayClient.last_name}
-                    </h3>
+  //         {displayClient && (
+  //           <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 flex flex-col gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+  //             <div className="flex justify-between items-center">
+  //               <div className="flex items-center gap-3">
+  //                 <div className="w-16 h-16 rounded-xl border-2 border-primary/30 overflow-hidden bg-black shrink-0">
+  //                   {displayClient.avatar_url ? (
+  //                     <img 
+  //                       src={displayClient.avatar_url.startsWith('http') 
+  //                         ? displayClient.avatar_url 
+  //                         : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/avatars/${displayClient.avatar_url}`} 
+  //                       className="w-full h-full object-cover" 
+  //                       alt=""
+  //                     />
+  //                   ) : (
+  //                     <div className="w-full h-full flex items-center justify-center text-primary/40"><User size={20} /></div>
+  //                   )}
+  //                 </div>
+  //                 <div className="leading-tight">
+  //                   <h3 className="text-sm font-black text-white uppercase italic">
+  //                     {displayClient.name} {displayClient.last_name}
+  //                   </h3>
                     
-                    {/* Only show hours if we have a selected package, not in quick mode */}
-                    {!isQuickCreationMode && selectedPkg && (
-                      <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
-                        <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
-                      </div>
-                    )}
+  //                   {/* Only show hours if we have a selected package, not in quick mode */}
+  //                   {!isQuickCreationMode && selectedPkg && (
+  //                     <div className="flex items-center gap-1 text-[10px] text-primary font-black tabular-nums uppercase">
+  //                       <Clock size={10} /> {selectedPkg.remaining}h {t('hoursLeft')}
+  //                     </div>
+  //                   )}
                     
-                    {/* {isQuickCreationMode && (
-                      <div className="text-[10px] text-amber-500 font-black uppercase italic">
-                        Разове
-                      </div>
-                    )} */}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onOpenDossier(displayClient)} 
-                  className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
-                >
-                  <Contact2 size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+  //                   {/* {isQuickCreationMode && (
+  //                     <div className="text-[10px] text-amber-500 font-black uppercase italic">
+  //                       Разове
+  //                     </div>
+  //                   )} */}
+  //                 </div>
+  //               </div>
+  //               <button
+  //                 type="button"
+  //                 onClick={() => onOpenDossier(displayClient)} 
+  //                 className="p-3 bg-primary text-black rounded-xl hover:bg-white transition-all shadow-lg active:scale-90"
+  //               >
+  //                 <Contact2 size={18} />
+  //               </button>
+  //             </div>
+  //           </div>
+  //         )}
 
-          <div className="space-y-2">
-            <div className="relative">
-              <select 
-                value={status} 
-                onChange={(e) => setStatus(e.target.value as LessonStatus)}
-                className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer ${
-                  status === 'planned' ? 'text-blue-400' : 
-                  status === 'completed' ? 'text-green-400' :
-                  status === 'no_show' || status === 'late_cancelled' ? 'text-orange-400' :
-                  status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
-                  'text-red-500'
-                }`}
-              >
-                {allStatuses.map((s) => (
-                  <option key={s} value={s} className="bg-[#121212] text-white">
-                    {tStatus(s)}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-            </div>
-          </div>
+  //         <div className="space-y-2">
+  //           <div className="relative">
+  //             <select 
+  //               value={status} 
+  //               onChange={(e) => setStatus(e.target.value as LessonStatus)}
+  //               className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl p-4 text-[13px] font-black tracking-wider outline-none focus:border-primary transition-all cursor-pointer ${
+  //                 status === 'planned' ? 'text-blue-400' : 
+  //                 status === 'completed' ? 'text-green-400' :
+  //                 status === 'no_show' || status === 'late_cancelled' ? 'text-orange-400' :
+  //                 status === 'cancelled' || status === 'rescheduled' ? 'text-slate-500' : 
+  //                 'text-red-500'
+  //               }`}
+  //             >
+  //               {allStatuses.map((s) => (
+  //                 <option key={s} value={s} className="bg-[#121212] text-white">
+  //                   {tStatus(s)}
+  //                 </option>
+  //               ))}
+  //             </select>
+  //             <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+  //           </div>
+  //         </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('date')}</label>
-              <div className="relative">
-                <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary [color-scheme:dark]" value={lessonDate} onChange={e => setLessonDate(e.target.value)} />
-                <CalendarIcon size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-              </div>
-            </div> */}
+  //         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  //           {/* <div className="space-y-2">
+  //             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('date')}</label>
+  //             <div className="relative">
+  //               <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary [color-scheme:dark]" value={lessonDate} onChange={e => setLessonDate(e.target.value)} />
+  //               <CalendarIcon size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+  //             </div>
+  //           </div> */}
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  {t('date')}
-                </label>
+  //           <div className="space-y-2">
+  //             <div className="flex items-center justify-between px-1">
+  //               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+  //                 {t('date')}
+  //               </label>
                 
-                {lessonDate && (
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                    {format(parseISO(lessonDate), "LLLL", { locale: uk }).charAt(0).toUpperCase() + 
-                    format(parseISO(lessonDate), "LLLL", { locale: uk }).slice(1)}
-                  </span>
-                )}
-              </div>
+  //               {lessonDate && (
+  //                 <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+  //                   {format(parseISO(lessonDate), "LLLL", { locale: uk }).charAt(0).toUpperCase() + 
+  //                   format(parseISO(lessonDate), "LLLL", { locale: uk }).slice(1)}
+  //                 </span>
+  //               )}
+  //             </div>
               
-              <Popover modal={true}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[58px] text-white justify-start font-normal hover:bg-white/10 hover:border-white/20 transition-all outline-none",
-                      !lessonDate && "text-slate-500"
-                    )}
-                  >
-                    <CalendarIcon size={16} className="mr-3 text-slate-500" />
-                    {lessonDate ? (
-                      format(parseISO(lessonDate), "dd.MM.yyyy", { locale: uk })
-                    ) : (
-                      <span>{t('select_date')}</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
+  //             <Popover modal={true}>
+  //               <PopoverTrigger asChild>
+  //                 <Button
+  //                   variant="outline"
+  //                   className={cn(
+  //                     "w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[58px] text-white justify-start font-normal hover:bg-white/10 hover:border-white/20 transition-all outline-none",
+  //                     !lessonDate && "text-slate-500"
+  //                   )}
+  //                 >
+  //                   <CalendarIcon size={16} className="mr-3 text-slate-500" />
+  //                   {lessonDate ? (
+  //                     format(parseISO(lessonDate), "dd.MM.yyyy", { locale: uk })
+  //                   ) : (
+  //                     <span>{t('select_date')}</span>
+  //                   )}
+  //                 </Button>
+  //               </PopoverTrigger>
                 
-                <PopoverContent 
-                  className="w-auto p-0 border-white/10 bg-[#09090b] shadow-2xl z-[9999]" 
-                  align="start"
-                  sideOffset={8}
-                >
-                  <Calendar
-                    mode="single"
-                    locale={uk}
-                    selected={lessonDate ? parseISO(lessonDate) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        setLessonDate(format(date, "yyyy-MM-dd"))
-                      }
-                    }}
-                    autoFocus
-                    // --- User Friendly Options ---
-                    showOutsideDays={true} // Shows grayed out days from prev/next month
-                    fixedWeeks={true}      // Always shows 6 rows so the modal doesn't jump in height
-                    className="rounded-md border border-white/5"
+  //               <PopoverContent 
+  //                 className="w-auto p-0 border-white/10 bg-[#09090b] shadow-2xl z-[9999]" 
+  //                 align="start"
+  //                 sideOffset={8}
+  //               >
+  //                 <Calendar
+  //                   mode="single"
+  //                   locale={uk}
+  //                   selected={lessonDate ? parseISO(lessonDate) : undefined}
+  //                   onSelect={(date) => {
+  //                     if (date) {
+  //                       setLessonDate(format(date, "yyyy-MM-dd"))
+  //                     }
+  //                   }}
+  //                   autoFocus
+  //                   // --- User Friendly Options ---
+  //                   showOutsideDays={true} // Shows grayed out days from prev/next month
+  //                   fixedWeeks={true}      // Always shows 6 rows so the modal doesn't jump in height
+  //                   className="rounded-md border border-white/5"
                     
-                    // Customizing how "Today" looks
-                    modifiers={{
-                      today: new Date()
-                    }}
-                    modifiersClassNames={{
-                      today: "border border-primary text-primary font-bold" 
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+  //                   // Customizing how "Today" looks
+  //                   modifiers={{
+  //                     today: new Date()
+  //                   }}
+  //                   modifiersClassNames={{
+  //                     today: "border border-primary text-primary font-bold" 
+  //                   }}
+  //                 />
+  //               </PopoverContent>
+  //             </Popover>
 
+  //           </div>
+
+
+  //           {/* TIME PICKER COLUMN */}
+  //           <div className="space-y-2">
+  //             <div className="flex items-center justify-between px-1">
+  //               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+  //                 Час (24H)
+  //               </label>
+  //               {/* Optional: Show "Вибрано" status */}
+  //               <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+  //                 {selectedHour}:{selectedMinute}
+  //               </span>
+  //             </div>
+              
+  //             <div className="flex gap-2 h-[58px]">
+  //               <div className="relative flex-1">
+  //                 <select 
+  //                   value={selectedHour} 
+  //                   onChange={(e) => setSelectedHour(e.target.value)} 
+  //                   className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
+  //                 >
+  //                   {Array.from({ length: 24 }).map((_, i) => {
+  //                     const h = i.toString().padStart(2, '0');
+  //                     return <option key={i} value={h} className="bg-[#09090b]">{h}</option>
+  //                   })}
+  //                 </select>
+  //                 {/* Subtle label inside the select for better UX */}
+  //                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">год</span>
+  //               </div>
+
+  //               <div className="flex items-center text-primary font-black animate-pulse">:</div>
+
+  //               <div className="relative flex-1">
+  //                 <select 
+  //                   value={selectedMinute} 
+  //                   onChange={(e) => setSelectedMinute(e.target.value)} 
+  //                   className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
+  //                 >
+  //                   {["00", "15", "30", "45"].map((m) => (
+  //                     <option key={m} value={m} className="bg-[#09090b]">{m}</option>
+  //                   ))}
+  //                 </select>
+  //                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">хв</span>
+  //               </div>
+  //             </div>
+  //           </div>
+  //         </div>
+
+  //         {/* Warning Notification Block */}
+  //         {warnings.length > 0 && (
+  //           <div className="mt-4 space-y-2">
+  //             {warnings.map((alert) => (
+  //               <div 
+  //                 key={alert.id}
+  //                 className={cn(
+  //                   "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-1",
+  //                   alert.type === 'error' 
+  //                     ? "bg-red-500/10 border-red-500/20 text-red-200" 
+  //                     : "bg-amber-500/10 border-amber-500/20 text-amber-200"
+  //                 )}
+  //               >
+  //                 {/* Visual Indicator (The pulsing dot or icon) */}
+  //                 <div className={cn(
+  //                   "w-2 h-2 rounded-full shrink-0 animate-pulse",
+  //                   alert.type === 'error' ? "bg-red-500" : "bg-amber-500"
+  //                 )} />
+                  
+  //                 <p className="text-[11px] leading-tight font-medium">
+  //                   <strong className="uppercase mr-1 text-[10px] opacity-70">
+  //                     {alert.type === 'error' ? 'Увага' : 'Увага'}:
+  //                   </strong> 
+  //                   {alert.message}
+  //                 </p>
+  //               </div>
+  //             ))}
+  //           </div>
+  //         )}
+
+
+  //         <div className="space-y-2">
+  //           <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
+  //           <div className="grid grid-cols-4 gap-2">
+  //             {["1", "2", "3", "4"].map((val) => (
+  //               <button key={val} type="button" onClick={() => setDuration(val)} className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary shadow-lg scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+  //                 {val}h
+  //               </button>
+  //             ))}
+  //           </div>
+  //         </div>
+
+  //         <div className="space-y-4">
+  //           <div className="space-y-2">
+  //             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
+  //             <div className="relative">
+  //               <select 
+  //                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none pr-12" 
+  //                   value={locationId} 
+  //                   onChange={(e) => setLocationId(e.target.value)}
+  //               >
+  //                 <option value="custom" className="bg-black text-primary font-black italic">✦ Адреса</option>
+  //                 {filteredLocations.map(loc => (
+  //                   <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
+  //                 ))}
+  //               </select>
+  //               <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+  //             </div>
+  //           </div>
+
+  //           <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
+  //               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40">
+  //                   <MapPin size={18} />
+  //               </div>
+  //               <input 
+  //                   type="text"
+  //                   placeholder="Адреса..."
+  //                   readOnly={locationId !== "custom"}
+  //                   value={displayAddress}
+  //                   onChange={(e) => setCustomAddress(e.target.value)}
+  //                   className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none ${
+  //                       locationId === "custom" 
+  //                       ? "border-primary/30 text-white focus:border-primary" 
+  //                       : "border-white/5 text-slate-500 opacity-60 grayscale cursor-not-allowed"
+  //                   }`}
+  //               />
+  //           </div>
+  //         </div>
+
+  //         <div className="relative">
+  //           <textarea placeholder={t('notesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[80px] resize-none" value={summary} onChange={(e) => setSummary(e.target.value)} />
+  //           <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
+  //         </div>
+
+  //         <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
+  //           {editLesson && (profile?.role === 'admin') && (
+  //             <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
+  //               <Trash2 size={22} />
+  //             </button>
+  //           )}
+  //           <button 
+  //             type="submit" 
+  //             disabled={loading} 
+  //             className="flex-1 py-5 bg-primary text-black font-black uppercase rounded-2xl hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
+  //           >
+  //             {loading ? <Loader2 className="animate-spin" /> : <Check size={20} strokeWidth={4} />}
+  //             {editLesson ? t('update') : t('confirm')}
+  //           </button>
+  //         </div>
+  //       </form>
+  //     </div>
+  //   </div>
+  // )
+}
+
+
+
+
+
+
+
+
+
+            
               {/* NEW: Warning Logic Display */}
               {/* {warning && (
                 <div className={cn(
@@ -988,7 +1447,6 @@ export function AddLessonModal({
                   ))}
                 </div>
               )} */}
-            </div>
 
             
             {/* <div className="space-y-2">
@@ -1008,156 +1466,13 @@ export function AddLessonModal({
               </div>
             </div> */}
 
-            {/* TIME PICKER COLUMN */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  Час (24H)
-                </label>
-                {/* Optional: Show "Вибрано" status */}
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                  {selectedHour}:{selectedMinute}
-                </span>
-              </div>
-              
-              <div className="flex gap-2 h-[58px]">
-                <div className="relative flex-1">
-                  <select 
-                    value={selectedHour} 
-                    onChange={(e) => setSelectedHour(e.target.value)} 
-                    className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
-                  >
-                    {Array.from({ length: 24 }).map((_, i) => {
-                      const h = i.toString().padStart(2, '0');
-                      return <option key={i} value={h} className="bg-[#09090b]">{h}</option>
-                    })}
-                  </select>
-                  {/* Subtle label inside the select for better UX */}
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">год</span>
-                </div>
-
-                <div className="flex items-center text-primary font-black animate-pulse">:</div>
-
-                <div className="relative flex-1">
-                  <select 
-                    value={selectedMinute} 
-                    onChange={(e) => setSelectedMinute(e.target.value)} 
-                    className="w-full h-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white outline-none focus:border-primary appearance-none text-center font-black cursor-pointer hover:bg-white/10 transition-all"
-                  >
-                    {["00", "15", "30", "45"].map((m) => (
-                      <option key={m} value={m} className="bg-[#09090b]">{m}</option>
-                    ))}
-                  </select>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-600 pointer-events-none uppercase font-bold">хв</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Warning Notification Block */}
-          {warnings.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {warnings.map((alert) => (
-                <div 
-                  key={alert.id}
-                  className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl border transition-all animate-in fade-in slide-in-from-top-1",
-                    alert.type === 'error' 
-                      ? "bg-red-500/10 border-red-500/20 text-red-200" 
-                      : "bg-amber-500/10 border-amber-500/20 text-amber-200"
-                  )}
-                >
-                  {/* Visual Indicator (The pulsing dot or icon) */}
-                  <div className={cn(
-                    "w-2 h-2 rounded-full shrink-0 animate-pulse",
-                    alert.type === 'error' ? "bg-red-500" : "bg-amber-500"
-                  )} />
-                  
-                  <p className="text-[11px] leading-tight font-medium">
-                    <strong className="uppercase mr-1 text-[10px] opacity-70">
-                      {alert.type === 'error' ? 'Увага' : 'Увага'}:
-                    </strong> 
-                    {alert.message}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
 
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('duration')}</label>
-            <div className="grid grid-cols-4 gap-2">
-              {["1", "2", "3", "4"].map((val) => (
-                <button key={val} type="button" onClick={() => setDuration(val)} className={`py-3 rounded-xl font-black text-xs border transition-all ${duration === val ? 'bg-primary text-black border-primary shadow-lg scale-[1.02]' : 'bg-white/5 border-white/10 text-slate-400'}`}>
-                  {val}h
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{t('location')}</label>
-              <div className="relative">
-                <select 
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary appearance-none pr-12" 
-                    value={locationId} 
-                    onChange={(e) => setLocationId(e.target.value)}
-                >
-                  <option value="custom" className="bg-black text-primary font-black italic">✦ Адреса</option>
-                  {filteredLocations.map(loc => (
-                    <option key={loc.id} value={loc.id} className="bg-black">{loc.name}</option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-              </div>
-            </div>
 
-            <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40">
-                    <MapPin size={18} />
-                </div>
-                <input 
-                    type="text"
-                    placeholder="Адреса..."
-                    readOnly={locationId !== "custom"}
-                    value={displayAddress}
-                    onChange={(e) => setCustomAddress(e.target.value)}
-                    className={`w-full bg-white/5 border rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none ${
-                        locationId === "custom" 
-                        ? "border-primary/30 text-white focus:border-primary" 
-                        : "border-white/5 text-slate-500 opacity-60 grayscale cursor-not-allowed"
-                    }`}
-                />
-            </div>
-          </div>
 
-          <div className="relative">
-            <textarea placeholder={t('notesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:border-primary min-h-[80px] resize-none" value={summary} onChange={(e) => setSummary(e.target.value)} />
-            <FileText size={16} className="absolute right-5 top-4 text-slate-500" />
-          </div>
 
-          <div className="flex gap-3 pt-2 pb-safe-bottom-mobile">
-            {editLesson && (profile?.role === 'admin') && (
-              <button type="button" onClick={handleDelete} className="p-5 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all">
-                <Trash2 size={22} />
-              </button>
-            )}
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="flex-1 py-5 bg-primary text-black font-black uppercase rounded-2xl hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : <Check size={20} strokeWidth={4} />}
-              {editLesson ? t('update') : t('confirm')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
+
 
 
 
