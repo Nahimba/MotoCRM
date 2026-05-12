@@ -40,6 +40,35 @@
     /* Only transition background/colors after the initial load */
     transition: background-color 0.4s ease, border-color 0.4s ease;
   }
+
+  
+  /* iOS Fixes */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  textarea {
+    /* Отключаем системный стиль Safari/iOS */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+
+    /* Вместо border-radius: 0, лучше разрешить Tailwind управлять этим */
+    /* Но важно сбросить системное принудительное скругление iOS */
+    border-radius: var(--radius, 0); 
+    
+    /* Убираем внутреннюю тень в iOS */
+    background-image: none;
+  }
+
+  /* Для чекбоксов лучше оставить стандартный вид или стилизовать отдельно */
+  input[type="checkbox"],
+  input[type="radio"] {
+    -webkit-appearance: checkbox; /* Возвращаем системный вид, если нужно */
+    appearance: checkbox;
+  }
+  /* iOS Fixes */
 }
 
 
@@ -58,11 +87,6 @@ html {
 /* 3. Делает скролл на iOS плавным (уже не так критично для новых версий, но полезно) */
 .scroll-container {
   -webkit-overflow-scrolling: touch;
-}
-
-/* 4. Фикс для input: убирает внутренние тени и закругления по умолчанию */
-input, textarea {
-  -webkit-appearance: none;
 }
 /* iOS Fixes */
 
