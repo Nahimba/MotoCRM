@@ -46,17 +46,40 @@
 
 
 /* Fix for the mobile scroll 'jump' START*/
-/* html, body {
-  height: -webkit-fill-available; */
+html, body {
+  height: -webkit-fill-available;
   /* Prevents the 'bounce' effect at the edges */
-  /* overscroll-behavior-y: none; 
+  overscroll-behavior-y: none; 
   background-color: black;
-} */
+}
 /* Ensure the root container handles the dynamic height correctly */
-/* #__next, main {
+#__next, main {
   min-height: 100dvh;
-} */
+}
 /* Fix for the mobile scroll 'jump' END */
+
+
+
+/* Apply this ONLY when a modal is active */
+.lock-screen {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+/* The outer wrapper that handles height */
+.modal-container {
+  height: 100dvh; /* Stable mobile height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The scrollable area inside */
+.modal-content {
+  flex-grow: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain; /* Stops the 'jump back' bounce */
+  -webkit-overflow-scrolling: touch;
+}
 
 
 
