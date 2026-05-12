@@ -62,6 +62,8 @@ export default function SchedulePage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<any | null>(null)
   const [selectedClient, setSelectedClient] = useState<any | null>(null)
+  
+  const [isClientProfileModalOpen, setClientProfileModalOpen] = useState(false)
 
 
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
@@ -783,9 +785,15 @@ export default function SchedulePage() {
         exceptions={exceptions}
         lessons={lessons}
         // ВАЖНО: Передаем ID клиента и ID пакета для правильной загрузки досье
-        onOpenDossier={(client) => setSelectedClient({ 
-          id: client.id, 
-          package_id: editingLesson?.course_package_id })} 
+        onOpenDossier={(client) => {
+          setSelectedClient({ 
+            id: client.id,
+            // Fallback to null if editingLesson isn't set yet
+            //package_id: editingLesson?.course_package_id|| client.package_id || null });
+            package_id: editingLesson?.course_package_id});
+          setClientProfileModalOpen(true);
+          }
+        } 
       />
 
       <AddExceptionModal 
@@ -812,7 +820,11 @@ export default function SchedulePage() {
       {selectedClient && (
         <ClientProfileModal 
           client={selectedClient} 
-          onClose={() => setSelectedClient(null)} 
+          isOpen={isClientProfileModalOpen}
+          onClose={() => {
+            setSelectedClient(null); 
+            setClientProfileModalOpen(false);
+          }} 
         />
       )}
     </div>
