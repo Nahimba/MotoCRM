@@ -1,7 +1,7 @@
 {
     "name": "RaceWay CRM — Управління Авто та Мотошколою",
     "short_name": "RaceWay",
-    "description": "Професійна система автоматизації для шкіл водіння RaceWay.",
+    "description": "Система управління для шкіл водіння RaceWay.",
     "icons": [
       {
         "src": "/icon-192.png",

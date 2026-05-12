@@ -140,6 +140,7 @@ export async function proxy(request: NextRequest) {
 
   let response = intlMiddleware(request);
 
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -202,12 +203,30 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  
+  // ЦЕ ВИПРАВЛЯЄ ПОМИЛКИ БЕЗПЕКИ НА ANDROID
+  response.headers.set('Content-Security-Policy', 'upgrade-insecure-requests');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  // Перед return response
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
   return response;
 }
 
+// export const config = {
+//   matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+// };
+
 export const config = {
-  matcher: ['/((?!api|_next|_static|_vercel|[\\w-]+\\.\\w+).*)']
+  matcher: [
+    /*
+     * Виключаємо маніфест і сервіс-воркер, щоб Chrome бачив їх без проксі
+     */
+    '/((?!api|_next|_static|_vercel|manifest|site\\.webmanifest|sw\\.js|.*\\.\\w+).*)'
+  ]
 };
+
 
 
 
