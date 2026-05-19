@@ -137,7 +137,7 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   // Отримання перекладів для клієнтської частини
-  const messages = await getMessages();
+  const messages = (await getMessages()) ?? {};
 
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>

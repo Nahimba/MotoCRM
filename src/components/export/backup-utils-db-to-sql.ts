@@ -14,12 +14,34 @@ export const exportDataBackup = async (setLoading: (l: boolean) => void) => {
     // session_replication_role = replica disables FK checks for easier import
     sql += `BEGIN;\nSET session_replication_role = 'replica';\n\n`;
     
+    // const tables = [
+    //   'profiles', 'locations', 'payment_methods', 'payment_plans', 
+    //   'courses', 'instructors', 'clients', 'accounts', 
+    //   'course_instructors', 'course_packages', 'lessons', 
+    //   'payments', 'business_expenses', 'client_documents', 
+    //   'course_payment_allocations'
+    // ];
+
     const tables = [
-      'profiles', 'locations', 'payment_methods', 'payment_plans', 
-      'courses', 'instructors', 'clients', 'accounts', 
-      'course_instructors', 'course_packages', 'lessons', 
-      'payments', 'business_expenses', 'client_documents', 
-      'course_payment_allocations'
+      'profiles',
+      'locations',
+      'payment_methods',
+      'payment_plans',
+      'courses',
+      'instructors',
+      'instructor_work_hours',
+      'instructor_exceptions',
+      'clients',
+      'accounts',
+      'course_instructors',
+      'course_packages',
+      'lessons',
+      'payments',
+      'business_expenses',
+      'client_documents',
+      'client_files',
+      'email_templates',
+      'audit_logs'
     ];
 
     for (const table of tables) {

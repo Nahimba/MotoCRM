@@ -20,7 +20,11 @@ export default function ClientLandingPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!profile?.id) return
+      if (!profile?.id) {
+        setPackages([])
+        setLoading(false)
+        return
+      }
       setLoading(true)
       try {
         const { data } = await supabase
@@ -43,6 +47,17 @@ export default function ClientLandingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black text-white p-6">
+        <div className="max-w-sm text-center border border-white/10 rounded-[2rem] p-8">
+          <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-500">Profile data is unavailable.</p>
+          <p className="mt-3 text-xs text-slate-400">Please refresh or sign in again to continue.</p>
+        </div>
       </div>
     )
   }

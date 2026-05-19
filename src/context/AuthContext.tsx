@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -75,11 +75,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
       }
     }
-  }, [profile]);
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) await fetchProfile(user.id, true);
-  };
+  }, [fetchProfile, user]);
+
+  const signOut = useCallback(async () => {
+    sessionStorage.setItem('manualLogout', 'true');
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  }, []);
 
   useEffect(() => {
     // Initial session check on mount
@@ -128,14 +134,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, [fetchProfile]);
 
-  const signOut = async () => {
-    sessionStorage.setItem('manualLogout', 'true');
-    await supabase.auth.signOut();
-    window.location.href = '/';
-  };
-
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={useMemo(
+        () => ({ user, profile, loading, signOut, refreshProfile }),
+        [user, profile, loading, signOut, refreshProfile]
+      )}
+    >
       {children}
     </AuthContext.Provider>
   );

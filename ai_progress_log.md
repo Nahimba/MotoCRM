@@ -167,3 +167,34 @@ export const supabase = createBrowserClient(
 
 **Last Updated:** 2026-05-17T22:33:45Z  
 **Session Status:** In Progress — Configuration & Core Libraries Audited ✅
+
+---
+
+## Refactoring Actions
+
+### ✅ src/context/AuthContext.tsx
+- Memoized provider value using `useMemo`
+- Stabilized `refreshProfile` and `signOut` with `useCallback`
+- Reduced unnecessary rerenders for auth consumers
+
+### ✅ src/context/NotificationContext.tsx
+- Cached provider value with `useMemo`
+- Kept `markAsSeen` stable via `useCallback`
+- Improved notification provider render performance
+
+### ✅ src/app/[locale]/layout.tsx
+- Added `const messages = (await getMessages()) ?? {}`
+- Prevented root layout failure on null/undefined translation payloads
+
+### ✅ src/app/[locale]/(customer)/account/page.tsx
+- Added fallback for missing `profile` and prevented indefinite loading
+- Ensured `packages` clears and `loading` resolves when profile data is absent
+- Added explicit empty-state UI
+
+### ✅ src/app/[locale]/profile/page.tsx
+- Added missing-profile fallback UI after auth load
+- Guarded avatar URL resolution with `data?.publicUrl ?? null`
+- Added default role fallback to `rider`
+
+**Last Updated:** 2026-05-19T00:00:00Z  
+**Session Status:** In Progress — Context and Pages Stabilized ✅

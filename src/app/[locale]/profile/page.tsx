@@ -17,7 +17,7 @@ import { AvatarModal } from "@/components/avatar/AvatarModal"
 export default function ProfilePage() {
   const t = useTranslations("Profile")
   const { user, profile, loading: authLoading, refreshProfile } = useAuth()
-  const role = user?.app_metadata?.role;
+  const role = user?.app_metadata?.role ?? 'rider';
   
   const [updating, setUpdating] = useState(false)
   const [fetchingExtended, setFetchingExtended] = useState(true)
@@ -82,7 +82,7 @@ export default function ProfilePage() {
         const { data } = supabase.storage
           .from('avatars')
           .getPublicUrl(`avatars/${formData.avatar_url}`)
-        setPreviewUrl(data.publicUrl)
+        setPreviewUrl(data?.publicUrl ?? "")
       }
     } else {
       setPreviewUrl("")
@@ -108,7 +108,7 @@ export default function ProfilePage() {
         const { data } = supabase.storage
           .from('avatars')
           .getPublicUrl(`avatars/${rawAvatar}`)
-        setAvatarPreview(data.publicUrl)
+        setAvatarPreview(data?.publicUrl ?? null)
       }
     }
     resolveAvatar()
@@ -304,7 +304,16 @@ export default function ProfilePage() {
     )
   }
 
-  if (!profile) return null
+  if (!profile) {
+    return (
+      <div className="h-[70vh] flex items-center justify-center text-white">
+        <div className="max-w-md p-8 border border-white/10 rounded-[2rem] bg-[#0a0a0a] text-center">
+          <p className="text-sm uppercase tracking-[0.25em] text-slate-500">Profile not found</p>
+          <p className="mt-4 text-sm text-slate-400">Please reload the page or sign in again.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8 pb-32">

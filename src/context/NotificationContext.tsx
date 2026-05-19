@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { dateUtils } from '@/lib/date-utils';
@@ -79,8 +79,13 @@ const NotificationProvider = ({
     };
   }, [userId, refreshData]);
 
+  const providerValue = useMemo(
+    () => ({ unreadCount, markAsSeen }),
+    [unreadCount, markAsSeen]
+  );
+
   return (
-    <NotificationContext.Provider value={{ unreadCount, markAsSeen }}>
+    <NotificationContext.Provider value={providerValue}>
       {children}
     </NotificationContext.Provider>
   );
