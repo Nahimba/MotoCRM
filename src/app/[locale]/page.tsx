@@ -15,8 +15,14 @@ const saira = Saira({
   style: ['italic']
 })
 
+// const DEV_ACCOUNTS = {
+//   rider: { email: "", password: "", role: 'rider' },
+// }
+
 const DEV_ACCOUNTS = {
-  rider: { email: "", password: "", role: 'rider' },
+  admin: { email: "admin@motocrm.local", password: "password123", role: 'admin' },
+  instructor: { email: "coach@motocrm.local", password: "password123", role: 'instructor' },
+  rider: { email: "rider@motocrm.local", password: "password123", role: 'rider' },
 }
 
 export default function LandingPage() {
@@ -91,7 +97,7 @@ export default function LandingPage() {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: targetEmail,
+        email: targetEmail, 
         password: targetPassword,
       })
 
@@ -208,7 +214,7 @@ export default function LandingPage() {
           </form>
 
           {/* Dev Shortcut Buttons */}
-          {/* <div className="mt-8 pt-6 border-t border-white/5">
+          <div className="mt-8 pt-6 border-t border-white/5">
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(DEV_ACCOUNTS) as Array<keyof typeof DEV_ACCOUNTS>).map((role) => (
                 <button
@@ -221,7 +227,7 @@ export default function LandingPage() {
                 </button>
               ))}
             </div>
-          </div> */}
+          </div>
         </div>
       </div>
     </div>

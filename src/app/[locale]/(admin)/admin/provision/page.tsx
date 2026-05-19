@@ -23,19 +23,19 @@ export default function ProvisionPage() {
     for (const u of devUsers) {
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: u.email,
-        password: 'passwordNO',
+        password: 'password123',
         email_confirm: true,
         user_metadata: { role: u.role }
       })
       setLog(prev => [...prev, error ? `❌ ${u.email}: ${error.message}` : `✅ ${u.email} created!`])
-    }
+    } 
     */
   }
 
   return (
     <div className="p-10 bg-black text-white font-mono">
       <button onClick={run} className="p-4 bg-primary text-black font-bold rounded">
-        FIX AUTH SYSTEM NOW (SANDBOX MODE)
+        FIX AUTH SYSTEM NOW
       </button>
       <div className="mt-4">{log.map((l, i) => <p key={i}>{l}</p>)}</div>
     </div>

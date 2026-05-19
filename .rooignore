@@ -35,3 +35,11 @@ supabase/.temp/
 .env
 .env.local
 .env.production
+
+
+# Игнорировать провайдеры авторизации и уведомлений (Stage 3 Защита)
+# src/components/UserAuthControl.tsx
+# src/context/AuthContext.tsx
+# src/context/NotificationContext.tsx
+# src/proxy.ts
+# src/components/export/
