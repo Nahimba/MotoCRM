@@ -304,14 +304,16 @@ export function PaymentModal({
   
       if (editPayment) {
         // PERFORM UPDATE: Only send mutable fields
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('payments')
           .update(updatePayload)
           .eq('id', paymentId)
+          .select() // ПОВЕРТАЄ ПОВНИЙ ОБ'ЄКТ
+          .single()
         
         if (error) throw error
 
-        await logAction('UPDATE', paymentId, editPayment, updatePayload);
+        await logAction('UPDATE', paymentId, editPayment, updated);
 
         toast.success(t('updateSuccess'))
       } else {
@@ -333,7 +335,7 @@ export function PaymentModal({
         
         if (error) throw error
 
-        if (inserted) await logAction('INSERT', inserted.id, null, insertPayload);
+        await logAction('INSERT', inserted.id, null, inserted);
         
         toast.success(t('logSuccess'))
       }
@@ -350,41 +352,47 @@ export function PaymentModal({
 
   const logAction = async (action: 'INSERT' | 'UPDATE' | 'DELETE', recordId: string, oldData: any, newData: any) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('auth_user_id', user?.id)
-        .single();
+      // const { data: { user } } = await supabase.auth.getUser();
+      // const { data: profileData } = await supabase
+      //   .from('profiles')
+      //   .select('id, first_name, last_name')
+      //   .eq('auth_user_id', user?.id)
+      //   .single();
+      // const userName = profileData ? `${profileData.first_name} ${profileData.last_name}` : user?.email;
 
-      const userName = profileData ? `${profileData.first_name} ${profileData.last_name}` : user?.email;
+      const profileId = profile?.id;
+      const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'System';
       
-      let description = "";
       const oldAmt = oldData?.amount;
       const newAmt = newData?.amount;
       // Використовуємо searchTerm як ім'я студента/курсу для опису
       const target = searchTerm || "Платіж";
 
-      if (action === 'INSERT') {
-        description = `Зараховано платіж: ${newAmt} UAH — ${target}`;
-      } else if (action === 'UPDATE') {
-        if (oldAmt !== newAmt) {
-          description = `Оновлено платіж: ${oldAmt} -> ${newAmt} UAH — ${target}`;
-        } else {
-          description = `Змінено деталі платежу: ${newAmt} UAH — ${target}`;
+      const getDescription = () => {
+        const format = (val: any) => `${val ?? 0} UAH`;
+        
+        switch (action) {
+          case 'INSERT':
+            return `Зараховано платіж: ${format(newAmt)} — ${target}`;
+          case 'UPDATE':
+            return oldAmt !== newAmt
+              ? `Оновлено платіж: ${format(oldAmt)} -> ${format(newAmt)} — ${target}`
+              : `Змінено деталі платежу: ${format(newAmt)} — ${target}`;
+          case 'DELETE':
+            return `Видалено платіж: ${format(oldAmt)} — ${target}`;
+          default:
+            return `${action} action on payments — ${target}`;
         }
-      } else if (action === 'DELETE') {
-        description = `Видалено платіж: ${oldAmt} UAH — ${target}`;
-      }
+      };
 
       await supabase.from('audit_logs').insert([{
         table_name: 'payments',
         record_id: recordId,
         action,
-        description,
+        description: getDescription(),
         old_data: oldData,
         new_data: newData,
-        profile_id: profileData?.id,
+        profile_id: profileId,
         user_display_name: userName
       }]);
     } catch (e) {

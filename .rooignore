@@ -1,0 +1,53 @@
+# Dependency & Build Directories
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# Version Control & Local Environment Layouts (CRITICAL SECRETS)
+.git/
+.gitignore
+.env
+.env.*
+.env.local
+
+# Supabase Temporary Storage & Functions Secrets
+supabase/.temp/
+supabase/.env
+supabase/functions/.env
+
+# Lockfiles & Manifests (High Token Cost / Low Context Value)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+components.json
+
+# Local Scripting & Diagnostic Tools (Ignore Automation Executables)
+*.bat
+dev.bat
+Push.bat
+test-db.js
+
+# Deprecated / Backup Project Code (Saves Context Windows)
+src/app/[locale]/(staff)/staff/schedulesmallold/
+src/app/[locale]/(staff)/staff/packages/new_deprecated/
+
+# Local Dumps & Generated Database Backups
+*.sql
+*.log
+*.pfx
+*.bak
+motocrm_data_*.sql
+motocrm_synced_backup_*.sql
+
+# System / IDE Bloat Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

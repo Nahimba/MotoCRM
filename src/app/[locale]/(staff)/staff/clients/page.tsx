@@ -28,7 +28,7 @@ export default function ClientsPage() {
     setLoading(true)
     try {
       let query = supabase
-        .from('client_roster_summary_view')
+        .from('client_financial_summary')
         .select('*')
         .eq('is_active', showOnlyActive)
 
@@ -37,8 +37,9 @@ export default function ClientsPage() {
         query = query.contains('instructor_ids', [user.id])
       }
 
-      const { data, error } = await query.order('name', { ascending: true })
-      
+      //const { data, error } = await query.order('name', { ascending: true })
+      const { data, error } = await query.order('created_at', { ascending: false })
+
       if (error) throw error
       setClients(data || [])
     } catch (error: any) {

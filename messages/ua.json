@@ -418,7 +418,8 @@
       "active_clients": "Активних",
       "inactive_clients": "Архівних",
       "switch_active": "Активні",
-      "switch_inactive": "Архівні"
+      "switch_inactive": "Архівні",
+      "sync_error": "Не вдалося завантажити список клієнтів"
     },
     "form": {
       "abort": "Скасувати",
