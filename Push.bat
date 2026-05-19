@@ -10,7 +10,8 @@ echo ============================================
 echo.
 
 :: Step into the project folder
-cd /d "C:\Users\zvict\Desktop\MotoCRM\Project\my-crm"
+:: cd /d "C:\Users\zvict\Desktop\MotoCRM\Project\my-crm"
+cd /d "%~dp0"
 
 echo [1/3] 🛠  Staging parts...
 git add .
