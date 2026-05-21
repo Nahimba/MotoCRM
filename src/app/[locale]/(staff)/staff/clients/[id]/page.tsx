@@ -480,10 +480,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             onClick={() => setIsIntelOpen(!isIntelOpen)} 
             className={`flex items-center justify-between cursor-pointer md:cursor-default select-none transition-all duration-200 ${isIntelOpen ? 'border-b border-white/5 pb-4' : 'border-b border-transparent pb-0 md:border-white/5 md:pb-4'}`}
           >
-            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{t("core_intel")}</h2>
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t("core_intel")}</h2>
             {/* Chevron Indicator - Visible only on mobile */}
-            <div className="md:hidden text-slate-500 transition-transform duration-200">
-              <ChevronDown size={14} className={isIntelOpen ? "rotate-180" : "rotate-0"} />
+            <div className="md:hidden text-slate-300 transition-transform duration-200">
+              <ChevronDown size={16} className={isIntelOpen ? "rotate-180" : "rotate-0"} />
             </div>
           </div>
 
