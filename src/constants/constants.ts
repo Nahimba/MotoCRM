@@ -49,13 +49,24 @@ export type PackageStatus = (typeof PACKAGE_STATUSES)[number];
 
 
 
+// export const STUDENT_STAGES = [
+//   "lead",
+//   "theory_learning",
+//   "theory_passed",
+//   "practice",
+//   "graduated",
+//   "upskilling"
+// ] as const;
+
+
 export const STUDENT_STAGES = [
   "lead",
   "theory_learning",
-  "theory_passed",
+  // "theory_passed",
   "practice",
-  "graduated",
-  "upskilling"
+  "upskilling",
+  "per_hour",
+  // "graduated"
 ] as const;
 
 export type StudentStage = (typeof STUDENT_STAGES)[number];

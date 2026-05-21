@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, Phone, Mail, MapPin, CreditCard, Clock, Bike, 
-  ShieldCheck, FileText, RotateCcw, KeyRound, Loader2, Plus
+  ShieldCheck, FileText, RotateCcw, KeyRound, Loader2, Plus, ChevronDown
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -23,6 +23,7 @@ import { toast } from "sonner"
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
   const tConst = useTranslations("Constants.gear_type")
+  const tConstSS = useTranslations("Constants.student_stages")
   const { id } = use(params)
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -37,6 +38,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const [isDocModalOpen, setIsDocModalOpen] = useState(false)
   const [docCount, setDocCount] = useState(0) // Optional: to show count in sidebar
+
+  const [isIntelOpen, setIsIntelOpen] = useState(false);
 
   const refreshData = async () => {
     const { count, error } = await supabase
@@ -342,7 +345,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-24 px-4 pt-6">
+    <div className="max-w-7xl mx-auto space-y-4 pb-24 px-2 pt-2">
       
       <Link href="/staff/clients" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors group w-fit">
         <ChevronLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
@@ -350,9 +353,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       </Link>
 
       {/* HEADER */}
-      <div className="bg-[#0a0a0a] border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-hidden shadow-2xl">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
-          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+      <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-hidden shadow-2xl">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-0 relative z-10">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
             <div className="relative shrink-0">
               <div className="w-36 h-36 md:w-48 md:h-48 bg-gradient-to-br from-zinc-800 to-black rounded-[2rem] md:rounded-[3rem] border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl">
                 {avatarPreview ? (
@@ -366,22 +369,35 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </div> */}
             </div>
 
-            <div className="text-center md:text-left">
-              <div className="space-y-0">
-                <h1 className="text-2xl md:text-3xl font-black italic uppercase text-white tracking-tighter leading-none">{profile?.first_name}</h1>
-                <h1 className="text-2xl md:text-3xl font-black italic uppercase text-primary tracking-tighter leading-none">{profile?.last_name}</h1>
+            <div className="text-center md:text-left flex-1 w-full min-w-0">
+              <div className="flex-1 w-full min-w-0">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2">
+                  <span className="text-2xl md:text-3xl font-black italic uppercase text-white tracking-tighter leading-none">{profile?.first_name}</span>
+                  <span className="text-2xl md:text-3xl font-black italic uppercase text-primary tracking-tighter leading-none">{profile?.last_name}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-center md:justify-start gap-3 mt-4 md:mt-6">
-                {/* <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">UID: {id.slice(0, 8)}</span> */}
+              {/* <span className="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-black text-slate-500 uppercase">UID: {id.slice(0, 8)}</span> */}
+              {/* {client?.is_active ? t("active_status") : "Неактивний"} */}
+              <div className="flex items-center justify-center md:justify-start gap-4 mt-4 md:mt-6">
+  
                 <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${client?.is_active ? 'text-green-500' : 'text-red-500'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${client?.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                  {client?.is_active ? t("active_status") : "Неактивний"}
+                  {client?.is_active ? tConstSS(client?.training_stage) : "Неактивний"}
                 </span>
+
+                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${tConst(client?.gear_type) ? 'text-blue-400' : 'text-orange-400'}`}>
+                  {tConst(client?.gear_type)}
+                </span>
+
+              </div>
+
+              <div className="pt-4 border-t border-white/5">
+                {/* <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p> */}
               </div>
             </div>
           </div>
 
-{/* 
+          {/* 
           <div className="flex flex-wrap gap-4">
             <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
               {t("modify")}
@@ -408,8 +424,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
           </div> */}
 
-          <div className="flex flex-wrap gap-4">
-            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-10 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
+          <div className="flex flex-wrap gap-2">
+            {/* <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
+              {t("modify")}
+            </Link> */}
+            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-2.5 px-4 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary transition-all flex items-center whitespace-nowrap">
               {t("modify")}
             </Link>
 
@@ -418,7 +437,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <button
                 onClick={() => setShowConfirmModal({ show: true, type: 'create-user' })}
                 disabled={isLinking || !profile?.email}
-                className="bg-blue-600 text-white py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="bg-blue-600 text-white py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
               >
                 {isLinking ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
                 {!profile?.email ? "Вкажіть Email" : "Активувати доступ"}
@@ -430,7 +449,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <button
                     onClick={() => setShowConfirmModal({ show: true, type: 'sync_email' })}
                     disabled={isSyncing}
-                    className="bg-amber-600/10 text-amber-500 border border-amber-500/20 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2"
+                    className="bg-amber-600/10 text-amber-500 border border-amber-500/20 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
                   >
                     {isSyncing ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
                     <span>Оновити пошту до {profile?.email}</span>
@@ -440,7 +459,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                   <button 
                     onClick={() => setShowConfirmModal({ show: true, type: 'reset_password' })}
                     disabled={isResetting} 
-                    className="bg-zinc-800 text-zinc-400 border border-white/5 py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary hover:text-black transition-all flex items-center gap-2"
+                    className="bg-zinc-800 text-zinc-400 border border-white/5 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary hover:text-black transition-all flex items-center gap-2 whitespace-nowrap"
                   >
                     {isResetting ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />}
                     <span>Скинути Пароль</span>
@@ -453,11 +472,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* LEFT: INFO */}
-        <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-8 space-y-8 relative overflow-hidden">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-4">{t("core_intel")}</h2>
-          <div className="space-y-6">
+        <div className={`bg-[#0a0a0a] border border-white/5 rounded-[1.5rem] md:rounded-[2rem] px-5 py-4 md:p-8 relative overflow-hidden transition-all duration-200 ${isIntelOpen ? 'space-y-5 md:space-y-8 pb-5' : 'space-y-0 pb-4'}`}>
+          {/* Header Toggle Wrapper */}
+          <div 
+            onClick={() => setIsIntelOpen(!isIntelOpen)} 
+            className={`flex items-center justify-between cursor-pointer md:cursor-default select-none transition-all duration-200 ${isIntelOpen ? 'border-b border-white/5 pb-4' : 'border-b border-transparent pb-0 md:border-white/5 md:pb-4'}`}
+          >
+            <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{t("core_intel")}</h2>
+            {/* Chevron Indicator - Visible only on mobile */}
+            <div className="md:hidden text-slate-500 transition-transform duration-200">
+              <ChevronDown size={14} className={isIntelOpen ? "rotate-180" : "rotate-0"} />
+            </div>
+          </div>
+
+          {/* Collapsible content space */}
+          <div className={`${isIntelOpen ? 'block pt-1' : 'hidden'} md:block space-y-5 md:space-y-6`}>
 
             {/* <div className="flex items-center justify-between group/row">
               <InfoRow 
@@ -474,20 +505,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               )}
             </div> */}
 
-            <div className="flex items-center justify-between group/row">
-              <InfoRow 
-                icon={<Phone size={14} className="text-slate-500" />} 
-                label={t("phone")} 
-                /* Форматований текст для ока */
-                value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
-                fallback="Немає номеру" 
-              />
+            <div className="flex items-center justify-between gap-3 group/row">
+              <div className="flex-1 min-w-0">
+                <InfoRow 
+                  icon={<Phone size={14} className="text-slate-500" />} 
+                  label={t("phone")} 
+                  /* Форматований текст для ока */
+                  value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
+                  fallback="Немає номеру" 
+                />
+              </div>
               
               {profile?.phone && (
                 /* Чистий номер для виклику (видаляємо все крім + та цифр) */
                 <a 
                   href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} 
-                  className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95"
+                  className="p-3 md:p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95 shrink-0"
                   title="Зателефонувати"
                 >
                   <Phone size={16} strokeWidth={2.5} />
@@ -498,12 +531,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
             <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
           </div>
-          <div className="pt-4 border-t border-white/5">
-            <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">{t("transmission")}</p>
-            <span className={`px-6 py-3 rounded-2xl text-xs font-black uppercase inline-block border ${ tConst(client?.gear_type) ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
-              { tConst(client?.gear_type)}
-            </span>
-          </div>
+
+        </div>
+        
+        <div className="bg-[#0a0a0a] border border-white/5 rounded-[1rem] p-4 space-y-2 relative overflow-hidden">
+        
 
           <button 
             onClick={() => setIsDocModalOpen(true)}
@@ -514,8 +546,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </button>
 
 
-          {/* <div className="pt-4 border-t border-white/5">
-            <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">
+          <div className="pt-4 border-t border-white/5">
+            {/* <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">
               Статус оформлення
             </p> */}
             
@@ -541,33 +573,61 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               >
                 Очистити статус (null)
               </button> */}
-            {/* </div> */}
+            </div>
           </div>
 
         </div>
-
+        
 
         {/* RIGHT: STATS & PACKAGES */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <StatCard 
-              label="Залишок часу" 
-              value={`${totalRemainingHours}H`} 
-              icon={<Clock size={18} className="text-primary" />} 
-              variant="default"
-            />
-            <StatCard 
-              label="Баланс" 
-              value={
-                totalDebt > 0 
-                  ? `-${totalDebt}` 
-                  : <span className="text-sm text-[24px]">Без боргу</span>
-              }
-              unit={totalDebt > 0 ? "₴" : ""}
-              icon={<CreditCard size={18} className={totalDebt > 0 ? "text-red-500" : "text-green-400"} />} 
-              variant={totalDebt > 0 ? "danger" : "success"}
-            />
+
+
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
+            {/* CARD 1: REMAINING HOURS */}
+            <div className="relative bg-[#0d0d0d] border border-white/5 rounded-[2rem] p-4 md:p-6 flex flex-col justify-between overflow-hidden min-w-0">
+              <div className="space-y-1">
+                <span className="text-[10px] md:text-xs font-black uppercase text-zinc-500 tracking-wider block">
+                  Залишок
+                </span>
+                <div className="pr-10 md:pr-0">
+                  <span className="text-sm md:text-2xl font-black italic uppercase text-white tracking-tighter leading-none block truncate">
+                    {totalRemainingHours}H
+                  </span>
+                </div>
+              </div>
+              <div className="absolute right-3 bottom-3 md:right-6 md:bottom-6 bg-zinc-900/50 p-2 rounded-xl border border-white/5 shrink-0 flex items-center justify-center">
+                <Clock size={14} className="text-primary md:w-[18px] md:h-[18px]" />
+              </div>
+            </div>
+
+            {/* CARD 2: BALANCE */}
+            <div className={`relative bg-[#0d0d0d] border border-white/5 rounded-[2rem] p-4 md:p-6 flex flex-col justify-between overflow-hidden min-w-0 ${totalDebt > 0 ? 'ring-1 ring-red-500/10' : ''}`}>
+              <div className="space-y-1">
+                <span className="text-[10px] md:text-xs font-black uppercase text-zinc-500 tracking-wider block">
+                  Баланс
+                </span>
+                <div className="pr-10 md:pr-0 flex items-baseline gap-0.5 truncate">
+                  {totalDebt > 0 ? (
+                    <>
+                      <span className="text-sm md:text-2xl font-black italic uppercase text-red-500 tracking-tighter leading-none truncate">
+                        -{totalDebt}
+                      </span>
+                      <span className="text-xs md:text-lg font-black text-red-500">₴</span>
+                    </>
+                  ) : (
+                    <span className="text-[10px] md:text-lg font-black tracking-tight text-green-400 uppercase">
+                      Без боргу
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="absolute right-3 bottom-3 md:right-6 md:bottom-6 bg-zinc-900/50 p-2 rounded-xl border border-white/5 shrink-0 flex items-center justify-center">
+                <CreditCard size={14} className={totalDebt > 0 ? "text-red-500 md:w-[18px] md:h-[18px]" : "text-green-400 md:w-[18px] md:h-[18px]"} />
+              </div>
+            </div>
           </div>
+
 
           <div className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-4">Контракти</h3>

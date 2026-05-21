@@ -323,9 +323,9 @@ export default function RiderForm({ initialData, id }: { initialData?: any, id?:
                 </div>
               </div>
 
-            <div className="text-center md:text-left">
+            {/* <div className="text-center md:text-left">
               <p className="text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-1">Фото</p>
-            </div>
+            </div> */}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

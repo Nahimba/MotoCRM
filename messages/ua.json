@@ -459,7 +459,7 @@
       "modify": "Змінити дані",
       "core_intel": "Основні дані",
       "phone": "Зв'язок",
-      "email": "Мережа",
+      "email": "Email",
       "address": "Адреса",
       "transmission": "Специфікація КПП",
       "rem_time": "Залишок часу",
@@ -553,7 +553,9 @@
       "theory_passed": "Здав теорію",
       "practice": "Практика",
       "graduated": "Випустився",
-      "upskilling": "Підвищує кваліфікацію"
+      "upskilling": "Накатка А",
+      "per_hour": "Погодинно"
+      
     },
     "payment": {
       "method": {
