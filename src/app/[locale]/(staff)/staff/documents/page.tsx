@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { dateUtils } from '@/lib/date-utils';
 import { 
   Search, Calendar, ExternalLink, User, 
-  ChevronRight, AlertCircle, CheckCircle2, Clock
+  ChevronRight, AlertCircle, CheckCircle2, Clock, ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 import {DocumentModal} from '@/components/staff/DocumentModal'; // Adjust path if needed
@@ -24,6 +24,9 @@ export default function AdminDocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'today'>('today');
   
+  // Collapse State tracking client IDs
+  const [collapsedClients, setCollapsedClients] = useState<Record<string, boolean>>({});
+
   // Modal States
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function AdminDocumentsPage() {
     setLoading(true);
     let query = supabase
       .from('client_documents')
-      .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name, middle_name))`)
+      .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name, middle_name, phone))`)
       .order('ready_date_est', { ascending: true });
 
     if (filter === 'today') {
@@ -67,11 +70,37 @@ export default function AdminDocumentsPage() {
     setIsDocModalOpen(true);
   };
 
+  const toggleClientCollapse = (clientId: string) => {
+    setCollapsedClients(prev => ({ ...prev, [clientId]: !prev[clientId] }));
+  };
+
   const filteredDocs = docs.filter(doc => {
     const name = `${doc.clients?.profiles?.first_name || ''} ${doc.clients?.profiles?.last_name || ''}`.toLowerCase();
+    const phone = (doc.clients?.profiles?.phone || '').toLowerCase();
     const search = searchTerm.toLowerCase();
-    return doc.title?.toLowerCase().includes(search) || name.includes(search);
+    
+    return (
+      doc.title?.toLowerCase().includes(search) || 
+      name.includes(search) ||
+      phone.includes(search)
+    );
   });
+
+  // Grouping logic
+  const groupedClients: Record<string, { client_id: string; profile: any; documents: any[] }> = {};
+  filteredDocs.forEach(doc => {
+    const clientId = doc.client_id || 'unknown';
+    if (!groupedClients[clientId]) {
+      groupedClients[clientId] = {
+        client_id: clientId,
+        profile: doc.clients?.profiles,
+        documents: []
+      };
+    }
+    groupedClients[clientId].documents.push(doc);
+  });
+
+  const clientGroups = Object.values(groupedClients);
 
   return (
     <div className="min-h-screen bg-black text-white p-3 sm:p-8 pb-32">
@@ -114,60 +143,94 @@ export default function AdminDocumentsPage() {
       <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="py-20 text-center animate-pulse text-slate-600 uppercase font-black text-[10px] tracking-widest">Завантаження...</div>
-        ) : filteredDocs.length === 0 ? (
+        ) : clientGroups.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-white/5 rounded-[2rem] opacity-20">
             <p className="font-black uppercase text-[10px]">Порожньо</p>
           </div>
         ) : (
-          <div className="grid gap-2">
-            {filteredDocs.map((doc) => {
-              const status = statusStyles[doc.status] || statusStyles.pending_collection;
-              //const isOverdue = doc.ready_date_est < today && doc.status !== 'completed' && doc.status !== 'not_needed';
-              //const isDone = doc.status === 'completed' || doc.status === 'not_needed';
-              const isOverdue = doc.ready_date_est < today && doc.status !== 'completed';
-              const isDone = doc.status === 'completed';
-              const profile = doc.clients?.profiles;
+          <div className="space-y-4">
+            {clientGroups.map((group) => {
+              const isCollapsed = !!collapsedClients[group.client_id];
+              const profile = group.profile;
 
               return (
-                <div 
-                  key={doc.id} 
-                  className={`group relative overflow-hidden bg-[#0a0a0a] border ${isOverdue ? 'border-red-900/30' : 'border-white/5'} ${isDone ? 'opacity-60' : ''} p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="min-w-0">
-                      <h3 className="font-black italic uppercase text-sm truncate pr-4">{doc.title || 'Документ'}</h3>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                        <Link href={`/staff/clients/${doc.client_id}`} className="flex items-center gap-1.2 text-[10px] font-bold text-slate-400 hover:text-primary whitespace-nowrap">
-                          <User size={10} /> {profile ? `${profile.first_name} ${profile.last_name}` : 'Гість'}
-                        </Link>
-                        <div className={`flex items-center gap-1 text-[10px] font-bold ${isOverdue ? 'text-red-500/80' : 'text-slate-500'}`}>
-                          <Calendar size={10} /> {doc.ready_date_est ? dateUtils.toDisplay(doc.ready_date_est, 'dd.MM.yy') : '--.--'}
-                        </div>
-                      </div>
+                <div key={group.client_id} className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden">
+                  
+                  {/* CLIENT GROUP HEADER TOGGLE */}
+                  <div 
+                    onClick={() => toggleClientCollapse(group.client_id)}
+                    className="flex items-center justify-between p-4 sm:p-5 bg-white/[0.02] border-b border-white/5 cursor-pointer select-none active:bg-white/[0.04] transition-all"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <User size={14} className="text-primary shrink-0" />
+                      <h2 className="font-black italic uppercase text-sm sm:text-base tracking-tight truncate">
+                        {profile ? `${profile.first_name} ${profile.last_name}` : 'Гість'}
+                      </h2>
+                      <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-[9px] font-black text-slate-400">
+                        {group.documents.length}
+                      </span>
                     </div>
+                    {/* {group.client_id !== 'unknown' && (
+                      <Link 
+                        href={`/staff/clients/${group.client_id}`} 
+                        onClick={(e) => e.stopPropagation()} 
+                        className="ml-auto mr-4 text-[10px] font-black uppercase text-slate-500 hover:text-primary transition-all tracking-wider hidden sm:block"
+                      >
+                        Профіль
+                      </Link>
+                    )} */}
+                    <ChevronDown size={16} className={`text-slate-500 transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-180'}`} />
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 border-t sm:border-none border-white/5 pt-3 sm:pt-0">
-                    <div className={`flex items-center gap-1.5 ${status.color}`}>
-                      <status.icon size={12} />
-                      <span className="text-[9px] font-black uppercase tracking-wider">{status.label}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5">
-                      {doc.url && (
-                        <a href={doc.url} target="_blank" rel="noreferrer" className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
-                      {/* Action Button: Opens Modal */}
-                      <button 
-                        onClick={() => handleOpenModal(doc)}
-                        className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-primary transition-all active:scale-90"
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
+                  {/* DOCUMENT LIST SPACE */}
+                  <div className={`p-4 sm:p-5 space-y-2 ${isCollapsed ? 'hidden' : 'block'}`}>
+                    {group.documents.map((doc) => {
+                      const status = statusStyles[doc.status] || statusStyles.pending_collection;
+                      const isOverdue = doc.ready_date_est < today && doc.status !== 'completed';
+                      const isDone = doc.status === 'completed';
+
+                      return (
+                        <div 
+                          key={doc.id} 
+                          className={`group relative overflow-hidden bg-black/40 border ${isOverdue ? 'border-red-900/30' : 'border-white/5'} ${isDone ? 'opacity-60' : ''} p-4 rounded-xl hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
+                        >
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="min-w-0">
+                              <h3 className="font-black italic uppercase text-xs sm:text-sm truncate pr-4">{doc.title || 'Документ'}</h3>
+                              <div className="flex items-center gap-3 mt-1">
+                                <div className={`flex items-center gap-1 text-[10px] font-bold ${isOverdue ? 'text-red-500/80' : 'text-slate-500'}`}>
+                                  <Calendar size={10} /> {doc.ready_date_est ? dateUtils.toDisplay(doc.ready_date_est, 'dd.MM.yy') : '--.--'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 border-t sm:border-none border-white/5 pt-3 sm:pt-0">
+                            <div className={`flex items-center gap-1.5 ${status.color}`}>
+                              <status.icon size={12} />
+                              <span className="text-[9px] font-black uppercase tracking-wider">{status.label}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5">
+                              {doc.url && (
+                                <a href={doc.url} target="_blank" rel="noreferrer" className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all">
+                                  <ExternalLink size={14} />
+                                </a>
+                              )}
+                              {/* Action Button: Opens Modal */}
+                              <button 
+                                onClick={() => handleOpenModal(doc)}
+                                className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-primary transition-all active:scale-90"
+                              >
+                                <ChevronRight size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+
                 </div>
               );
             })}
@@ -196,11 +259,9 @@ export default function AdminDocumentsPage() {
   );
 }
 
-
-
 // 'use client';
 
-// import React, { useEffect, useState } from 'react';
+// import { useEffect, useState } from 'react';
 // import { supabase } from '@/lib/supabase';
 // import { dateUtils } from '@/lib/date-utils';
 // import { 
@@ -208,13 +269,14 @@ export default function AdminDocumentsPage() {
 //   ChevronRight, AlertCircle, CheckCircle2, Clock
 // } from 'lucide-react';
 // import Link from 'next/link';
+// import {DocumentModal} from '@/components/staff/DocumentModal'; // Adjust path if needed
 
 // const statusStyles: Record<string, { color: string, icon: any, label: string, weight: number }> = {
 //   pending_collection: { color: 'text-amber-500', icon: Clock, label: 'Очікується', weight: 1 },
 //   submitted: { color: 'text-primary', icon: AlertCircle, label: 'Подано', weight: 2 },
 //   ready: { color: 'text-green-500', icon: CheckCircle2, label: 'Готово', weight: 3 },
 //   completed: { color: 'text-slate-500', icon: CheckCircle2, label: 'Видано', weight: 10 },
-//   not_needed: { color: 'text-slate-600', icon: Clock, label: 'Не потрібно', weight: 11 },
+//   // not_needed: { color: 'text-slate-600', icon: Clock, label: 'Не потрібно', weight: 11 },
 // };
 
 // export default function AdminDocumentsPage() {
@@ -222,6 +284,12 @@ export default function AdminDocumentsPage() {
 //   const [loading, setLoading] = useState(true);
 //   const [searchTerm, setSearchTerm] = useState('');
 //   const [filter, setFilter] = useState<'all' | 'today'>('today');
+  
+//   // Modal States
+//   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+//   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+//   const [selectedDoc, setSelectedDoc] = useState<any>(null);
+
 //   const today = dateUtils.getKyivToday();
 
 //   useEffect(() => { fetchGlobalDocuments(); }, [filter]);
@@ -230,19 +298,19 @@ export default function AdminDocumentsPage() {
 //     setLoading(true);
 //     let query = supabase
 //       .from('client_documents')
-//       .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name))`)
+//       .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name, middle_name, phone))`)
 //       .order('ready_date_est', { ascending: true });
 
 //     if (filter === 'today') {
 //       query = query
 //         .lte('ready_date_est', today)
-//         .not('status', 'in', '("completed","not_needed")');
+//         // .not('status', 'in', '("completed", "not_needed")');
+//         .neq('status', 'completed');
 //     }
 
 //     const { data, error } = await query;
     
 //     if (!error && data) {
-//       // Sort: Priority by status weight (Completed at the end), then by date
 //       const sorted = [...data].sort((a, b) => {
 //         const weightA = statusStyles[a.status]?.weight || 5;
 //         const weightB = statusStyles[b.status]?.weight || 5;
@@ -254,12 +322,29 @@ export default function AdminDocumentsPage() {
 //     setLoading(false);
 //   }
 
-//   const filteredDocs = docs.filter(doc => {
-//     const name = `${doc.clients?.profiles?.first_name || ''} ${doc.clients?.profiles?.last_name || ''}`.toLowerCase();
-//     const search = searchTerm.toLowerCase();
-//     return doc.title?.toLowerCase().includes(search) || name.includes(search);
-//   });
+//   const handleOpenModal = (doc: any) => {
+//     setSelectedDoc(doc);
+//     setSelectedClientId(doc.client_id);
+//     setIsDocModalOpen(true);
+//   };
+
+  // const filteredDocs = docs.filter(doc => {
+  //   const name = `${doc.clients?.profiles?.first_name || ''} ${doc.clients?.profiles?.last_name || ''}`.toLowerCase();
+  //   const search = searchTerm.toLowerCase();
+  //   return doc.title?.toLowerCase().includes(search) || name.includes(search);
+  // });
+
+// const filteredDocs = docs.filter(doc => {
+//   const name = `${doc.clients?.profiles?.first_name || ''} ${doc.clients?.profiles?.last_name || ''}`.toLowerCase();
+//   const phone = (doc.clients?.profiles?.phone || '').toLowerCase();
+//   const search = searchTerm.toLowerCase();
   
+//   return (
+//     doc.title?.toLowerCase().includes(search) || 
+//     name.includes(search) ||
+//     phone.includes(search)
+//   );
+// });
 
 //   return (
 //     <div className="min-h-screen bg-black text-white p-3 sm:p-8 pb-32">
@@ -267,7 +352,6 @@ export default function AdminDocumentsPage() {
 //         <div className="flex flex-col gap-6 md:flex-row md:items-center justify-between">
 //           <div>
 //             <div className="flex items-center gap-3 mb-1">
-//               {/* <div className="p-2 bg-primary/10 rounded-lg text-primary"><Dock size={20} /></div> */}
 //               <h1 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter">Реєстр <span className="text-primary">Документів</span></h1>
 //             </div>
 //             <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em]">
@@ -305,15 +389,16 @@ export default function AdminDocumentsPage() {
 //           <div className="py-20 text-center animate-pulse text-slate-600 uppercase font-black text-[10px] tracking-widest">Завантаження...</div>
 //         ) : filteredDocs.length === 0 ? (
 //           <div className="py-20 text-center border border-dashed border-white/5 rounded-[2rem] opacity-20">
-//             {/* <Dock size={40} className="mx-auto mb-3" /> */}
 //             <p className="font-black uppercase text-[10px]">Порожньо</p>
 //           </div>
 //         ) : (
 //           <div className="grid gap-2">
 //             {filteredDocs.map((doc) => {
 //               const status = statusStyles[doc.status] || statusStyles.pending_collection;
-//               const isOverdue = doc.ready_date_est < today && doc.status !== 'completed' && doc.status !== 'not_needed';
-//               const isDone = doc.status === 'completed' || doc.status === 'not_needed';
+//               //const isOverdue = doc.ready_date_est < today && doc.status !== 'completed' && doc.status !== 'not_needed';
+//               //const isDone = doc.status === 'completed' || doc.status === 'not_needed';
+//               const isOverdue = doc.ready_date_est < today && doc.status !== 'completed';
+//               const isDone = doc.status === 'completed';
 //               const profile = doc.clients?.profiles;
 
 //               return (
@@ -322,9 +407,6 @@ export default function AdminDocumentsPage() {
 //                   className={`group relative overflow-hidden bg-[#0a0a0a] border ${isOverdue ? 'border-red-900/30' : 'border-white/5'} ${isDone ? 'opacity-60' : ''} p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] hover:border-white/10 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4`}
 //                 >
 //                   <div className="flex items-center gap-4">
-//                     {/* <div className={`shrink-0 p-3 rounded-xl ${isOverdue ? 'bg-red-500/10 text-red-500' : isDone ? 'bg-white/5 text-slate-600' : 'bg-primary/10 text-primary'}`}>
-//                       <Dock size={18} />
-//                     </div> */}
 //                     <div className="min-w-0">
 //                       <h3 className="font-black italic uppercase text-sm truncate pr-4">{doc.title || 'Документ'}</h3>
 //                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
@@ -350,9 +432,13 @@ export default function AdminDocumentsPage() {
 //                           <ExternalLink size={14} />
 //                         </a>
 //                       )}
-//                       <Link href={`/staff/clients/${doc.client_id}?tab=documents`} className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-primary transition-all">
+//                       {/* Action Button: Opens Modal */}
+//                       <button 
+//                         onClick={() => handleOpenModal(doc)}
+//                         className="p-2.5 bg-white/5 rounded-lg text-slate-500 hover:text-primary transition-all active:scale-90"
+//                       >
 //                         <ChevronRight size={14} />
-//                       </Link>
+//                       </button>
 //                     </div>
 //                   </div>
 //                 </div>
@@ -361,6 +447,24 @@ export default function AdminDocumentsPage() {
 //           </div>
 //         )}
 //       </div>
+
+//       {/* DOCUMENT MODAL */}
+//       {selectedClientId && (
+//         <DocumentModal  
+//           clientId={selectedClientId}
+//           first_name={selectedDoc?.clients?.profiles?.first_name || ""}
+//           middle_name={selectedDoc?.clients?.profiles?.middle_name || ""}
+//           last_name={selectedDoc?.clients?.profiles?.last_name || ""}
+//           doc={selectedDoc}
+//           isOpen={isDocModalOpen} 
+//           onClose={() => {
+//             setIsDocModalOpen(false);
+//             setSelectedDoc(null);
+//             setSelectedClientId(null);
+//           }} 
+//           onUpdate={fetchGlobalDocuments}
+//         />
+//       )}
 //     </div>
 //   );
 // }

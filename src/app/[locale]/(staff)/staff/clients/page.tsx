@@ -57,8 +57,24 @@ export default function ClientsPage() {
   const filteredClients = clients.filter(c => {
     const fullName = `${c.name || ''} ${c.last_name || ''}`.toLowerCase()
     const search = searchTerm.toLowerCase()
-    return fullName.includes(search) || (c.phone && c.phone.includes(search))
+    
+    // Normalize string by stripping non-numeric digits for precise phone matching
+    const cleanSearch = search.replace(/\D/g, '')
+    const cleanPhone = (c.phone || '').replace(/\D/g, '')
+
+    return (
+      fullName.includes(search) || 
+      (cleanSearch && cleanPhone.includes(cleanSearch)) ||
+      (c.phone && c.phone.toLowerCase().includes(search))
+    )
   })
+
+  // const filteredClients = clients.filter(c => {
+  //   const fullName = `${c.name || ''} ${c.last_name || ''}`.toLowerCase()
+  //   const search = searchTerm.toLowerCase()
+  //   return fullName.includes(search) || (c.phone && c.phone.includes(search))
+  // })
+
 
   // return (
   //   <div className="max-w-7xl mx-auto px-4 pb-32">
