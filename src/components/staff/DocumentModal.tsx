@@ -18,7 +18,8 @@ interface DocumentModalProps {
 
 const statusTranslations: Record<string, string> = {
   pending_collection: "Очікую",
-  submitted: "Подано",
+  submitted: "Подано на теорию",
+  submitted2: "Подано на практику",
   ready: "Готово",
   //completed: "Видано",
 }
@@ -154,6 +155,14 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   const studentFullName = useMemo(() => {
     return `${last_name} ${first_name} ${middle_name}`.trim() || "Керування файлами"
   }, [first_name, middle_name, last_name])
+
+  // Локальний стан для перевірки наявності тексту в інпуті
+  const [urlValue, setUrlValue] = useState(doc?.url || editingDoc?.url || '');
+  
+  // Синхронізація стану при зміні обраного документа
+  useEffect(() => {
+    setUrlValue(doc?.url || editingDoc?.url || '');
+  }, [doc?.url, editingDoc?.url]);
 
   // useEffect(() => {
   //   if (isOpen) {
@@ -373,9 +382,13 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                           <Pencil size={14}/>
                         </button>
                         {d.url && (
-                          <a href={d.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl text-slate-400 active:text-primary transition-colors">
+                          <button 
+                            onClick={() => window.open(d.url, '_blank', 'noopener,noreferrer')}
+                            className="p-3 bg-white/5 rounded-xl text-slate-400 hover:text-primary active:text-primary transition-colors"
+                            title="Відкрити посилання"
+                          >
                             <ExternalLink size={14}/>
-                          </a>
+                          </button>
                         )}
                         <button 
                           onClick={() => handleDelete(d.id)} 
@@ -536,11 +549,40 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                   </select>
                 </div>
                 
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Посилання</label>
                   <div className="relative">
                     <LinkIcon size={12} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                     <input name="url" type="url" defaultValue={editingDoc?.url || ''} placeholder="Google Drive URL..." className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
+                  </div>
+                </div> */}
+
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Посилання</label>
+                  <div className="relative flex items-center">
+                    <LinkIcon size={12} className="absolute left-4 text-slate-500 pointer-events-none" />
+                    
+                    <input 
+                      name="url" 
+                      type="url" 
+                      value={urlValue}
+                      onChange={(e) => setUrlValue(e.target.value)}
+                      placeholder="Google Drive URL..." 
+                      className="w-full bg-black border border-white/10 rounded-xl pl-10 pr-12 py-3 text-xs font-bold text-white focus:border-primary outline-none" 
+                    />
+
+                    {/* Кнопка переходу: показується лише якщо urlValue не порожній */}
+                    {urlValue && (
+                      <a 
+                        href={urlValue} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="absolute right-3 p-2 text-slate-400 hover:text-primary active:scale-95 bg-white/5 hover:bg-white/10 rounded-lg transition-all"
+                        title="Відкрити посилання"
+                      >
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
                   </div>
                 </div>
 

@@ -373,6 +373,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     });
   };
 
+  // 1. Отримуємо відрендерені лінки
+  const links = profile?.social_link ? renderLinks(profile.social_link) : null;
+  
+  // 2. Перевіряємо, чи масив лінків не порожній (якщо renderLinks повертає масив елементів)
+  const hasLinks = Array.isArray(links) ? links.length > 0 : !!links;
+  
+
   return (
     <div className="max-w-7xl mx-auto space-y-4 pb-24 px-2 pt-2">
       
@@ -567,15 +574,15 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               fallback="N/A" 
             />
             <InfoRow 
-              icon={<Globe size={14}/>} 
-              label="Соціальні мережі" 
-              value={profile?.social_link ? (
-                <div className="flex flex-wrap gap-2">
-                  {renderLinks(profile.social_link)}
-                </div>
-              ) : null} 
-              fallback="N/A" 
-            />
+                  icon={<Globe size={14}/>} 
+                  label="Соціальні мережі" 
+                  value={hasLinks ? (
+                    <div className="flex flex-wrap gap-2 pt-0.5 normal-case">
+                      {links}
+                    </div>
+                  ) : null} 
+                  fallback="N/A" 
+                />
           
           </div>
 
