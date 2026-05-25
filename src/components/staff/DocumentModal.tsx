@@ -124,6 +124,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   const [mobileTab, setMobileTab] = useState<'list' | 'form'>('list')
 
   const [docTitle, setDocTitle] = useState("");
+  const [bloodType, setBloodType] = useState("");
   const [passportType, setPassportType] = useState<"old" | "id">("old");
   const [checklist, setChecklist] = useState<ChecklistState>({
     has_passport_old: null,
@@ -174,6 +175,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       
       if (currentDoc) {
         setDocTitle(currentDoc.title || "");
+        setBloodType(currentDoc.blood_type || "");
         setPassportType(currentDoc.has_id_card === true || currentDoc.has_address_extract === true ? "id" : "old");
         setChecklist({
           has_passport_old: currentDoc.has_passport_old ?? null,
@@ -187,6 +189,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       } else {
         // Reset to initial clean state setup
         setDocTitle("");
+        setBloodType("");
         setPassportType("old");
         setChecklist({
           has_passport_old: null,
@@ -222,6 +225,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
     const payload = {
       client_id: clientId,
       title: docTitle,
+      blood_type: bloodType || null,
       status: formData.get('status'),
       url: formData.get('url') || null,
       submission_date: rawSubDate || null,
@@ -357,6 +361,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                            <span className={`w-1.5 h-1.5 rounded-full ${(d.status === 'ready' || d.status === 'completed' ) ? 'bg-green-500' : 'bg-primary'}`} />
                            <p className="text-[9px] font-black text-slate-500 uppercase">
                              {statusTranslations[d.status] || d.status}
+                             {d.blood_type && ` • Гр. крові: ${d.blood_type}`}
                            </p>
                         </div>
                       </div>
@@ -494,11 +499,6 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       </div>
     </div>
   )}
-
-  {/* Hidden forms transmission fields */}
-  {Object.entries(checklist).map(([key, val]) => (
-    <input key={key} type="hidden" name={key} value={val === null ? "" : String(val)} />
-  ))}
 </div>
                 
                 <div className="space-y-1">
@@ -510,6 +510,32 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                   </select>
                 </div>
 
+
+                {/* Поле: Група Крові (Необов'язкове) */}
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-500 uppercase ml-2 tracking-wider">
+                    Група крові <span className="text-slate-600 font-medium">(необов'язково)</span>
+                  </label>
+                  <p className="text-[10px] font-bold text-rose-500/80 leading-relaxed px-2 pt-1 tracking-wide">
+                    * Може бути помилковим! Необхідно перевіряти у мед. довідці!
+                  </p>
+                  <select 
+                    value={bloodType} 
+                    onChange={(e) => setBloodType(e.target.value)}
+                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none appearance-none"
+                  >
+                    <option value="">Не вказано</option>
+                    <option value="I(O) Rh+">I(O) Rh+</option>
+                    <option value="I(O) Rh-">I(O) Rh-</option>
+                    <option value="II(A) Rh+">II(A) Rh+</option>
+                    <option value="II(A) Rh-">II(A) Rh-</option>
+                    <option value="III(B) Rh+">III(B) Rh+</option>
+                    <option value="III(B) Rh-">III(B) Rh-</option>
+                    <option value="IV(AB) Rh+">IV(AB) Rh+</option>
+                    <option value="IV(AB) Rh-">IV(AB) Rh-</option>
+                  </select>
+                </div>
+                
                 <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Посилання</label>
                   <div className="relative">
