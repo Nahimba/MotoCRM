@@ -7,7 +7,6 @@ import {
   Search, Calendar, ExternalLink, User, 
   ChevronRight, AlertCircle, CheckCircle2, Clock, ChevronDown
 } from 'lucide-react';
-import Link from 'next/link';
 import {DocumentModal} from '@/components/staff/DocumentModal'; // Adjust path if needed
 
 const statusStyles: Record<string, { color: string, icon: any, label: string, weight: number }> = {

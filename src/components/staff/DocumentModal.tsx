@@ -23,28 +23,183 @@ const statusTranslations: Record<string, string> = {
   completed: "Видано",
 }
 
+export const CHECKLIST_ITEMS = [
+  {
+    key: "has_passport_old",
+    label: "Фото/копії Паспорту",
+    desc: "1, 2 сторінка та прописка",
+    group: "passport_old"
+  },
+  {
+    key: "has_tax_code",
+    label: "Ідентифікаційний код",
+    group: "passport_old"
+  },
+  {
+    key: "has_id_card",
+    label: "Фото/копії ID card",
+    desc: "фото з обох сторін",
+    group: "id_card"
+  },
+  {
+    key: "has_address_extract",
+    label: "Витяг з пропискою",
+    group: "id_card"
+  },
+  {
+    key: "has_existing_license",
+    label: "Права",
+    desc: "якщо є",
+    group: "common"
+  },
+  {
+    key: "has_medical",
+    label: "Мед довідка 083",
+    group: "common"
+  }
+] as const;
+
+type ChecklistState = {
+  has_passport_old: boolean | null;
+  has_id_card: boolean | null;
+  has_tax_code: boolean | null;
+  has_address_extract: boolean | null;
+  has_existing_license: boolean | null;
+  has_medical: boolean | null;
+}
+
+
+function ChecklistRow({ label, desc, value, onChange }: { 
+  label: string; 
+  desc?: string;
+  value: boolean | null; 
+  onChange: (status: boolean | null) => void 
+}) {
+  return (
+    <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-white/[0.01] border border-white/5 transition-all">
+      {/* Line 1: Label & Description inline */}
+      <div className="flex items-baseline flex-wrap gap-1.5 min-w-0">
+        <span className="text-xs text-slate-300 font-bold tracking-wide">
+          {label}
+        </span>
+        {desc && (
+          <span className="text-[10px] text-slate-500 font-medium shrink-0">
+            ({desc})
+          </span>
+        )}
+      </div>
+      
+      {/* Line 2: Full-Width Button Group Control Wrapper */}
+      <div className="flex gap-1 bg-black border border-white/5 p-0.5 rounded-lg w-full">
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className={`flex-1 px-2 py-2 rounded-md text-[9px] font-black uppercase tracking-wider transition-all text-center ${value === null ? 'bg-amber-500/15 text-amber-400' : 'text-slate-600'}`}
+        >
+          Очікується
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          className={`flex-1 px-2 py-2 rounded-md text-[9px] font-black uppercase tracking-wider transition-all text-center ${value === true ? 'bg-emerald-500/15 text-emerald-400' : 'text-slate-600'}`}
+        >
+          Надано
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          className={`flex-1 px-2 py-2 rounded-md text-[9px] font-black uppercase tracking-wider transition-all text-center ${value === false ? 'bg-zinc-800 text-zinc-400' : 'text-slate-600'}`}
+        >
+          Не треба
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function DocumentModal({ clientId, first_name, middle_name, last_name, isOpen, onClose, onUpdate, doc }: DocumentModalProps) {
   const [documents, setDocuments] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
   const [mobileTab, setMobileTab] = useState<'list' | 'form'>('list')
 
+  const [docTitle, setDocTitle] = useState("");
+  const [passportType, setPassportType] = useState<"old" | "id">("old");
+  const [checklist, setChecklist] = useState<ChecklistState>({
+    has_passport_old: null,
+    has_id_card: null,
+    has_tax_code: null,
+    has_address_extract: null,
+    has_existing_license: null,
+    has_medical: null,
+  });
+  
+  // const [docTitle, setDocTitle] = useState(editingDoc?.title || "");
+  // // Track the active UI identity route ('old' or 'id')
+  // const [passportType, setPassportType] = useState<"old" | "id">(
+  //   editingDoc?.has_id_card === true || editingDoc?.has_address_extract === true ? "id" : "old"
+  // );
+  
+  // const [checklist, setChecklist] = useState({
+  //   has_passport_old: editingDoc?.has_passport_old ?? null,
+  //   has_id_card: editingDoc?.has_id_card ?? null,
+  //   has_tax_code: editingDoc?.has_tax_code ?? null,
+  //   has_address_extract: editingDoc?.has_address_extract ?? null,
+  //   has_existing_license: editingDoc?.has_existing_license ?? null,
+  //   has_medical: editingDoc?.has_medical ?? null,
+  // });
+  
+
   const studentFullName = useMemo(() => {
     return `${last_name} ${first_name} ${middle_name}`.trim() || "Керування файлами"
   }, [first_name, middle_name, last_name])
 
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     fetchDocuments()
+  //     if (doc) {
+  //       setEditingDoc(doc)
+  //       setMobileTab('form')
+  //     } else {
+  //       setEditingDoc(null)
+  //       setMobileTab('list')
+  //     }
+  //   }
+  // }, [isOpen, clientId, doc])
+
   useEffect(() => {
     if (isOpen) {
       fetchDocuments()
-      if (doc) {
-        setEditingDoc(doc)
-        setMobileTab('form')
+      const currentDoc = doc || editingDoc;
+      
+      if (currentDoc) {
+        setDocTitle(currentDoc.title || "");
+        setPassportType(currentDoc.has_id_card === true || currentDoc.has_address_extract === true ? "id" : "old");
+        setChecklist({
+          has_passport_old: currentDoc.has_passport_old ?? null,
+          has_id_card: currentDoc.has_id_card ?? null,
+          has_tax_code: currentDoc.has_tax_code ?? null,
+          has_address_extract: currentDoc.has_address_extract ?? null,
+          has_existing_license: currentDoc.has_existing_license ?? null,
+          has_medical: currentDoc.has_medical ?? null,
+        });
+        if (doc) setMobileTab('form');
       } else {
-        setEditingDoc(null)
-        setMobileTab('list')
+        // Reset to initial clean state setup
+        setDocTitle("");
+        setPassportType("old");
+        setChecklist({
+          has_passport_old: null,
+          has_id_card: null,
+          has_tax_code: null,
+          has_address_extract: null,
+          has_existing_license: null,
+          has_medical: null,
+        });
+        setMobileTab('list');
       }
     }
-  }, [isOpen, clientId, doc])
+  }, [isOpen, clientId, doc, editingDoc?.id])
 
   async function fetchDocuments() {
     const { data } = await supabase
@@ -57,25 +212,28 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const form = e.currentTarget
     setIsUploading(true)
-    const formData = new FormData(form)
+    const formData = new FormData(e.currentTarget)
     
     const rawSubDate = formData.get('submission_date') as string
     const rawReadyDate = formData.get('ready_date_est') as string
 
+    // Directly integrate React state instead of unreliable inner HTML text form interpretations
     const payload = {
       client_id: clientId,
-      title: formData.get('title'),
+      title: docTitle,
       status: formData.get('status'),
-      url: formData.get('url'),
+      url: formData.get('url') || null,
       submission_date: rawSubDate || null,
       ready_date_est: rawReadyDate || null,
+      ...checklist
     }
 
     let error;
-    if (editingDoc?.id) {
-      const result = await supabase.from('client_documents').update(payload).eq('id', editingDoc.id)
+    const activeId = doc?.id || editingDoc?.id;
+
+    if (activeId) {
+      const result = await supabase.from('client_documents').update(payload).eq('id', activeId)
       error = result.error
     } else {
       const result = await supabase.from('client_documents').insert(payload)
@@ -83,7 +241,6 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
     }
 
     if (!error) {
-      form.reset()
       setEditingDoc(null)
       fetchDocuments()
       onUpdate()
@@ -93,6 +250,8 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       } else {
         setMobileTab('list')
       }
+    } else {
+      console.error("Помилка збереження документа:", error.message)
     }
     setIsUploading(false)
   }
@@ -107,10 +266,36 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
     }
   }
 
+  const handleToggle = (key: keyof typeof checklist, status: boolean | null) => {
+    setChecklist(prev => ({ ...prev, [key]: status }));
+  };
+  
+  // When the user swaps the top type switch, configure the alternate data rows automatically
+  const handleTypeChange = (type: "old" | "id") => {
+    setPassportType(type);
+    setChecklist(prev => {
+      const updated = { ...prev };
+      if (type === "old") {
+        updated.has_id_card = false;
+        updated.has_address_extract = false;
+        // Reset passport fields to default evaluation status if they were hard disabled
+        if (updated.has_passport_old === false) updated.has_passport_old = null;
+        if (updated.has_tax_code === false) updated.has_tax_code = null;
+      } else {
+        updated.has_passport_old = false;
+        updated.has_tax_code = false;
+        if (updated.has_id_card === false) updated.has_id_card = null;
+        if (updated.has_address_extract === false) updated.has_address_extract = null;
+      }
+      return updated;
+    });
+  };
+
+
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl sm:p-4 overflow-hidden">
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/95 backdrop-blur-xl sm:p-4 overflow-hidden">
       <div className="bg-[#0a0a0a] border-white/10 w-full max-w-4xl h-full sm:h-auto sm:max-h-[90vh] sm:rounded-[3rem] sm:border relative shadow-2xl flex flex-col overflow-hidden mx-auto">
         
         {/* Header */}
@@ -217,10 +402,104 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
               </div>
 
               <form key={editingDoc?.id || 'new'} onSubmit={handleSubmit} className="space-y-4 bg-white/5 p-5 sm:p-6 rounded-[2rem] border border-white/5">
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Назва</label>
                   <input name="title" defaultValue={editingDoc?.title || ''} placeholder="Назва Документа" required className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none" />
-                </div>
+                </div> */}
+
+<div className="space-y-4 max-w-full">
+  {/* Package Target Picker */}
+  <div className="space-y-1">
+    <label className="text-[8px] font-black text-slate-500 uppercase ml-2 tracking-wider">Назва Пакету</label>
+    <select 
+      name="title" 
+      value={docTitle}
+      onChange={(e) => setDocTitle(e.target.value)}
+      required 
+      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none"
+    >
+      <option value="" disabled hidden>Оберіть Назву Пакету</option>
+      <option value="Права А">Права А</option>
+      <option value="Права Б">Права Б</option>
+    </select>
+  </div>
+
+  {/* Checklist Manifest Section */}
+  {docTitle && (
+    <div className="space-y-4 bg-white/[0.02] p-3 sm:p-4 rounded-2xl border border-white/5">
+      
+      {/* Mobile-Friendly Custom Segmented Select Box Control */}
+      <div className="space-y-1.5">
+        <label className="text-[8px] font-black text-slate-500 uppercase ml-1 tracking-wider">Тип Посвідчення Особи</label>
+        <div className="grid grid-cols-2 gap-1 bg-black p-1 rounded-xl border border-white/5">
+          <button
+            type="button"
+            onClick={() => handleTypeChange("old")}
+            className={`py-2.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all ${passportType === "old" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : "text-slate-500 hover:text-slate-300 border border-transparent"}`}
+          >
+            Паспорт
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTypeChange("id")}
+            className={`py-2.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all ${passportType === "id" ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "text-slate-500 hover:text-slate-300 border border-transparent"}`}
+          >
+            ID Картка
+          </button>
+        </div>
+      </div>
+
+      <div className="pt-2 space-y-3">
+        {/* Conditional Group Rendering based on selection */}
+        {passportType === "old" ? (
+          <div className="space-y-2 anim-fade-in">
+            {CHECKLIST_ITEMS.filter(i => i.group === "passport_old").map(item => (
+              <ChecklistRow 
+                key={item.key} 
+                label={item.label} 
+                desc={"desc" in item ? item.desc : undefined}
+                value={checklist[item.key]} 
+                onChange={(status) => handleToggle(item.key, status)} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2 anim-fade-in">
+            {CHECKLIST_ITEMS.filter(i => i.group === "id_card").map(item => (
+              <ChecklistRow 
+                key={item.key} 
+                label={item.label} 
+                desc={"desc" in item ? item.desc : undefined}
+                value={checklist[item.key]} 
+                onChange={(status) => handleToggle(item.key, status)} 
+              />
+            ))}
+          </div>
+        )}
+
+        <hr className="border-white/5 my-1" />
+
+        {/* Shared Prerequisites */}
+        <div className="space-y-2">
+          {CHECKLIST_ITEMS.filter(i => i.group === "common").map(item => (
+            <ChecklistRow 
+              key={item.key} 
+              label={item.label} 
+              desc={"desc" in item ? item.desc : undefined}
+              value={checklist[item.key]} 
+              onChange={(status) => handleToggle(item.key, status)} 
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Hidden forms transmission fields */}
+  {Object.entries(checklist).map(([key, val]) => (
+    <input key={key} type="hidden" name={key} value={val === null ? "" : String(val)} />
+  ))}
+</div>
                 
                 <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Статус</label>
