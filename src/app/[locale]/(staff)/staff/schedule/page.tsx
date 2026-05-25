@@ -29,87 +29,50 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 
 export function useScheduleZoom(
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>,
-  setHourHeight: React.Dispatch<React.SetStateAction<number>>
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>, // Аргумент 1
+  setHourHeight: React.Dispatch<React.SetStateAction<number>>  // Аргумент 2
 ) {
-  const zoomStateRef = useRef({
-    startDistance: 0,
-    startHeight: 0,
-    isZooming: false
-  });
-
+  // Блокуємо дефолтний Ctrl+Wheel зум всього браузера на десктопі
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const getDistance = (touches: TouchList) => {
-      if (touches.length < 2) return 0;
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx * dx + dy * dy);
+    const handleGlobalWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
     };
+    window.addEventListener('wheel', handleGlobalWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleGlobalWheel);
+  }, []);
 
-    // --- MOBILE PINCH ZOOM (2 пальці) ---
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        // Отримуємо поточну висоту прямо з рендер-циклу перед початком жесту
-        setHourHeight((currentHeight) => {
-          zoomStateRef.current = {
-            startDistance: getDistance(e.touches),
-            startHeight: currentHeight,
-            isZooming: true
-          };
-          return currentHeight;
+  const bind = usePinch(
+    ({ active, event, memo, movement: [distance], memo: startHeight }) => {
+      // Перевіряємо, чи це тач-подія і скільки пальців на екрані
+      if (event && 'touches' in event && event.touches.length !== 2) {
+        return memo; // Ігноруємо, якщо скролять 1 пальцем
+      }
+
+      if (active) {
+        if (event && event.cancelable) event.preventDefault();
+
+        // Ініціалізуємо початкову висоту при першому дотику
+        const baseHeight = startHeight || setHourHeight(h => { memo = h; return h; });
+
+        /* movement[0] повертає чисту зміну відстані між пальцями в пікселях.
+          Множник -2.5 (reverse + x3 швидкість)
+        */
+        setHourHeight(() => {
+          const nextHeight = baseHeight - distance * 2.5;
+          return Math.max(50, Math.min(200, nextHeight));
         });
+
+        return baseHeight;
       }
-    };
+      return null;
+    },
+    {
+      // Дозволяє нативному скролу працювати, поки не почнеться pinch
+      eventOptions: { passive: true } 
+    }
+  );
 
-    const handleTouchMove = (e: TouchEvent) => {
-      const state = zoomStateRef.current;
-      if (e.touches.length === 2 && state.isZooming && state.startDistance > 0) {
-        // Скасовуємо нативний зум сторінки браузера, але ТІЛЬКИ коли тримаємо 2 пальці
-        if (e.cancelable) e.preventDefault();
-
-        const currentDistance = getDistance(e.touches);
-        if (currentDistance <= 5) return;
-
-        // Коефіцієнт масштабування (Збільшено чутливість х3 за рахунок Math.pow або множників)
-        const scale = currentDistance / state.startDistance;
-        const targetScale = 1 + (scale - 1) * 2.5; // х2.5 швидкість реагування на жест
-        
-        setHourHeight(() => Math.max(50, Math.min(200, state.startHeight * targetScale)));
-      }
-    };
-
-    const handleTouchEnd = () => {
-      zoomStateRef.current.isZooming = false;
-      zoomStateRef.current.startDistance = 0;
-    };
-
-    // --- DESKTOP CTRL + WHEEL ZOOM ---
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.cancelable) e.preventDefault();
-        // Швидкий інвертований зум для коліщатка (0.85 / 1.15 дає х3 швидкість порівняно з 0.95)
-        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
-      }
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('touchcancel', handleTouchEnd);
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, [scrollContainerRef, setHourHeight]);
+  return bind;
 }
 
 
