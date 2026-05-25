@@ -10,11 +10,11 @@ import {
 import {DocumentModal} from '@/components/staff/DocumentModal'; // Adjust path if needed
 
 const statusStyles: Record<string, { color: string, icon: any, label: string, weight: number }> = {
-  pending_collection: { color: 'text-amber-500', icon: Clock, label: 'Очікується', weight: 1 },
-  submitted: { color: 'text-primary', icon: AlertCircle, label: 'Подано', weight: 2 },
-  ready: { color: 'text-green-500', icon: CheckCircle2, label: 'Готово', weight: 3 },
-  completed: { color: 'text-slate-500', icon: CheckCircle2, label: 'Видано', weight: 10 },
-  // not_needed: { color: 'text-slate-600', icon: Clock, label: 'Не потрібно', weight: 11 },
+  pending_collection: { color: 'text-amber-500', icon: Clock, label: 'Очікую', weight: 1 },
+  submitted: { color: 'text-primary', icon: AlertCircle, label: 'Подано на теорію', weight: 2 },
+  submitted2: { color: 'text-sky-400', icon: AlertCircle, label: 'Подано на практику', weight: 3 }, // Новий статус
+  ready: { color: 'text-green-500', icon: CheckCircle2, label: 'Готово', weight: 4 },
+  completed: { color: 'text-slate-500', icon: CheckCircle2, label: 'Видано', weight: 10 }, // Залишаємо для сумісності з БД, якщо статус існує
 };
 
 export default function AdminDocumentsPage() {
@@ -42,11 +42,12 @@ export default function AdminDocumentsPage() {
       .select(`*, clients:client_id (id, profiles:profile_id (first_name, last_name, middle_name, phone))`)
       .order('ready_date_est', { ascending: true });
 
+    // ОНОВЛЕНИЙ ШМАТОК ФУНКЦІЇ ВСЕРЕДИНІ fetchGlobalDocuments():
     if (filter === 'today') {
       query = query
         .lte('ready_date_est', today)
-        // .not('status', 'in', '("completed", "not_needed")');
-        .neq('status', 'completed');
+        // Показувати у дедлайнах лише ті документи, які ще НЕ готові й НЕ видані
+        .not('status', 'in', '("ready", "completed")'); 
     }
 
     const { data, error } = await query;
@@ -56,7 +57,8 @@ export default function AdminDocumentsPage() {
         const weightA = statusStyles[a.status]?.weight || 5;
         const weightB = statusStyles[b.status]?.weight || 5;
         if (weightA !== weightB) return weightA - weightB;
-        return new Date(a.ready_date_est).getTime() - new Date(b.ready_date_est).getTime();
+        // Безпечне порівняння чистих текстових дат YYYY-MM-DD без таймзон
+        return (a.ready_date_est || '').localeCompare(b.ready_date_est || '');
       });
       setDocs(sorted);
     }
@@ -238,7 +240,30 @@ export default function AdminDocumentsPage() {
       </div>
 
       {/* DOCUMENT MODAL */}
-      {selectedClientId && (
+      {isDocModalOpen && selectedClientId && (
+        <DocumentModal  
+          clientId={selectedClientId}
+          first_name={selectedDoc?.clients?.profiles?.first_name || ""}
+          middle_name={selectedDoc?.clients?.profiles?.middle_name || ""}
+          last_name={selectedDoc?.clients?.profiles?.last_name || ""}
+          doc={selectedDoc}
+          isOpen={isDocModalOpen} 
+          onClose={() => {
+            setIsDocModalOpen(false);
+            setSelectedDoc(null);
+            setSelectedClientId(null);
+          }} 
+          onUpdate={() => {
+            fetchGlobalDocuments();
+            setIsDocModalOpen(false);
+            setSelectedDoc(null);
+            setSelectedClientId(null);
+          }}
+        />
+      )}
+
+      {/* DOCUMENT MODAL */}
+      {/* {selectedClientId && (
         <DocumentModal  
           clientId={selectedClientId}
           first_name={selectedDoc?.clients?.profiles?.first_name || ""}
@@ -253,7 +278,8 @@ export default function AdminDocumentsPage() {
           }} 
           onUpdate={fetchGlobalDocuments}
         />
-      )}
+      )} */}
+
     </div>
   );
 }
