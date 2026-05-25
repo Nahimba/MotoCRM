@@ -29,38 +29,88 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 
 export function useScheduleZoom(
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>,
   setHourHeight: React.Dispatch<React.SetStateAction<number>>
 ) {
-  useEffect(() => {
-    const handleGlobalWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('wheel', handleGlobalWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleGlobalWheel);
-  }, []);
+  const zoomStateRef = useRef({
+    startDistance: 0,
+    startHeight: 0,
+    isZooming: false
+  });
 
-  const bind = usePinch(
-    ({ active, event, delta: [dDistance, dMovement] }) => {
-      if (active) {
-        if (event && event.cancelable) event.preventDefault();
-        
-        // Використовуємо dMovement для лінійної дельти зміни відстані між пальцями/коліщатка
-        setHourHeight((prev) => {
-          const nextHeight = prev - dMovement * 2.5;
-          return Math.max(50, Math.min(200, nextHeight));
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const getDistance = (touches: TouchList) => {
+      if (touches.length < 2) return 0;
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    // --- MOBILE PINCH ZOOM (2 пальці) ---
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        // Отримуємо поточну висоту прямо з рендер-циклу перед початком жесту
+        setHourHeight((currentHeight) => {
+          zoomStateRef.current = {
+            startDistance: getDistance(e.touches),
+            startHeight: currentHeight,
+            isZooming: true
+          };
+          return currentHeight;
         });
       }
-    },
-    {
-      eventOptions: { passive: false }
-    }
-  );
+    };
 
-  return bind;
+    const handleTouchMove = (e: TouchEvent) => {
+      const state = zoomStateRef.current;
+      if (e.touches.length === 2 && state.isZooming && state.startDistance > 0) {
+        // Скасовуємо нативний зум сторінки браузера, але ТІЛЬКИ коли тримаємо 2 пальці
+        if (e.cancelable) e.preventDefault();
+
+        const currentDistance = getDistance(e.touches);
+        if (currentDistance <= 5) return;
+
+        // Коефіцієнт масштабування (Збільшено чутливість х3 за рахунок Math.pow або множників)
+        const scale = currentDistance / state.startDistance;
+        const targetScale = 1 + (scale - 1) * 2.5; // х2.5 швидкість реагування на жест
+        
+        setHourHeight(() => Math.max(50, Math.min(200, state.startHeight * targetScale)));
+      }
+    };
+
+    const handleTouchEnd = () => {
+      zoomStateRef.current.isZooming = false;
+      zoomStateRef.current.startDistance = 0;
+    };
+
+    // --- DESKTOP CTRL + WHEEL ZOOM ---
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.cancelable) e.preventDefault();
+        // Швидкий інвертований зум для коліщатка (0.85 / 1.15 дає х3 швидкість порівняно з 0.95)
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [scrollContainerRef, setHourHeight]);
 }
-
 
 
 const HOURS = eachHourOfInterval({
@@ -91,7 +141,7 @@ export default function SchedulePage() {
   // 🚩 Оголошуємо реф контейнера скролу
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   // 🚩 ВИПРАВЛЕНО: Викликаємо новий хук з одним аргументом
-  const bindZoom = useScheduleZoom(setHourHeight);
+  useScheduleZoom(scrollContainerRef, setHourHeight);
 
   const [lessons, setLessons] = useState<any[]>([])
   const [instructors, setInstructors] = useState<any[]>([])
@@ -609,13 +659,14 @@ export default function SchedulePage() {
 
       {/* 🚩 Головний контейнер розкладу (прив'язано ref) */}
       <div 
-        {...bindZoom()} 
         ref={scrollContainerRef}
-        className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased"
+        className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased select-none"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
-          touchAction: 'none'
+          /* 🚩 ТУТ: використовуємо 'pan-x pan-y', що дозволяє браузеру 
+             вільно та плавно скролити одним пальцем у будь-який бік */
+          touchAction: 'pan-x pan-y' 
         }}
       >
 
