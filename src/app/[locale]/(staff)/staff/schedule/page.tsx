@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { usePinch } from '@use-gesture/react'
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, ChevronRight, Plus, 
@@ -27,80 +28,37 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 
-// 🚩 Універсальний хук для Mobile Pinch + Desktop Ctrl+Wheel
-function useScheduleZoom(
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>,
+export function useScheduleZoom(
   setHourHeight: React.Dispatch<React.SetStateAction<number>>
 ) {
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    let startDistance = 0;
-    let startHeight = 0;
-
-    const getDistance = (touches: TouchList) => {
-      if (touches.length < 2) return 0;
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    // --- ОБРОБКА ДЛЯ МОБІЛЬНИХ (PINCH ZOOM) ---
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        startDistance = getDistance(e.touches);
-        setHourHeight((prev) => {
-          startHeight = prev;
-          return prev;
-        });
+    const handleGlobalWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
       }
     };
+    window.addEventListener('wheel', handleGlobalWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleGlobalWheel);
+  }, []);
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && startDistance > 0) {
-        // Запобігаємо нативному зуму браузера
-        e.preventDefault();
+  const bind = usePinch(
+    ({ active, event, delta: [dDistance, dMovement] }) => {
+      if (active) {
+        if (event && event.cancelable) event.preventDefault();
         
-        const currentDistance = getDistance(e.touches);
-        if (currentDistance === 0) return;
-        
-        const scale = currentDistance / startDistance;
-        setHourHeight(() => {
-          const nextHeight = startHeight * scale;
+        // Використовуємо dMovement для лінійної дельти зміни відстані між пальцями/коліщатка
+        setHourHeight((prev) => {
+          const nextHeight = prev + dMovement * 0.8;
           return Math.max(50, Math.min(200, nextHeight));
         });
       }
-    };
+    },
+    {
+      eventOptions: { passive: false }
+    }
+  );
 
-    const handleTouchEnd = () => {
-      startDistance = 0;
-    };
-
-    // --- ОБРОБКА ДЛЯ ДЕСКТОПУ (CTRL + WHEEL) ---
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault(); // Скасовуємо зум сторінки браузера
-        const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
-        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
-      }
-    };
-
-    // Слухачі подій тачу
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    
-    // Слухач коліщатка миші
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, [scrollContainerRef, setHourHeight]);
+  return bind;
 }
 
 
@@ -120,7 +78,6 @@ export default function SchedulePage() {
     setIsMounted(true);
   }, []);
 
-
   const t = useTranslations("Schedule")
   const locale = useLocale()
   const dateLocale = locale === "ua" ? uk : enUS
@@ -129,6 +86,12 @@ export default function SchedulePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [hourHeight, setHourHeight] = useState(80) 
+
+  
+  // 🚩 Оголошуємо реф контейнера скролу
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // 🚩 ВИПРАВЛЕНО: Викликаємо новий хук з одним аргументом
+  const bindZoom = useScheduleZoom(setHourHeight);
 
   const [lessons, setLessons] = useState<any[]>([])
   const [instructors, setInstructors] = useState<any[]>([])
@@ -142,15 +105,9 @@ export default function SchedulePage() {
   
   const [isClientProfileModalOpen, setClientProfileModalOpen] = useState(false)
 
-
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
-
-  // 🚩 Оголошуємо реф контейнера скролу
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
-  // 🚩 Активуємо наш комбо-хук для зуму
-  useScheduleZoom(scrollContainerRef, setHourHeight);
 
   // Responsive UI logic для початкового стану
   useEffect(() => {
@@ -158,6 +115,7 @@ export default function SchedulePage() {
     handleResize()
   }, [])
 
+  // ... решта вашого коду сторінки
 
 
   // 2. Resolve Instructor Context
@@ -651,12 +609,13 @@ export default function SchedulePage() {
 
       {/* 🚩 Головний контейнер розкладу (прив'язано ref) */}
       <div 
+        {...bindZoom()} 
         ref={scrollContainerRef}
         className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
-          touchAction: 'pan-x pan-y' // 🚩 Дозволяє нативний скрол пальцем, але віддає Pinch-to-zoom нашому JS коду
+          touchAction: 'none'
         }}
       >
 
