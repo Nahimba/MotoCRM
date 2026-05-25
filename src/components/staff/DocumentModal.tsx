@@ -123,6 +123,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   const [isUploading, setIsUploading] = useState(false)
   const [editingDoc, setEditingDoc] = useState<any | null>(null)
   const [mobileTab, setMobileTab] = useState<'list' | 'form'>('list')
+  const [docStatus, setDocStatus] = useState('pending_collection');
 
   const [docTitle, setDocTitle] = useState("");
   const [bloodType, setBloodType] = useState("");
@@ -181,49 +182,56 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   // }, [isOpen, clientId, doc])
 
   useEffect(() => {
-    if (isOpen) {
-      fetchDocuments()
-      const currentDoc = doc || editingDoc;
+    if (!isOpen) return;
+  
+    // Завжди підтягуємо свіжий список документів для клієнта
+    fetchDocuments();
+  
+    // Визначаємо активний документ
+    const currentDoc = doc || editingDoc;
+  
+    if (currentDoc) {
+      setDocTitle(currentDoc.title || "");
+      setBloodType(currentDoc.blood_type || "");
+      setDocStatus(currentDoc.status || "pending_collection"); // Додано для контрольованого селекту статусу
+      setPassportType(currentDoc.has_id_card !== null || currentDoc.has_address_extract !== null ? "id" : "old");
       
-      if (currentDoc) {
-        setDocTitle(currentDoc.title || "");
-        setBloodType(currentDoc.blood_type || "");
-        setPassportType(currentDoc.has_id_card === true || currentDoc.has_address_extract === true ? "id" : "old");
-        
-        // Записуємо дати з обраного документа
-        setSubDate(currentDoc.submission_date || dateUtils.getKyivToday());
-        setReadyDate(currentDoc.ready_date_est || '');
-
-        setChecklist({
-          has_passport_old: currentDoc.has_passport_old ?? null,
-          has_id_card: currentDoc.has_id_card ?? null,
-          has_tax_code: currentDoc.has_tax_code ?? null,
-          has_address_extract: currentDoc.has_address_extract ?? null,
-          has_existing_license: currentDoc.has_existing_license ?? null,
-          has_medical: currentDoc.has_medical ?? null,
-        });
-        if (doc) setMobileTab('form');
-      } else {
-        setDocTitle("");
-        setBloodType("");
-        setPassportType("old");
-        
-        // Дефолтні значення для нової форми
-        setSubDate(dateUtils.getKyivToday());
-        setReadyDate('');
-
-        setChecklist({
-          has_passport_old: null,
-          has_id_card: null,
-          has_tax_code: null,
-          has_address_extract: null,
-          has_existing_license: null,
-          has_medical: null,
-        });
-        setMobileTab('list');
-      }
+      // Записуємо дати з обраного документа
+      setSubDate(currentDoc.submission_date || dateUtils.getKyivToday());
+      setReadyDate(currentDoc.ready_date_est || '');
+  
+      setChecklist({
+        has_passport_old: currentDoc.has_passport_old ?? null,
+        has_id_card: currentDoc.has_id_card ?? null,
+        has_tax_code: currentDoc.has_tax_code ?? null,
+        has_address_extract: currentDoc.has_address_extract ?? null,
+        has_existing_license: currentDoc.has_existing_license ?? null,
+        has_medical: currentDoc.has_medical ?? null,
+      });
+      
+      // Якщо прийшов пропс doc (клік з адмінки), відразу перемикаємо мобільний таб на форму
+      if (doc) setMobileTab('form');
+    } else {
+      // Скидання форми для створення нового пакету
+      setDocTitle("");
+      setBloodType("");
+      setDocStatus("pending_collection");
+      setPassportType("old");
+      setSubDate(dateUtils.getKyivToday());
+      setReadyDate('');
+  
+      setChecklist({
+        has_passport_old: null,
+        has_id_card: null,
+        has_tax_code: null,
+        has_address_extract: null,
+        has_existing_license: null,
+        has_medical: null,
+      });
+      setMobileTab('list');
     }
-  }, [isOpen, clientId, doc, editingDoc?.id])
+  // Передаємо повні об'єкти doc та editingDoc у масив залежностей, щоб React реагував на будь-яку їх зміну
+  }, [isOpen, clientId, doc, editingDoc]);
   
   async function fetchDocuments() {
     const { data } = await supabase
@@ -247,7 +255,8 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       client_id: clientId,
       title: docTitle,
       blood_type: bloodType || null,
-      status: formData.get('status'),
+      status: docStatus,
+      //status: formData.get('status'),
       url: formData.get('url') || null,
       submission_date: rawSubDate || null,
       ready_date_est: rawReadyDate || null,
@@ -526,13 +535,29 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
   )}
 </div>
                 
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Статус</label>
                   <select name="status" defaultValue={editingDoc?.status || 'pending_collection'} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none appearance-none">
                     {Object.entries(statusTranslations).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
+                </div> */}
+
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Статус</label>
+                  <div className="relative">
+                    <select 
+                      name="status" 
+                      value={docStatus} 
+                      onChange={(e) => setDocStatus(e.target.value)}
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white focus:border-primary outline-none appearance-none cursor-pointer"
+                    >
+                      {Object.entries(statusTranslations).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
 
