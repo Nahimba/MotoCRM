@@ -11,7 +11,7 @@ import {DocumentModal} from '@/components/staff/DocumentModal'; // Adjust path i
 
 const statusStyles: Record<string, { color: string, icon: any, label: string, weight: number }> = {
   pending_collection: { color: 'text-amber-500', icon: Clock, label: 'Очікую', weight: 1 },
-  submitted: { color: 'text-primary', icon: AlertCircle, label: 'Подано на теорію', weight: 2 },
+  submitted: { color: 'text-cyan-500', icon: AlertCircle, label: 'Подано на теорію', weight: 2 },
   submitted2: { color: 'text-sky-400', icon: AlertCircle, label: 'Подано на практику', weight: 3 }, // Новий статус
   ready: { color: 'text-green-500', icon: CheckCircle2, label: 'Готово', weight: 4 },
   completed: { color: 'text-slate-500', icon: CheckCircle2, label: 'Видано', weight: 10 }, // Залишаємо для сумісності з БД, якщо статус існує
