@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, Phone, Mail, MapPin, CreditCard, Clock, Bike, 
-  ShieldCheck, FileText, RotateCcw, KeyRound, Loader2, Plus, ChevronDown
+  ShieldCheck, FileText, RotateCcw, KeyRound, Loader2, Plus, ChevronDown, Globe, Share2
 } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -24,6 +24,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const t = useTranslations("Clients.details")
   const tForm = useTranslations("Clients.form")
   const tConst = useTranslations("Constants.gear_type")
+  const tConstLS = useTranslations("Constants.lead_sources")
   const tConstSS = useTranslations("Constants.student_stages")
 
   const { id } = use(params)
@@ -345,6 +346,32 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   };
 
 
+  const renderLinks = (text: string) => {
+    if (!text) return null;
+  
+    // Split by whitespace or commas
+    const parts = text.split(/[\s,]+/);
+  
+    return parts.map((part, index) => {
+      const isUrl = /^(https?:\/\/)?([\w.-]+\.[a-z]{2,})(\/\S*)?$/i.test(part);
+      
+      if (isUrl) {
+        const href = part.startsWith('http') ? part : `https://${part}`;
+        return (
+          <a 
+            key={index} 
+            href={href} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-primary hover:underline break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      return <span key={index}>{part} </span>;
+    });
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 pb-24 px-2 pt-2">
@@ -532,6 +559,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             
             <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
             <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
+
+            <InfoRow 
+              icon={<Share2 size={14}/>} 
+              label={tForm("lead_source")} 
+              value={client?.lead_source ? tConstLS(`${client.lead_source}`) : null} 
+              fallback="N/A" 
+            />
+            <InfoRow 
+              icon={<Globe size={14}/>} 
+              label="Соціальні мережі" 
+              value={profile?.social_link ? (
+                <div className="flex flex-wrap gap-2">
+                  {renderLinks(profile.social_link)}
+                </div>
+              ) : null} 
+              fallback="N/A" 
+            />
+          
           </div>
 
         </div>
@@ -909,10 +954,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 function InfoRow({ icon, label, value, fallback }: any) {
   return (
     <div className="flex items-center gap-5 group">
-      <div className="p-4 bg-white/5 rounded-2xl text-slate-500 group-hover:text-primary transition-all border border-white/5 group-hover:border-primary/20">{icon}</div>
+      <div className="p-4 bg-white/5 rounded-2xl text-slate-500 group-hover:text-primary transition-all border border-white/5 group-hover:border-primary/20">
+        {icon}
+      </div>
       <div>
-        <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">{label}</p>
-        <p className="text-sm font-bold text-white uppercase tracking-tight">{value || fallback}</p>
+        <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">
+          {label}
+        </p>
+        {/* CHANGED: p to div to allow block-level content like flex containers */}
+        <div className="text-sm font-bold text-white uppercase tracking-tight">
+          {value || fallback}
+        </div>
       </div>
     </div>
   )
