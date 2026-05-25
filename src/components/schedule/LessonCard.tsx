@@ -127,24 +127,24 @@ export function LessonCard({
       {/* DETAILS ROW: Phone, Location, Summary */}
       {(hasSpace || !isWeek) && !isVeryShort && (
         <div className="flex-1 flex flex-col gap-1.5 min-w-0 overflow-hidden mt-3 z-10">
-          {lesson.client_phone && (
+          {/* {lesson.client_phone && (
             <div className="flex items-center gap-2 text-slate-400">
               <Phone size={isWeek ? 10 : 13} className={`${isMoto ? 'text-fuchsia-500/50' : 'text-primary/50'} shrink-0`} />
               <span className={`font-bold tabular-nums ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'}`}>
                 {lesson.client_phone}
               </span>
             </div>
-          )}
+          )} */}
           
-          <div className={`flex items-center gap-2 ${isCustom ? 'bg-purple-500/5 py-0.5 px-1 -ml-1 rounded-md border border-purple-500/10' : ''}`}>
+          <div className={`flex items-center gap-2 min-w-0 ${isCustom ? 'bg-purple-500/5 py-0.5 px-1 -ml-1 rounded-md border border-purple-500/10' : ''}`}>
             <MapPin 
-                size={isWeek ? 10 : 13} 
-                style={{ color: locationColor || (isMoto ? '#e879f9' : '#3b82f6') }}
-                className={`shrink-0 ${isCustom ? 'animate-pulse' : ''}`} 
+              size={isWeek ? 10 : 13} 
+              style={{ color: locationColor || (isMoto ? '#e879f9' : '#3b82f6') }}
+              className={`shrink-0 ${isCustom ? 'animate-pulse' : ''}`} 
             />
             <span 
-                style={{ color: locationColor || '#e2e8f0' }}
-                className={`font-black uppercase truncate ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'} ${isCustom ? 'italic' : ''}`}
+              style={{ color: locationColor || '#e2e8f0' }}
+              className={`font-black uppercase text-ellipsis overflow-hidden whitespace-nowrap block w-full ${isWeek ? 'text-[9px]' : 'text-xs md:text-sm'} ${isCustom ? 'italic' : ''}`}
             >
               {isCustom && <span className="text-[8px] mr-1 opacity-60">✦</span>}
               {displayLocation}
@@ -152,11 +152,11 @@ export function LessonCard({
           </div>
 
           {lesson.summary && (
-            <div className="flex items-start gap-2 text-slate-500 border-t border-white/5 pt-2 mt-auto">
-              <FileText size={isWeek ? 10 : 13} className="shrink-0 mt-0.5 opacity-50" />
-              <p className={`italic leading-tight line-clamp-2 ${isWeek ? 'text-[10px]' : 'text-xs md:text-sm'}`}>
+            <div className="flex items-center gap-2 text-slate-300 min-w-0">
+              <FileText size={isWeek ? 10 : 13} className={`${isMoto ? 'text-fuchsia-500/50' : 'text-primary/50'} shrink-0`} />
+              <span className={`font-medium text-ellipsis overflow-hidden whitespace-nowrap block w-full ${isWeek ? 'text-[10px]' : 'text-xs md:text-sm'}`}>
                 {lesson.summary}
-              </p>
+              </span>
             </div>
           )}
         </div>
