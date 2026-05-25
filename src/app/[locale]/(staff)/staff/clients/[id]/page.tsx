@@ -22,8 +22,10 @@ import { toast } from "sonner"
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const t = useTranslations("Clients.details")
+  const tForm = useTranslations("Clients.form")
   const tConst = useTranslations("Constants.gear_type")
   const tConstSS = useTranslations("Constants.student_stages")
+
   const { id } = use(params)
   const [client, setClient] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -533,10 +535,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
         </div>
+
         
         <div className="bg-[#0a0a0a] border border-white/5 rounded-[1rem] p-4 space-y-2 relative overflow-hidden">
         
-
           <button 
             onClick={() => setIsDocModalOpen(true)}
             className="w-full bg-primary/10 border border-primary/20 hover:bg-primary hover:text-black py-4 rounded-2xl flex items-center justify-center gap-3 group transition-all font-black uppercase text-[10px] tracking-widest text-primary"
@@ -577,7 +579,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
         </div>
-        
+
+        {client?.notes && client.notes !== "" && (
+          <div className="bg-[#0a0a0a] border border-white/5 rounded-[1rem] p-4 space-y-2 relative overflow-hidden">
+            <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">
+              {tForm("notes")}
+            </p>
+            <span className="mt-6 pt-4 border-t border-zinc-800 block">
+              {client.notes}
+            </span>
+          </div>
+        )}
 
         {/* RIGHT: STATS & PACKAGES */}
         <div className="lg:col-span-2 space-y-6">
