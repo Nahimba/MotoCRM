@@ -17,7 +17,7 @@ interface DocumentModalProps {
 }
 
 const statusTranslations: Record<string, string> = {
-  pending_collection: "Очікується",
+  pending_collection: "Очікую",
   submitted: "Подано",
   ready: "Готово",
   //completed: "Видано",
