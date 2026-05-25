@@ -48,7 +48,7 @@ export function useScheduleZoom(
         
         // Використовуємо dMovement для лінійної дельти зміни відстані між пальцями/коліщатка
         setHourHeight((prev) => {
-          const nextHeight = prev + dMovement * 0.8;
+          const nextHeight = prev - dMovement * 2.5;
           return Math.max(50, Math.min(200, nextHeight));
         });
       }
