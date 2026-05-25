@@ -27,64 +27,81 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
 
-function useVerticalPinchZoom(
-  onZoom: (scaleMultiplier: number) => void,
-  isActive: boolean
+// 🚩 Універсальний хук для Mobile Pinch + Desktop Ctrl+Wheel
+function useScheduleZoom(
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>,
+  setHourHeight: React.Dispatch<React.SetStateAction<number>>
 ) {
-  const touchStartRef = useRef<{ y1: number; y2: number } | null>(null);
-
   useEffect(() => {
-    if (!isActive) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
+    let startDistance = 0;
+    let startHeight = 0;
+
+    const getDistance = (touches: TouchList) => {
+      if (touches.length < 2) return 0;
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    // --- ОБРОБКА ДЛЯ МОБІЛЬНИХ (PINCH ZOOM) ---
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        touchStartRef.current = {
-          y1: e.touches[0].clientY,
-          y2: e.touches[1].clientY,
-        };
+        startDistance = getDistance(e.touches);
+        setHourHeight((prev) => {
+          startHeight = prev;
+          return prev;
+        });
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && touchStartRef.current) {
-        const currentY1 = e.touches[0].clientY;
-        const currentY2 = e.touches[1].clientY;
-
-        const startDist = Math.abs(touchStartRef.current.y1 - touchStartRef.current.y2);
-        const currentDist = Math.abs(currentY1 - currentY2);
-
-        // Ігноруємо надто дрібні рухи, щоб не перебивати скрол
-        if (startDist > 10 && currentDist > 10) {
-          const multiplier = currentDist / startDist;
-          
-          // Згладжуємо коефіцієнт зміни
-          const smoothMultiplier = 1 + (multiplier - 1) * 0.15;
-          onZoom(smoothMultiplier);
-
-          // Оновлюємо початкову точку для плавного безперервного зуму
-          touchStartRef.current = { y1: currentY1, y2: currentY2 };
-        }
+      if (e.touches.length === 2 && startDistance > 0) {
+        // Запобігаємо нативному зуму браузера
+        e.preventDefault();
+        
+        const currentDistance = getDistance(e.touches);
+        if (currentDistance === 0) return;
+        
+        const scale = currentDistance / startDistance;
+        setHourHeight(() => {
+          const nextHeight = startHeight * scale;
+          return Math.max(50, Math.min(200, nextHeight));
+        });
       }
     };
 
     const handleTouchEnd = () => {
-      touchStartRef.current = null;
+      startDistance = 0;
     };
 
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd);
-    window.addEventListener('touchcancel', handleTouchEnd);
+    // --- ОБРОБКА ДЛЯ ДЕСКТОПУ (CTRL + WHEEL) ---
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault(); // Скасовуємо зум сторінки браузера
+        const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
+        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
+      }
+    };
+
+    // Слухачі подій тачу
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    
+    // Слухач коліщатка миші
+    container.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-      window.removeEventListener('touchcancel', handleTouchEnd);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('wheel', handleWheel);
     };
-  }, [isActive, onZoom]);
+  }, [scrollContainerRef, setHourHeight]);
 }
-
 
 
 
@@ -128,25 +145,20 @@ export default function SchedulePage() {
 
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
-  // Припустимо, у вас є стан висоти години та функція його зміни
-  // const [hourHeight, setHourHeight] = useState(80); 
-  useVerticalPinchZoom((scaleMultiplier) => {
-    setHourHeight((prev) => {
-      const nextHeight = prev * scaleMultiplier;
-      // Обмежуємо висоту години: мінімум 50px (щоб текст ліз), максимум 200px
-      return Math.max(50, Math.min(200, nextHeight));
-    });
-  }, true); // Працює постійно
 
+  // 🚩 Оголошуємо реф контейнера скролу
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // 🚩 Активуємо наш комбо-хук для зуму
+  useScheduleZoom(scrollContainerRef, setHourHeight);
 
-
-  // 1. Responsive UI logic
+  // Responsive UI logic для початкового стану
   useEffect(() => {
     const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
     handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+
 
   // 2. Resolve Instructor Context
   useEffect(() => {
@@ -629,24 +641,24 @@ export default function SchedulePage() {
       </div>
     </div>
 
-{/* 
-      <div 
+      {/*<div 
           className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased touch-auto"
           style={{ 
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain'
           }}
         > */}
+
+      {/* 🚩 Головний контейнер розкладу (прив'язано ref) */}
       <div 
-          className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased"
-          style={{ 
-            WebkitOverflowScrolling: 'touch',
-            overscrollBehavior: 'contain',
-            // 🚩 Важливо: змушуємо браузер обробляти панорамування пальцем (скрол), 
-            // але віддаємо pinch-to-zoom нашому JS-коду
-            touchAction: 'pan-x pan-y' 
-          }}
-        >
+        ref={scrollContainerRef}
+        className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          touchAction: 'pan-x pan-y' // 🚩 Дозволяє нативний скрол пальцем, але віддає Pinch-to-zoom нашому JS коду
+        }}
+      >
 
         <div className="relative" style={{ minWidth: gridMinWidth }}>
           {(viewMode === 'week' || isTeamView) && (
