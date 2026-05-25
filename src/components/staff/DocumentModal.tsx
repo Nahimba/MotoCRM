@@ -135,6 +135,9 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
     has_existing_license: null,
     has_medical: null,
   });
+
+  const [subDate, setSubDate] = useState("");
+  const [readyDate, setReadyDate] = useState("");
   
   // const [docTitle, setDocTitle] = useState(editingDoc?.title || "");
   // // Track the active UI identity route ('old' or 'id')
@@ -186,6 +189,11 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
         setDocTitle(currentDoc.title || "");
         setBloodType(currentDoc.blood_type || "");
         setPassportType(currentDoc.has_id_card === true || currentDoc.has_address_extract === true ? "id" : "old");
+        
+        // Записуємо дати з обраного документа
+        setSubDate(currentDoc.submission_date || dateUtils.getKyivToday());
+        setReadyDate(currentDoc.ready_date_est || '');
+
         setChecklist({
           has_passport_old: currentDoc.has_passport_old ?? null,
           has_id_card: currentDoc.has_id_card ?? null,
@@ -196,10 +204,14 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
         });
         if (doc) setMobileTab('form');
       } else {
-        // Reset to initial clean state setup
         setDocTitle("");
         setBloodType("");
         setPassportType("old");
+        
+        // Дефолтні значення для нової форми
+        setSubDate(dateUtils.getKyivToday());
+        setReadyDate('');
+
         setChecklist({
           has_passport_old: null,
           has_id_card: null,
@@ -212,7 +224,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
       }
     }
   }, [isOpen, clientId, doc, editingDoc?.id])
-
+  
   async function fetchDocuments() {
     const { data } = await supabase
       .from('client_documents')
@@ -586,7 +598,7 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                {/* <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[8px] font-black text-slate-500 uppercase ml-2">Подано</label>
                     <input 
@@ -604,6 +616,36 @@ export function DocumentModal({ clientId, first_name, middle_name, last_name, is
                       defaultValue={editingDoc?.ready_date_est || ''} 
                       className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[10px] text-white outline-none focus:border-primary [color-scheme:dark]" 
                     />
+                  </div>
+                </div> */}
+
+                <div className="grid grid-cols-2 gap-3 relative z-30">
+                  {/* Дата подачі */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-500 uppercase ml-2 tracking-wider">Подано</label>
+                    <div className="relative">
+                      <input 
+                        name="submission_date" 
+                        type="date" 
+                        value={subDate} 
+                        onChange={(e) => setSubDate(e.target.value)}
+                        className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[11px] font-bold text-white outline-none focus:border-primary [color-scheme:dark] cursor-pointer min-w-0" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Очікувана дата готовності */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-500 uppercase ml-2 tracking-wider">Готовність</label>
+                    <div className="relative">
+                      <input 
+                        name="ready_date_est" 
+                        type="date" 
+                        value={readyDate} 
+                        onChange={(e) => setReadyDate(e.target.value)}
+                        className="w-full bg-black border border-white/10 rounded-xl px-3 py-3 text-[11px] font-bold text-white outline-none focus:border-primary [color-scheme:dark] cursor-pointer min-w-0" 
+                      />
+                    </div>
                   </div>
                 </div>
 

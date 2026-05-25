@@ -1,4 +1,4 @@
-import { toZonedTime, formatInTimeZone, format } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const TZ = 'Europe/Kyiv';
 
@@ -7,8 +7,8 @@ export const dateUtils = {
      * 1. GET TODAY (For DB Queries)
      * Returns YYYY-MM-DD in Kyiv time.
      */
-    getKyivToday: () => {
-        return format(toZonedTime(new Date(), TZ), 'yyyy-MM-dd');
+    getKyivToday: (): string => {
+        return formatInTimeZone(new Date(), TZ, 'yyyy-MM-dd');
     },
   
     /**
@@ -16,11 +16,11 @@ export const dateUtils = {
      * Converts UTC string to individual Kyiv time parts.
      */
     parseFromDb: (utcDate: string | Date) => {
-        const zoned = toZonedTime(new Date(utcDate), TZ);
+        const dateObj = typeof utcDate === 'string' ? new Date(utcDate) : utcDate;
         return {
-        date: format(zoned, 'yyyy-MM-dd'),
-        hour: format(zoned, 'HH'),
-        minute: format(zoned, 'mm'),
+            date: formatInTimeZone(dateObj, TZ, 'yyyy-MM-dd'),
+            hour: formatInTimeZone(dateObj, TZ, 'HH'),
+            minute: formatInTimeZone(dateObj, TZ, 'mm'),
         };
     },
   
@@ -48,8 +48,9 @@ export const dateUtils = {
      * 4. FORMAT DISPLAY
      * Simple helper for tables/lists.
      */
-    toDisplay: (utcDate: string | Date, pattern = 'MMM dd, HH:mm') => {
-      return format(toZonedTime(new Date(utcDate), TZ), pattern);
+    toDisplay: (utcDate: string | Date, pattern = 'MMM dd, HH:mm'): string => {
+        const dateObj = typeof utcDate === 'string' ? new Date(utcDate) : utcDate;
+        return formatInTimeZone(dateObj, TZ, pattern);
     },
 
     // toDisplay: (utcDate: string | Date, pattern = 'dd.MM.yyyy, HH:mm') => {
