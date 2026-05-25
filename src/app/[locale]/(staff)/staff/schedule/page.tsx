@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, ChevronRight, Plus, 
@@ -26,6 +26,66 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
+
+function useVerticalPinchZoom(
+  onZoom: (scaleMultiplier: number) => void,
+  isActive: boolean
+) {
+  const touchStartRef = useRef<{ y1: number; y2: number } | null>(null);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        touchStartRef.current = {
+          y1: e.touches[0].clientY,
+          y2: e.touches[1].clientY,
+        };
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartRef.current) {
+        const currentY1 = e.touches[0].clientY;
+        const currentY2 = e.touches[1].clientY;
+
+        const startDist = Math.abs(touchStartRef.current.y1 - touchStartRef.current.y2);
+        const currentDist = Math.abs(currentY1 - currentY2);
+
+        // Ігноруємо надто дрібні рухи, щоб не перебивати скрол
+        if (startDist > 10 && currentDist > 10) {
+          const multiplier = currentDist / startDist;
+          
+          // Згладжуємо коефіцієнт зміни
+          const smoothMultiplier = 1 + (multiplier - 1) * 0.15;
+          onZoom(smoothMultiplier);
+
+          // Оновлюємо початкову точку для плавного безперервного зуму
+          touchStartRef.current = { y1: currentY1, y2: currentY2 };
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      touchStartRef.current = null;
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [isActive, onZoom]);
+}
+
+
 
 
 const HOURS = eachHourOfInterval({
@@ -67,6 +127,17 @@ export default function SchedulePage() {
 
 
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
+
+  // Припустимо, у вас є стан висоти години та функція його зміни
+  // const [hourHeight, setHourHeight] = useState(80); 
+  useVerticalPinchZoom((scaleMultiplier) => {
+    setHourHeight((prev) => {
+      const nextHeight = prev * scaleMultiplier;
+      // Обмежуємо висоту години: мінімум 50px (щоб текст ліз), максимум 200px
+      return Math.max(50, Math.min(200, nextHeight));
+    });
+  }, true); // Працює постійно
+
 
 
   // 1. Responsive UI logic
@@ -558,12 +629,22 @@ export default function SchedulePage() {
       </div>
     </div>
 
-
+{/* 
       <div 
           className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased touch-auto"
           style={{ 
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain'
+          }}
+        > */}
+      <div 
+          className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            // 🚩 Важливо: змушуємо браузер обробляти панорамування пальцем (скрол), 
+            // але віддаємо pinch-to-zoom нашому JS-коду
+            touchAction: 'pan-x pan-y' 
           }}
         >
 
@@ -831,6 +912,38 @@ export default function SchedulePage() {
 
         <div className="h-32 md:hidden" aria-hidden="true" />
 
+      </div>
+
+
+      {/* Floating Zoom Control для тестування на ПК */}
+      <div className="fixed bottom-6 right-6 z-[99] flex items-center gap-2 bg-[#1A1A1A]/90 backdrop-blur border border-white/10 p-2 rounded-xl shadow-2xl select-none">
+        <button 
+          onClick={() => setHourHeight(prev => Math.max(50, prev - 10))}
+          className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all text-sm font-black"
+        >
+          －
+        </button>
+        
+        <div className="flex flex-col items-center px-2 min-w-[60px]">
+          <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Zoom</span>
+          <span className="text-xs font-mono font-bold text-primary tabular-nums">{hourHeight}px</span>
+        </div>
+
+        <input 
+          type="range" 
+          min="50" 
+          max="200" 
+          value={hourHeight} 
+          onChange={(e) => setHourHeight(Number(e.target.value))}
+          className="w-24 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary border-none outline-none m-0"
+        />
+
+        <button 
+          onClick={() => setHourHeight(prev => Math.min(200, prev + 10))}
+          className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all text-sm font-black"
+        >
+          ＋
+        </button>
       </div>
 
 
