@@ -20,7 +20,7 @@ const statusTranslations: Record<string, string> = {
   pending_collection: "Очікується",
   submitted: "Подано",
   ready: "Готово",
-  completed: "Видано",
+  //completed: "Видано",
 }
 
 export const CHECKLIST_ITEMS = [
@@ -96,7 +96,7 @@ function ChecklistRow({ label, desc, value, onChange }: {
           onClick={() => onChange(null)}
           className={`flex-1 px-2 py-2 rounded-md text-[9px] font-black uppercase tracking-wider transition-all text-center ${value === null ? 'bg-amber-500/15 text-amber-400' : 'text-slate-600'}`}
         >
-          Очікується
+          Очікую
         </button>
         <button
           type="button"
