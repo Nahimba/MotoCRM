@@ -13,7 +13,7 @@ import { useTranslations } from "next-intl"
 import { DocumentModal } from "@/components/staff/DocumentModal"// 1. Import the PaymentModal
 import { PaymentModal } from "@/components/staff/PaymentModal" // Adjust path as needed
 
-
+import { useAuth } from "@/context/AuthContext"
 
 import PackageFormModal from "@/components/staff/packages/PackageFormModal"
 
@@ -26,6 +26,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const tConst = useTranslations("Constants.gear_type")
   const tConstLS = useTranslations("Constants.lead_sources")
   const tConstSS = useTranslations("Constants.student_stages")
+
+
+  const { user } = useAuth()
+  const isAdmin = user?.app_metadata?.role === 'admin'
 
   const { id } = use(params)
   const [client, setClient] = useState<any>(null)
@@ -460,50 +464,54 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             )}
           </div> */}
 
-          <div className="flex flex-wrap gap-2">
-            {/* <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
-              {t("modify")}
-            </Link> */}
-            <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-2.5 px-4 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary transition-all flex items-center whitespace-nowrap">
-              {t("modify")}
-            </Link>
 
-            {!profile?.auth_user_id ? (
-              /* 1. ACTIVATE BUTTON */
-              <button
-                onClick={() => setShowConfirmModal({ show: true, type: 'create-user' })}
-                disabled={isLinking || !profile?.email}
-                className="bg-blue-600 text-white py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-              >
-                {isLinking ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
-                {!profile?.email ? "Вкажіть Email" : "Активувати доступ"}
-              </button>
-            ) : (
-              <>
-                {/* 2. SYNC BUTTON (Shown if emails differ) */}
-                {profile?.email !== profile?.last_synced_email ? (
-                  <button
-                    onClick={() => setShowConfirmModal({ show: true, type: 'sync_email' })}
-                    disabled={isSyncing}
-                    className="bg-amber-600/10 text-amber-500 border border-amber-500/20 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
-                  >
-                    {isSyncing ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
-                    <span>Оновити пошту до {profile?.email}</span>
-                  </button>
-                ) : (
-                  /* 3. RESET PASSWORD BUTTON (Shown if emails match) */
-                  <button 
-                    onClick={() => setShowConfirmModal({ show: true, type: 'reset_password' })}
-                    disabled={isResetting} 
-                    className="bg-zinc-800 text-zinc-400 border border-white/5 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary hover:text-black transition-all flex items-center gap-2 whitespace-nowrap"
-                  >
-                    {isResetting ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />}
-                    <span>Скинути Пароль</span>
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+
+          {isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              {/* <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-4 px-6 rounded-2xl font-black uppercase text-xs hover:bg-primary transition-all flex items-center">
+                {t("modify")}
+              </Link> */}
+              <Link href={`/staff/clients/${id}/edit`} className="bg-white text-black py-2.5 px-4 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary transition-all flex items-center whitespace-nowrap">
+                {t("modify")}
+              </Link>
+
+              {!profile?.auth_user_id ? (
+                /* 1. ACTIVATE BUTTON */
+                <button
+                  onClick={() => setShowConfirmModal({ show: true, type: 'create-user' })}
+                  disabled={isLinking || !profile?.email}
+                  className="bg-blue-600 text-white py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                >
+                  {isLinking ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+                  {!profile?.email ? "Вкажіть Email" : "Активувати доступ"}
+                </button>
+              ) : (
+                <>
+                  {/* 2. SYNC BUTTON (Shown if emails differ) */}
+                  {profile?.email !== profile?.last_synced_email ? (
+                    <button
+                      onClick={() => setShowConfirmModal({ show: true, type: 'sync_email' })}
+                      disabled={isSyncing}
+                      className="bg-amber-600/10 text-amber-500 border border-amber-500/20 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-amber-600 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {isSyncing ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />}
+                      <span>Оновити пошту до {profile?.email}</span>
+                    </button>
+                  ) : (
+                    /* 3. RESET PASSWORD BUTTON (Shown if emails match) */
+                    <button 
+                      onClick={() => setShowConfirmModal({ show: true, type: 'reset_password' })}
+                      disabled={isResetting} 
+                      className="bg-zinc-800 text-zinc-400 border border-white/5 py-2.5 px-2 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[10px] md:text-xs hover:bg-primary hover:text-black transition-all flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {isResetting ? <Loader2 className="animate-spin" size={16} /> : <KeyRound size={16} />}
+                      <span>Скинути Пароль</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
         </div>
       </div>

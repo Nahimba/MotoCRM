@@ -276,12 +276,13 @@ export default function ClientsPage() {
           >
             <Filter size={14} /> {showOnlyActive ? t("switch_active") : t("switch_inactive")}
           </button>
-  
-          <Link href="/staff/clients/new" className="w-full md:w-auto">
-            <button className="w-full bg-primary text-black px-5 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-white transition-all">
-              <UserPlus size={16} strokeWidth={3} /> {t("recruit_btn")}
-            </button>
-          </Link>
+          {isAdmin && (
+            <Link href="/staff/clients/new" className="w-full md:w-auto">
+              <button className="w-full bg-primary text-black px-5 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-white transition-all">
+                <UserPlus size={16} strokeWidth={3} /> {t("recruit_btn")}
+              </button>
+            </Link>
+          )}
         </div>
       </div>
   
