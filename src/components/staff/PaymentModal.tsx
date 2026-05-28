@@ -212,9 +212,9 @@ export function PaymentModal({
       //   if (current) setSearchTerm(`${current.account_label} — ${current.course_name}`)
       // } 
       if (editPayment) {
-        // Extract just the YYYY-MM-DD part from the ISO string (e.g., '2026-05-19T22:00:00+00')
-        // This avoids date-fns trying to calculate a timezone shift based on your local browser time
-        const dateOnly = editPayment.created_at.split('T')[0];
+
+        // Use your utility to parse, which correctly accounts for the shift
+        const parsed = dateUtils.parseFromDb(editPayment.created_at);
       
         setFormData({
           course_package_id: editPayment.course_package_id || "",
@@ -224,7 +224,7 @@ export function PaymentModal({
           payment_method_id: editPayment.payment_method_id || "",
           status: editPayment.status || "completed",
           notes: editPayment.notes || "",
-          created_at: dateOnly, 
+          created_at: parsed.date, // This will be the correctly shifted date string
         });
       
         const current = processedPkgs.find(p => p.id === editPayment.course_package_id);
@@ -345,16 +345,14 @@ export function PaymentModal({
   
     try {
 
-      // Reconstruct the combined string your untouched dateUtils expects (YYYY-MM-DDTHH:mm:ss)
-      let timePart = "12:00:00"; // Default fallback
-      if (editPayment?.created_at) {
-        const parsedTime = dateUtils.parseFromDb(editPayment.created_at);
-        timePart = `${parsedTime.hour}:${parsedTime.minute}:00`;
-      } else {
-        const nowTime = dateUtils.parseFromDb(new Date());
-        timePart = `${nowTime.hour}:${nowTime.minute}:00`;
-      }
-      const combinedDateString = `${formData.created_at}T${timePart}`;
+      // 1. Get the current time if new, or existing time if editing
+      const now = editPayment ? new Date(editPayment.created_at) : new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+
+      // 2. Combine the DATE from the picker with the TIME from the current moment
+      const combinedDateString = `${formData.created_at}T${hh}:${mm}:${ss}`;
 
       // 2. Mutable fields only
       const updatePayload = {
