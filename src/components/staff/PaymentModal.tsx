@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { 
-  X, Check, Wallet, User, 
+  X, Check, User, CalendarIcon,
   CreditCard, Loader2,
   Banknote, Hash, FileText, Trash2, Info, Search,
   Layers, ChevronDown, CheckCircle2
@@ -13,6 +13,25 @@ import { useAuth } from "@/context/AuthContext"
 import { useTranslations } from "next-intl"
 
 import { BaseModal } from "@/components/crm_ui/BaseModal"
+
+import { dateUtils } from "@/lib/date-utils"
+
+
+
+// calendar start
+import { uk } from "date-fns/locale"
+import { format, parseISO } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+// calendar end
+
+
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -36,6 +55,10 @@ export function PaymentModal({
 
   const t = useTranslations("Payments")
   const { profile } = useAuth()
+
+  const { user } = useAuth()
+  const isAdmin = user?.app_metadata?.role === 'admin'
+
   const dropdownRef = useRef<HTMLDivElement>(null)
   
   const [loading, setLoading] = useState(false)
@@ -45,7 +68,7 @@ export function PaymentModal({
   
   const [searchTerm, setSearchTerm] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  
+
   const [formData, setFormData] = useState({
     course_package_id: "",
     account_id: "",
@@ -53,7 +76,8 @@ export function PaymentModal({
     payment_plan_id: "",
     payment_method_id: "",
     status: "completed",
-    notes: ""
+    notes: "",
+    created_at: '',
   })
 
   useEffect(() => {
@@ -78,7 +102,8 @@ export function PaymentModal({
         payment_plan_id: "", 
         payment_method_id: "",
         status: "completed", 
-        notes: ""
+        notes: "",
+        created_at: '',
       });
       return;
     }
@@ -120,7 +145,7 @@ export function PaymentModal({
       
       let pkgQuery = supabase
         .from('staff_packages_view')
-        .select(`id, account_id, account_label, course_name, contract_price, total_paid, total_hours, instructor_id, status`)
+        .select(`id, account_id, account_label, course_name, contract_price, total_paid, total_hours, instructor_id, status, created_at`)
       
       if (instructorId) pkgQuery = pkgQuery.eq('instructor_id', instructorId)
       if (initialClientId) pkgQuery = pkgQuery.eq('account_id', initialClientId)
@@ -167,8 +192,30 @@ export function PaymentModal({
       //   setSearchTerm("")
       // }
 
+
+      
       // --- LOGIC FOR PRE-FILLING FORM ---
+      // if (editPayment) {
+      //   const parsed = dateUtils.parseFromDb(editPayment.created_at);
+      //   setFormData({
+      //     course_package_id: editPayment.course_package_id || "",
+      //     account_id: editPayment.account_id || "",
+      //     amount: editPayment.amount?.toString() || "",
+      //     payment_plan_id: editPayment.payment_plan_id || "",
+      //     payment_method_id: editPayment.payment_method_id || "",
+      //     status: editPayment.status || "completed",
+      //     notes: editPayment.notes || "",
+      //     created_at: parsed.date,
+      //   })
+
+      //   const current = processedPkgs.find(p => p.id === editPayment.course_package_id)
+      //   if (current) setSearchTerm(`${current.account_label} — ${current.course_name}`)
+      // } 
       if (editPayment) {
+        // Extract just the YYYY-MM-DD part from the ISO string (e.g., '2026-05-19T22:00:00+00')
+        // This avoids date-fns trying to calculate a timezone shift based on your local browser time
+        const dateOnly = editPayment.created_at.split('T')[0];
+      
         setFormData({
           course_package_id: editPayment.course_package_id || "",
           account_id: editPayment.account_id || "",
@@ -176,22 +223,24 @@ export function PaymentModal({
           payment_plan_id: editPayment.payment_plan_id || "",
           payment_method_id: editPayment.payment_method_id || "",
           status: editPayment.status || "completed",
-          notes: editPayment.notes || ""
-        })
-
-        const current = processedPkgs.find(p => p.id === editPayment.course_package_id)
-        if (current) setSearchTerm(`${current.account_label} — ${current.course_name}`)
-      } 
+          notes: editPayment.notes || "",
+          created_at: dateOnly, 
+        });
+      
+        const current = processedPkgs.find(p => p.id === editPayment.course_package_id);
+        if (current) setSearchTerm(`${current.account_label} — ${current.course_name}`);
+      }
       else if (initialPackageId && processedPkgs.length > 0) {
         // Context: Adding payment to a specific contract
         const pkg = processedPkgs.find(p => p.id === initialPackageId)
         if (pkg) {
-          
+          const parsed = dateUtils.parseFromDb(new Date());
           setFormData(prev => ({
             ...prev,
             course_package_id: pkg.id,
             account_id: pkg.account_id,
-            amount: pkg.balance_due.toString()
+            amount: pkg.balance_due.toString(),
+            created_at: dateUtils.getKyivToday(),
           }))
           setSearchTerm(`${pkg.account_label} — ${pkg.course_name}`)
         }
@@ -199,20 +248,24 @@ export function PaymentModal({
       else if (initialClientId && processedPkgs.length === 1) {
         // Context: Client profile and they only have 1 active package, auto-select it
         const pkg = processedPkgs[0]
+        const parsed = dateUtils.parseFromDb(new Date());
         setFormData(prev => ({
           ...prev,
           course_package_id: pkg.id,
           account_id: pkg.account_id,
-          amount: pkg.balance_due.toString()
+          amount: pkg.balance_due.toString(),
+          created_at: dateUtils.getKyivToday(),
         }))
         setSearchTerm(`${pkg.account_label} — ${pkg.course_name}`)
       }
       else {
         // Reset for clean "Add"
+        const parsed = dateUtils.parseFromDb(new Date());
         setFormData({
           course_package_id: "", account_id: "", amount: "",
           payment_plan_id: "", payment_method_id: "",
-          status: "completed", notes: ""
+          status: "completed", notes: "", 
+          created_at: dateUtils.getKyivToday()
         })
         setSearchTerm("")
       }
@@ -291,6 +344,18 @@ export function PaymentModal({
     const paymentId = editPayment?.id
   
     try {
+
+      // Reconstruct the combined string your untouched dateUtils expects (YYYY-MM-DDTHH:mm:ss)
+      let timePart = "12:00:00"; // Default fallback
+      if (editPayment?.created_at) {
+        const parsedTime = dateUtils.parseFromDb(editPayment.created_at);
+        timePart = `${parsedTime.hour}:${parsedTime.minute}:00`;
+      } else {
+        const nowTime = dateUtils.parseFromDb(new Date());
+        timePart = `${nowTime.hour}:${nowTime.minute}:00`;
+      }
+      const combinedDateString = `${formData.created_at}T${timePart}`;
+
       // 2. Mutable fields only
       const updatePayload = {
         account_id: formData.account_id,
@@ -300,6 +365,7 @@ export function PaymentModal({
         payment_method_id: formData.payment_method_id,
         status: formData.status,
         notes: formData.notes?.trim() || null,
+        created_at: dateUtils.toDbTimestamp(combinedDateString)
       }
   
       if (editPayment) {
@@ -511,6 +577,70 @@ export function PaymentModal({
             </select>
           </div>
         </div>
+
+        {/* PAYMENT DATE (CREATED_AT) */}
+        {/* {isAdmin && (
+        <div className="space-y-2">
+          <label className="text-[10px] font-black uppercase text-slate-500 ml-1 flex items-center gap-2 italic">
+            <Calendar size={12} className="text-primary" /> {t('paymentDate') || 'Payment Date'}
+          </label>
+          <input 
+            type="datetime-local"
+            value={formData.created_at || ''}
+            onChange={(e) => setFormData({...formData, created_at: e.target.value})}
+            className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-4 text-sm font-bold text-white outline-none focus:border-primary/50 transition-all scheme-dark uppercase"
+          />
+        </div>
+        )} */}
+
+        {/* PAYMENT DATE (CREATED_AT) */}
+        {isAdmin && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic flex items-center gap-2">
+                <CalendarIcon size={12} className="text-primary" /> {t('paymentDate') || 'Payment Date'}
+              </label>
+              {formData.created_at && (
+                <span className="text-[10px] font-bold text-primary uppercase tracking-wider italic">
+                  {/* Safely append T12:00:00 to prevent timezone day shifting */}
+                  {format(parseISO(`${formData.created_at}T12:00:00`), "LLLL", { locale: uk })}
+                </span>
+              )}
+            </div>
+            
+            <Popover modal={true}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full bg-white/5 border border-white/10 rounded-2xl p-4 h-[58px] text-white justify-start font-black italic text-sm hover:bg-white/10 hover:border-white/20 transition-all outline-none uppercase",
+                    !formData.created_at && "text-slate-500"
+                  )}
+                >
+                  <CalendarIcon size={16} className="mr-3 text-slate-500" />
+                  {/* Safely append T12:00:00 to prevent timezone day shifting */}
+                  {/* {formData.created_at ? format(parseISO(`${formData.created_at}T12:00:00`), "dd.MM.yyyy", { locale: uk }) : t('paymentDate')} */}
+                  {formData.created_at ? format(dateUtils.getSafeDisplayDate(formData.created_at), "dd.MM.yyyy", { locale: uk }) : t('paymentDate')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-white/10 bg-[#09090b] shadow-2xl z-[9999]" align="start">
+                <Calendar
+                  mode="single"
+                  locale={uk}
+                  // selected={formData.created_at ? parseISO(`${formData.created_at}T12:00:00`) : undefined}
+                  selected={formData.created_at ? dateUtils.getSafeDisplayDate(formData.created_at) : undefined}
+                  onSelect={(date) => date && setFormData({ ...formData, created_at: format(date, "yyyy-MM-dd") })}
+                  showOutsideDays
+                  fixedWeeks
+                  modifiers={{ today: new Date() }}
+                  modifiersClassNames={{ today: "border border-primary text-primary font-bold" }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+        
 
         {/* PAYMENT PLAN */}
         <div className="space-y-3">

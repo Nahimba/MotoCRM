@@ -329,6 +329,7 @@
     "logPayment": "Додати оплату",
     "targetPackage": "Пакет навчання",
     "selectPackage": "Оберіть пакет...",
+    "paymentDate": "Дата",
     "noMatches": "Збігів не знайдено",
     "amountLabel": "Сума",
     "statusLabel": "Статус",

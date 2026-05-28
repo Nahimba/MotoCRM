@@ -56,4 +56,12 @@ export const dateUtils = {
     // toDisplay: (utcDate: string | Date, pattern = 'dd.MM.yyyy, HH:mm') => {
     //     return format(toZonedTime(new Date(utcDate), TZ), pattern);
     // },
+
+
+    getSafeDisplayDate: (dateString: string) => {
+        if (!dateString) return new Date();
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day, 12, 0, 0);
+    },
+    
   };
