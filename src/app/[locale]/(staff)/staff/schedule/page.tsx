@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
-import { usePinch } from '@use-gesture/react'
+// import { usePinch } from '@use-gesture/react'
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, ChevronRight, Plus, 
@@ -27,53 +27,6 @@ import { WorkHoursModal } from "@/components/schedule/WorkHoursModal"
 
 
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz'
-
-export function useScheduleZoom(
-  scrollContainerRef: React.RefObject<HTMLDivElement | null>, // Аргумент 1
-  setHourHeight: React.Dispatch<React.SetStateAction<number>>  // Аргумент 2
-) {
-  // Блокуємо дефолтний Ctrl+Wheel зум всього браузера на десктопі
-  useEffect(() => {
-    const handleGlobalWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) e.preventDefault();
-    };
-    window.addEventListener('wheel', handleGlobalWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleGlobalWheel);
-  }, []);
-
-  const bind = usePinch(
-    ({ active, event, memo, movement: [distance], memo: startHeight }) => {
-      // Перевіряємо, чи це тач-подія і скільки пальців на екрані
-      if (event && 'touches' in event && event.touches.length !== 2) {
-        return memo; // Ігноруємо, якщо скролять 1 пальцем
-      }
-
-      if (active) {
-        if (event && event.cancelable) event.preventDefault();
-
-        // Ініціалізуємо початкову висоту при першому дотику
-        const baseHeight = startHeight || setHourHeight(h => { memo = h; return h; });
-
-        /* movement[0] повертає чисту зміну відстані між пальцями в пікселях.
-          Множник -2.5 (reverse + x3 швидкість)
-        */
-        setHourHeight(() => {
-          const nextHeight = baseHeight - distance * 2.5;
-          return Math.max(50, Math.min(200, nextHeight));
-        });
-
-        return baseHeight;
-      }
-      return null;
-    },
-    {
-      // Дозволяє нативному скролу працювати, поки не почнеться pinch
-      eventOptions: { passive: true } 
-    }
-  );
-
-  return bind;
-}
 
 
 const HOURS = eachHourOfInterval({
@@ -103,8 +56,6 @@ export default function SchedulePage() {
   
   // 🚩 Оголошуємо реф контейнера скролу
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // 🚩 ВИПРАВЛЕНО: Викликаємо новий хук з одним аргументом
-  useScheduleZoom(scrollContainerRef, setHourHeight);
 
   const [lessons, setLessons] = useState<any[]>([])
   const [instructors, setInstructors] = useState<any[]>([])
@@ -584,8 +535,7 @@ export default function SchedulePage() {
 
   return (
     // <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
-    // <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
-    <div className="flex flex-col h-full w-full bg-black text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
 
 
     <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
