@@ -76,69 +76,85 @@ export default function SchedulePage() {
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
-
+  
     let startDistance = 0;
     let startHeight = 0;
     let isZooming = false;
-
+  
     const getDistance = (touches: TouchList) => {
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
       return Math.sqrt(dx * dx + dy * dy);
     };
-
-    // Desktop Ctrl + Wheel Zoom
+  
+    // 1. Десктопний Ctrl + Wheel Zoom
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         if (e.cancelable) e.preventDefault();
-        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85; // Quick snappy desk zoom
-        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+        setHourHeight((prev) => Math.max(40, Math.min(250, prev * zoomFactor)));
       }
     };
-
-    // Mobile Multi-touch handlers
+  
+    // 2. Фіксація початку тачу двома пальцями
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
         isZooming = true;
         startDistance = getDistance(e.touches);
-        startHeight = hourHeight; // Captures baseline height instantly
+        startHeight = hourHeight;
       }
     };
-
+  
+    // 3. Калькуляція зуму без дефолтної поведінки браузера
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && isZooming && startDistance > 0) {
-        if (e.cancelable) e.preventDefault(); // Kill native browser window-zoom entirely
-
+        // КРИТИЧНО: Скасовуємо нативний зум сторінки мобільним браузером
+        if (e.cancelable) e.preventDefault();
+  
         const currentDistance = getDistance(e.touches);
         if (currentDistance <= 5) return;
-
+  
         const scale = currentDistance / startDistance;
-        // Reverse + x3 Speed adjustment matrix
-        const targetScale = 1 + (scale - 1) * 2.5; 
+        // Чутливість масштабування (2.0 підходить ідеально)
+        const targetScale = 1 + (scale - 1) * 2.0; 
         
-        setHourHeight(() => Math.max(50, Math.min(200, startHeight * targetScale)));
+        setHourHeight(() => Math.max(40, Math.min(250, startHeight * targetScale)));
       }
     };
-
+  
     const handleTouchEnd = () => {
       isZooming = false;
       startDistance = 0;
     };
-
+  
+    // 4. ЗАБЛОКУВАТИ ОДНОЧАСНИЙ ЗУМ СТОРІНКИ НА IOS (Safari Gesture API)
+    const handleGesture = (e: Event) => {
+      if (e.cancelable) e.preventDefault();
+    };
+  
+    // Вішаємо слухачі подій з { passive: false }, інакше preventDefault() не спрацює
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('touchend', handleTouchEnd);
     container.addEventListener('touchcancel', handleTouchEnd);
-
+    
+    // Жорстке глушіння Gesture API для iOS на рівні контейнера розкладу
+    container.addEventListener('gesturestart', handleGesture, { passive: false });
+    container.addEventListener('gesturechange', handleGesture, { passive: false });
+  
     return () => {
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
+      
+      container.removeEventListener('gesturestart', handleGesture);
+      container.removeEventListener('gesturechange', handleGesture);
     };
-  }, [hourHeight]); // Syncs perfectly with react renders
+  }, [hourHeight]); // Слідкуємо за актуальним станом висоти години
+  
 
   // Responsive UI initial setup
   useEffect(() => {
