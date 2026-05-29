@@ -77,8 +77,6 @@ export default function SchedulePage() {
     const container = scrollContainerRef.current;
     if (!container) return;
   
-    // Використовуємо refs для збереження проміжних значень,
-    // щоб уникнути затримок через ререндери React під час тачу
     const zoomState = {
       startDistance: 0,
       startHeight: 0,
@@ -91,34 +89,26 @@ export default function SchedulePage() {
       return Math.sqrt(dx * dx + dy * dy);
     };
   
-    // 1. БЛОКУВАННЯ НА ТАЧ-РУХИ (Критично для Android та iOS)
+    // --- ОБРОБКА ТАЧІВ (ДЛЯ ANDROID CHROME) ---
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
         zoomState.isZooming = true;
         zoomState.startDistance = getDistance(e.touches);
-        
-        // Беремо актуальне значення висоти безпосередньо з DOM або стану замикання
-        zoomState.startHeight = hourHeight; 
+        zoomState.startHeight = hourHeight;
       }
     };
   
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && zoomState.isZooming) {
-        // 🚩 НАЙВАЖЛИВІШЕ: Глушимо нативний зум сторінки на самому початку
-        if (e.cancelable) {
-          e.preventDefault();
-        }
+        // Глушимо дефолтний зум сторінки браузером
+        if (e.cancelable) e.preventDefault();
   
         const currentDistance = getDistance(e.touches);
         if (currentDistance <= 0 || zoomState.startDistance <= 0) return;
   
-        // Рахуємо чистий коефіцієнт зміни відстані між пальцями
         const scale = currentDistance / zoomState.startDistance;
-        
-        // Експоненціальний коефіцієнт плавного зуму (і для ін, і для аут)
         const newHeight = zoomState.startHeight * scale;
   
-        // Обмежуємо мінімальний та максимальний зум (наприклад, від 40px до 250px)
         setHourHeight(Math.max(40, Math.min(250, newHeight)));
       }
     };
@@ -128,31 +118,38 @@ export default function SchedulePage() {
       zoomState.startDistance = 0;
     };
   
-    // 2. ЖОРСТКЕ БЛОКУВАННЯ APPLE SAFARI GESTURE API
-    // Safari на iOS ігнорує touchmove для зуму, але підкоряється цим подіям
+    // --- ЖОРСТКЕ БЛОКУВАННЯ ДЛЯ IOS SAFARI ---
+    // Перехоплюємо жести на етапі capture і глушимо їх для всієї сторінки,
+    // але всередині обробника gesturechange крутимо наш hourHeight
     const handleGestureStart = (e: any) => {
       e.preventDefault();
+      zoomState.startHeight = hourHeight;
+      zoomState.isZooming = true;
     };
   
     const handleGestureChange = (e: any) => {
-      e.preventDefault();
-      // Альтернативний варіант зуму для iOS через native scale фактор події
+      e.preventDefault(); // 🚩 СТОП нативному зуму Safari
       if (zoomState.isZooming) {
         const newHeight = zoomState.startHeight * e.scale;
         setHourHeight(Math.max(40, Math.min(250, newHeight)));
       }
     };
   
-    // 3. РЕЄСТРАЦІЯ НА РІВНІ NATIVE DOM (З обов'язковим passive: false)
+    const handleGestureEnd = () => {
+      zoomState.isZooming = false;
+    };
+  
+    // Реєстрація тач-подій на контейнері
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
-    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
   
-    // Додаємо gesture події безпосередньо на контейнер
-    container.addEventListener('gesturestart', handleGestureStart, { passive: false });
-    container.addEventListener('gesturechange', handleGestureChange, { passive: false });
-    container.addEventListener('gestureend', handleTouchEnd, { passive: true });
+    // 🚩 ГЛОБАЛЬНЕ БЛОКУВАННЯ НА РІВНІ WINDOW (Флаг capture: true)
+    // Це змушує код спрацьовувати РАНІШЕ, ніж браузер ініціює зум сторінки
+    window.addEventListener('gesturestart', handleGestureStart, { passive: false, capture: true });
+    window.addEventListener('gesturechange', handleGestureChange, { passive: false, capture: true });
+    window.addEventListener('gestureend', handleGestureEnd, { passive: true, capture: true });
   
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);
@@ -160,11 +157,12 @@ export default function SchedulePage() {
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
   
-      container.removeEventListener('gesturestart', handleGestureStart);
-      container.removeEventListener('gesturechange', handleGestureChange);
-      container.removeEventListener('gestureend', handleTouchEnd);
+      window.removeEventListener('gesturestart', handleGestureStart, { capture: true });
+      window.removeEventListener('gesturechange', handleGestureChange, { capture: true });
+      window.removeEventListener('gestureend', handleGestureEnd, { capture: true });
     };
-  }, [hourHeight]); // Перезапускаємо ефект при зміні базової висоти для актуалізації refs
+  }, [hourHeight]);
+
   
 
   // Responsive UI initial setup
