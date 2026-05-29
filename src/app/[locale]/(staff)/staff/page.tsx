@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { 
-  PlusCircle, Calendar,
+  Calendar,
   ShieldCheck, GraduationCap,
   FileSignature, Banknote, ClipboardList, Wallet
 } from "lucide-react"
@@ -56,12 +56,12 @@ export default function UnifiedDashboard() {
           label={t('nav.riders')} 
           sub={t('nav.riders_sub', { count: activeRidersCount })} 
         />
-        <NavButton 
+        {/* <NavButton 
           href="/staff/clients/new" 
           icon={<PlusCircle size={20}/>} 
           label={t('nav.recruit')} 
           sub={t('nav.recruit_sub')} 
-        />
+        /> */}
         <NavButton 
           href="/staff/training" 
           icon={<ClipboardList size={20}/>} 
