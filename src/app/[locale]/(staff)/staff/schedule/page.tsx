@@ -77,9 +77,13 @@ export default function SchedulePage() {
     const container = scrollContainerRef.current;
     if (!container) return;
   
-    let startDistance = 0;
-    let startHeight = 0;
-    let isZooming = false;
+    // Використовуємо refs для збереження проміжних значень,
+    // щоб уникнути затримок через ререндери React під час тачу
+    const zoomState = {
+      startDistance: 0,
+      startHeight: 0,
+      isZooming: false,
+    };
   
     const getDistance = (touches: TouchList) => {
       const dx = touches[0].clientX - touches[1].clientX;
@@ -87,73 +91,80 @@ export default function SchedulePage() {
       return Math.sqrt(dx * dx + dy * dy);
     };
   
-    // 1. Десктопний Ctrl + Wheel Zoom
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.cancelable) e.preventDefault();
-        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-        setHourHeight((prev) => Math.max(40, Math.min(250, prev * zoomFactor)));
-      }
-    };
-  
-    // 2. Фіксація початку тачу двома пальцями
+    // 1. БЛОКУВАННЯ НА ТАЧ-РУХИ (Критично для Android та iOS)
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 2) {
-        isZooming = true;
-        startDistance = getDistance(e.touches);
-        startHeight = hourHeight;
+        zoomState.isZooming = true;
+        zoomState.startDistance = getDistance(e.touches);
+        
+        // Беремо актуальне значення висоти безпосередньо з DOM або стану замикання
+        zoomState.startHeight = hourHeight; 
       }
     };
   
-    // 3. Калькуляція зуму без дефолтної поведінки браузера
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && isZooming && startDistance > 0) {
-        // КРИТИЧНО: Скасовуємо нативний зум сторінки мобільним браузером
-        if (e.cancelable) e.preventDefault();
+      if (e.touches.length === 2 && zoomState.isZooming) {
+        // 🚩 НАЙВАЖЛИВІШЕ: Глушимо нативний зум сторінки на самому початку
+        if (e.cancelable) {
+          e.preventDefault();
+        }
   
         const currentDistance = getDistance(e.touches);
-        if (currentDistance <= 5) return;
+        if (currentDistance <= 0 || zoomState.startDistance <= 0) return;
   
-        const scale = currentDistance / startDistance;
-        // Чутливість масштабування (2.0 підходить ідеально)
-        const targetScale = 1 + (scale - 1) * 2.0; 
+        // Рахуємо чистий коефіцієнт зміни відстані між пальцями
+        const scale = currentDistance / zoomState.startDistance;
         
-        setHourHeight(() => Math.max(40, Math.min(250, startHeight * targetScale)));
+        // Експоненціальний коефіцієнт плавного зуму (і для ін, і для аут)
+        const newHeight = zoomState.startHeight * scale;
+  
+        // Обмежуємо мінімальний та максимальний зум (наприклад, від 40px до 250px)
+        setHourHeight(Math.max(40, Math.min(250, newHeight)));
       }
     };
   
     const handleTouchEnd = () => {
-      isZooming = false;
-      startDistance = 0;
+      zoomState.isZooming = false;
+      zoomState.startDistance = 0;
     };
   
-    // 4. ЗАБЛОКУВАТИ ОДНОЧАСНИЙ ЗУМ СТОРІНКИ НА IOS (Safari Gesture API)
-    const handleGesture = (e: Event) => {
-      if (e.cancelable) e.preventDefault();
+    // 2. ЖОРСТКЕ БЛОКУВАННЯ APPLE SAFARI GESTURE API
+    // Safari на iOS ігнорує touchmove для зуму, але підкоряється цим подіям
+    const handleGestureStart = (e: any) => {
+      e.preventDefault();
     };
   
-    // Вішаємо слухачі подій з { passive: false }, інакше preventDefault() не спрацює
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    const handleGestureChange = (e: any) => {
+      e.preventDefault();
+      // Альтернативний варіант зуму для iOS через native scale фактор події
+      if (zoomState.isZooming) {
+        const newHeight = zoomState.startHeight * e.scale;
+        setHourHeight(Math.max(40, Math.min(250, newHeight)));
+      }
+    };
+  
+    // 3. РЕЄСТРАЦІЯ НА РІВНІ NATIVE DOM (З обов'язковим passive: false)
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('touchcancel', handleTouchEnd);
-    
-    // Жорстке глушіння Gesture API для iOS на рівні контейнера розкладу
-    container.addEventListener('gesturestart', handleGesture, { passive: false });
-    container.addEventListener('gesturechange', handleGesture, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+  
+    // Додаємо gesture події безпосередньо на контейнер
+    container.addEventListener('gesturestart', handleGestureStart, { passive: false });
+    container.addEventListener('gesturechange', handleGestureChange, { passive: false });
+    container.addEventListener('gestureend', handleTouchEnd, { passive: true });
   
     return () => {
-      container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
-      
-      container.removeEventListener('gesturestart', handleGesture);
-      container.removeEventListener('gesturechange', handleGesture);
+  
+      container.removeEventListener('gesturestart', handleGestureStart);
+      container.removeEventListener('gesturechange', handleGestureChange);
+      container.removeEventListener('gestureend', handleTouchEnd);
     };
-  }, [hourHeight]); // Слідкуємо за актуальним станом висоти години
+  }, [hourHeight]); // Перезапускаємо ефект при зміні базової висоти для актуалізації refs
   
 
   // Responsive UI initial setup
