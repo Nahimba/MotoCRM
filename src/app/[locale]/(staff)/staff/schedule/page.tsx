@@ -584,7 +584,8 @@ export default function SchedulePage() {
 
   return (
     // <div className="flex flex-col h-screen bg-black text-white overflow-hidden font-sans">
-    <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
+    // <div className="flex flex-col h-dvh bg-black text-white overflow-hidden font-sans">
+    <div className="flex flex-col h-full w-full bg-black text-white overflow-hidden font-sans">
 
 
     <div className="px-0 py-2 md:px-4 md:py-3 border-b border-white/10 bg-[#0A0A0A] sticky top-0 z-[80] shrink-0">
