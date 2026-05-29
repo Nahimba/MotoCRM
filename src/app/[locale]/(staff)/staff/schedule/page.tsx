@@ -120,6 +120,80 @@ export default function SchedulePage() {
 
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
+
+  // 🚩 NATIVE PINCH-ZOOM & SCROLL ENGINE (No external libraries, x3 speed, 1-finger scroll perfectly free)
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let startDistance = 0;
+    let startHeight = 0;
+    let isZooming = false;
+
+    const getDistance = (touches: TouchList) => {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    // Desktop Ctrl + Wheel Zoom
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.cancelable) e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85; // Quick snappy desk zoom
+        setHourHeight((prev) => Math.max(50, Math.min(200, prev * zoomFactor)));
+      }
+    };
+
+    // Mobile Multi-touch handlers
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        isZooming = true;
+        startDistance = getDistance(e.touches);
+        startHeight = hourHeight; // Captures baseline height instantly
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && isZooming && startDistance > 0) {
+        if (e.cancelable) e.preventDefault(); // Kill native browser window-zoom entirely
+
+        const currentDistance = getDistance(e.touches);
+        if (currentDistance <= 5) return;
+
+        const scale = currentDistance / startDistance;
+        // Reverse + x3 Speed adjustment matrix
+        const targetScale = 1 + (scale - 1) * 2.5; 
+        
+        setHourHeight(() => Math.max(50, Math.min(200, startHeight * targetScale)));
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isZooming = false;
+      startDistance = 0;
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [hourHeight]); // Syncs perfectly with react renders
+
+  // Responsive UI initial setup
+  useEffect(() => {
+    const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
+    handleResize()
+  }, [])
   
 
   // Responsive UI logic для початкового стану
