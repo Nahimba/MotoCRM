@@ -115,7 +115,7 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
     }
 
     fetchFullDossier()
-  }, [targetClientId, targetPackageId])
+  }, [targetClientId, targetPackageId, isOpen])
 
   // const firstName = profile?.first_name || client.client_name || client.name || "Невідомо"
   // const lastName = profile?.last_name || client.client_last_name || client.last_name || ""
@@ -223,12 +223,14 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
   
                 <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${details?.is_active_1 ? 'text-green-500' : 'text-red-500'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${details?.is_active_1 ? 'bg-green-500' : 'bg-red-500'}`} />
-                  {details?.is_active_1 ? tConstSS(details?.training_stage) : "Неактивний"}
+                  {details?.is_active_1 && details?.training_stage ? tConstSS(details.training_stage) : "Неактивний"}
                 </span>
 
-                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${tConst(details?.gear_type) ? 'text-blue-400' : 'text-orange-400'}`}>
-                  {tConst(details?.gear_type)}
-                </span>
+                {details?.gear_type && (
+                  <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${tConst(details.gear_type) ? 'text-blue-400' : 'text-orange-400'}`}>
+                    {tConst(details.gear_type)}
+                  </span>
+                )}
 
               </div>
 
@@ -238,7 +240,6 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
 
           <div className="px-2 md:px-2 pb-0 mt-4 md:mt-4 relative flex justify-center">
             <Link href={`/staff/clients/${targetClientId}/`} className="bg-white text-black py-2.5 px-4 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[12px] md:text-xs hover:bg-primary transition-all items-center whitespace-nowrap">
-                  {/* {t("modify")} */}
                   {"До профілю клієнта"}
             </Link>
           </div>
@@ -281,14 +282,12 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
                   <InfoRow 
                     icon={<Phone size={14} className="text-slate-500" />} 
                     label={t("phone")} 
-                    /* Форматований текст для ока */
                     value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
                     fallback="Немає номеру" 
                   />
                 </div>
                 
                 {profile?.phone && (
-                  /* Чистий номер для виклику (видаляємо все крім + та цифр) */
                   <a 
                     href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} 
                     className="p-3 md:p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95 shrink-0"
@@ -305,7 +304,7 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
               <InfoRow 
                 icon={<Share2 size={14}/>}
                 label={tForm("lead_source")} 
-                value={details?.lead_source ? tConstLS(`${details.lead_source}`) : null}
+                value={details?.lead_source ? tConstLS(String(details.lead_source)) : null}
                 fallback="-" 
               />
               <InfoRow 
