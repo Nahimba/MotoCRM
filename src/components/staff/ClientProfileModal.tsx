@@ -89,6 +89,8 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
           is_active_1: clientData?.is_active,
           gear_type: clientData?.gear_type,
           training_stage: clientData?.training_stage,
+          lead_source: clientData?.lead_source,
+          address: clientData?.address,
           notes: clientData?.notes || dossierData?.client_notes 
         })
 
@@ -288,14 +290,14 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
                 )}
               </div>
               
-              <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
-              <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
+              <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="-" />
+              <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={details?.address} fallback="-" />
 
               <InfoRow 
-                icon={<Share2 size={14}/>} 
+                icon={<Share2 size={14}/>}
                 label={tForm("lead_source")} 
-                value={client?.lead_source ? tConstLS(`${client.lead_source}`) : null} 
-                fallback="N/A" 
+                value={details?.lead_source ? tConstLS(`${details.lead_source}`) : null}
+                fallback="-" 
               />
               <InfoRow 
                     icon={<Globe size={14}/>} 
@@ -305,7 +307,7 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
                         {links}
                       </div>
                     ) : null} 
-                    fallback="N/A" 
+                    fallback="-" 
                   />
             
             </div>

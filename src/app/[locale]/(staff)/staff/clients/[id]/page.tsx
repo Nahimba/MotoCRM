@@ -573,14 +573,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               )}
             </div>
             
-            <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
-            <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
+            <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="-" />
+            <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="-" />
 
             <InfoRow 
               icon={<Share2 size={14}/>} 
               label={tForm("lead_source")} 
               value={client?.lead_source ? tConstLS(`${client.lead_source}`) : null} 
-              fallback="N/A" 
+              fallback="-" 
             />
             <InfoRow 
                   icon={<Globe size={14}/>} 
@@ -590,7 +590,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                       {links}
                     </div>
                   ) : null} 
-                  fallback="N/A" 
+                  fallback="-" 
                 />
           
           </div>
