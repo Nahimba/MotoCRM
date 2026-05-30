@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { X, Phone, Share2, Globe, Mail, ChevronDown, MapPin } from "lucide-react"
 import { useTranslations } from "next-intl"
+import Link from "next/link"
 
 // import { formatFlexiblePhone, cn} from "@/lib/utils"
 
@@ -196,9 +197,9 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
         <X size={20} />
       </button>
 
-      <div className="-m-6 md:-m-10 overflow-y-auto custom-scrollbar">
+      <div className="-m-6 md:-m-8 overflow-y-auto custom-scrollbar">
         
-        <div className="px-6 md:px-2 pb-2 mt-6 md:mt-12 relative">
+        <div className="px-6 md:px-12 pb-2 mt-6 md:mt-18 relative">
 
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
             <div className="relative shrink-0">
@@ -232,6 +233,14 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
               </div>
 
             </div>
+
+          </div>
+
+          <div className="px-2 md:px-2 pb-0 mt-4 md:mt-4 relative flex justify-center">
+            <Link href={`/staff/clients/${targetClientId}/`} className="bg-white text-black py-2.5 px-4 md:py-4 md:px-6 rounded-2xl font-black uppercase text-[12px] md:text-xs hover:bg-primary transition-all items-center whitespace-nowrap">
+                  {/* {t("modify")} */}
+                  {"До профілю клієнта"}
+            </Link>
           </div>
 
         </div>
@@ -309,15 +318,8 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
                     ) : null} 
                     fallback="-" 
                   />
-            
             </div>
-
           </div>
-
-
-
-
-
         </div>
       </div>
     </BaseModal>
@@ -342,146 +344,4 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
       </div>
     )
   }
-
-
-  // return (
-  //   <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">
-  //     {/* Backdrop */}
-  //     <div 
-  //       className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500" 
-  //       onClick={onClose} 
-  //     />
-      
-  //     <div className="relative w-full max-w-lg bg-[#0A0A0A] border-t md:border border-white/10 rounded-t-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-300 max-h-[95vh] flex flex-col">
-        
-  //       <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mt-4 mb-2 md:hidden shrink-0" />
-
-  //       <div className="overflow-y-auto custom-scrollbar flex-1">
-  //         {/* Decorative Header */}
-  //         <div className="relative h-24 md:h-32 bg-gradient-to-br from-primary/20 via-zinc-900 to-transparent" />
-
-  //         <div className="px-6 md:px-10 pb-10 -mt-12 relative">
-  //           {/* Avatar Section */}
-  //           <div className="flex justify-between items-end mb-6">
-  //             <div className="h-32 w-32 md:h-40 md:w-40 rounded-[2.5rem] bg-zinc-900 border-[6px] border-[#0A0A0A] overflow-hidden shadow-2xl relative">
-  //               {avatarPreview ? (
-  //                 <img src={avatarPreview} alt="Аватар" className="w-full h-full object-cover" />
-  //               ) : (
-  //                 <div className="w-full h-full flex items-center justify-center text-zinc-700 bg-zinc-800">
-  //                   <User size={48} strokeWidth={1} />
-  //                 </div>
-  //               )}
-  //             </div>
-              
-  //             <div className="flex flex-col items-end gap-2 mb-2">
-  //               <div className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${details?.is_graduated ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-primary/10 border-primary/20 text-primary'}`}>
-  //                 {details?.is_graduated ? "Випускник" : "Активний"}
-  //               </div>
-  //               {details?.gear_type && (
-  //                 <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-slate-400 uppercase italic">
-  //                   {/* {details.gear_type} */}
-  //                   {t('gear_type.'+details.gear_type)}
-  //                 </div>
-  //               )}
-  //             </div>
-  //           </div>
-
-  //           {/* Identity */}
-  //           <div className="space-y-1">
-  //             <h3 className="text-3xl md:text-4xl font-black uppercase italic text-white tracking-tighter leading-none">
-  //               {firstName} <span className="text-primary">{lastName}</span>
-  //             </h3>
-  //           </div>
-            
-  //           {/* Training Stats - Focused on the current package */}
-  //           <div className="grid grid-cols-1 gap-4 mt-8 mb-6">
-
-  //             {/* Active Course Name */}
-  //             {/* <div className="p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group">
-  //               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 relative z-10">Активний контракт</p>
-  //               <div className="text-xl font-black uppercase italic text-primary relative z-10 truncate">
-  //                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (details?.active_course_name || "Навчальний Контракт")}
-  //               </div>
-  //             </div> */}
-
-  //             {/* Remaining Hours */}
-  //             {/* <div className="p-5 bg-primary/10 rounded-3xl border border-primary/20 relative overflow-hidden group">
-  //               <div className="flex justify-between items-center relative z-10">
-  //                 <div>
-  //                   <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Залишок часу</p>
-  //                   <div className="text-4xl font-black tabular-nums text-white">
-  //                     {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : `${details?.remaining_hours || 0}Г`}
-  //                   </div>
-  //                 </div>
-  //                 <Clock className="w-12 h-12 text-primary/20 rotate-12" />
-  //               </div>
-  //             </div> */}
-
-  //           </div>
-
-  //           {/* Contact Details */}
-  //           <div className="space-y-3">
-  //             <a 
-  //               // Якщо телефону немає, href взагалі можна не додавати або лишити undefined
-  //               href={profile?.phone ? `tel:${profile.phone.replace(/\s/g, '')}` : undefined} 
-  //               className={`flex items-center gap-4 p-4 rounded-2xl border transition-all 
-  //                 ${profile?.phone 
-  //                   ? 'bg-white/5 border-white/5 hover:bg-primary hover:text-black hover:border-primary' 
-  //                   : 'bg-white/5 border-white/5 opacity-40 cursor-not-allowed pointer-events-none'
-  //                 }`}
-  //             >
-  //               <div className="p-2 bg-black/20 rounded-lg">
-  //                 <Phone size={16} />
-  //               </div>
-  //               <span className="text-sm font-black tabular-nums tracking-tight">
-  //                 {profile?.phone ? formatFlexiblePhone(profile.phone) : 'НЕМАЄ ТЕЛЕФОНУ'}
-  //               </span>
-  //             </a>
-
-  //             <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl">
-  //               <div className="p-2 bg-black/20 rounded-lg"><Mail size={16} className="text-primary" /></div>
-  //               <span className="text-sm font-bold truncate text-white tracking-tight">{profile?.email || 'НЕМАЄ EMAIL'}</span>
-  //             </div>
-
-  //             {profile?.address && (
-  //               <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl">
-  //                 <div className="p-2 bg-black/20 rounded-lg"><MapPin size={16} className="text-primary" /></div>
-  //                 <span className="text-xs font-bold text-slate-300 leading-tight">{profile.address}</span>
-  //               </div>
-  //             )}
-  //           </div>
-
-  //           {/* Tactical Notes */}
-  //           <div className="mt-6 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] relative overflow-hidden">
-  //             <div className="flex items-center gap-2 mb-4">
-  //               <ShieldCheck size={14} className="text-primary" />
-  //               <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Нотатки про клієнта</span>
-  //             </div>
-  //             <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
-  //               {loading ? "Розшифровка..." : (details?.notes || "Для цього пілота не зафіксовано жодних специфічних нотаток.")}
-  //             </p>
-  //             <FileText className="absolute -right-4 -bottom-4 w-24 h-24 text-primary/5 -rotate-12" />
-  //           </div>
-  //         </div>
-  //       </div>
-        
-  //       {/* Actions / Close Button */}
-  //       <div className="p-6 border-t border-white/5 bg-[#0D0D0D] md:hidden">
-  //           <button 
-  //             onClick={onClose}
-  //             className="w-full py-4 bg-white text-black font-black uppercase text-xs tracking-[0.2em] rounded-2xl active:scale-95 transition-all shadow-xl"
-  //           >
-  //             Назад
-  //           </button>
-  //       </div>
-
-  //       <button 
-  //         onClick={onClose} 
-  //         className="absolute top-6 right-6 p-2.5 bg-white/5 hover:bg-red-500/20 text-white/30 hover:text-white rounded-full transition-all border border-white/10"
-  //       >
-  //         <X size={20} />
-  //       </button>
-  //     </div>
-  //   </div>
-  // )
 }
