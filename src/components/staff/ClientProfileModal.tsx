@@ -39,7 +39,7 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
   const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
 
   
-  const [isIntelOpen, setIsIntelOpen] = useState(false);
+  const [isIntelOpen, setIsIntelOpen] = useState(true);
 
   useEffect(() => {
     async function fetchFullDossier() {
@@ -234,8 +234,20 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
 
         </div>
 
+        {details?.notes && details.notes !== "" && (
+          <div className="px-6 md:px-10 pb-2 mt-2 md:mt-4 relative">
+            <div className="bg-[#0a0a0a] border border-white/5 rounded-[2rem] p-4 space-y-2 relative overflow-hidden">
+              <p className="text-[10px] font-black text-slate-600 uppercase mb-3 tracking-widest">
+                {tForm("notes")}
+              </p>
+              <span className="mt-6 pt-4 border-t border-zinc-800 block">
+                {details.notes}
+              </span>
+            </div>
+          </div>
+        )}
 
-        <div className="px-6 md:px-10 pb-10 mt-2 md:mt-4 relative">
+        <div className="px-6 md:px-10 pb-8 mt-2 md:mt-4 relative">
 
           <div className={`bg-[#0a0a0a] border border-white/5 rounded-[1.5rem] md:rounded-[2rem] px-5 py-4 md:p-8 relative overflow-hidden transition-all duration-200 ${isIntelOpen ? 'space-y-5 md:space-y-8 pb-5' : 'space-y-0 pb-4'}`}>
             {/* Header Toggle Wrapper */}
