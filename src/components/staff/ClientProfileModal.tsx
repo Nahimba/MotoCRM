@@ -203,11 +203,11 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
             <div className="flex items-center gap-2 mb-4 relative z-10">
               <ShieldCheck size={14} className="text-primary" />
               <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
-                Tactical Notes
+                Нотатки
               </span>
             </div>
             <p className="text-[13px] text-slate-300 font-medium leading-relaxed italic relative z-10">
-              {loading ? "Розшифровка даних..." : (details?.notes || "Для цього пілота не зафіксовано специфічних нотаток.")}
+              {loading ? "Завантаження..." : (details?.notes || "Для цього клієнта нотатки відсутні.")}
             </p>
             {/* Background Decorative Icon */}
             <FileText className="absolute -right-6 -bottom-6 w-32 h-32 text-primary/5 -rotate-12 pointer-events-none" />
