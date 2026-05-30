@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { X, Phone, User, FileText, Mail, ShieldCheck, MapPin } from "lucide-react"
+import { X, Phone, Share2, Globe, Mail, ChevronDown, MapPin } from "lucide-react"
 import { useTranslations } from "next-intl"
 
-import { formatFlexiblePhone, cn} from "@/lib/utils"
+// import { formatFlexiblePhone, cn} from "@/lib/utils"
 
 import { BaseModal } from "@/components/crm_ui/BaseModal"
 
@@ -17,16 +17,29 @@ interface ClientProfileModalProps {
 
 export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileModalProps) {
   const [details, setDetails] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(client?.profiles || null)
+
   const [loading, setLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   
-  const t = useTranslations("Constants")
+
+  //const t = useTranslations("Constants")
+  const t = useTranslations("Clients.details")
+  const tForm = useTranslations("Clients.form")
+  const tConst = useTranslations("Constants.gear_type")
+  const tConstLS = useTranslations("Constants.lead_sources")
+  const tConstSS = useTranslations("Constants.student_stages")
 
   // Отримуємо ID клієнта та ID конкретного пакета з пропсів
   const targetClientId = client.client_id || client.id
   const targetPackageId = client.course_package_id || client.package_id
+
+  
+  const initials = `${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`.toUpperCase()
+
+  
+  const [isIntelOpen, setIsIntelOpen] = useState(false);
 
   useEffect(() => {
     async function fetchFullDossier() {
@@ -37,17 +50,20 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
         // 1. Завантажуємо основні дані профілю
         const { data: clientData, error: clientError } = await supabase
           .from('clients')
+          // .select(`
+          //   *,
+          //   profiles:profile_id (
+          //     first_name,
+          //     last_name,
+          //     phone,
+          //     email,
+          //     avatar_url,
+          //     address
+          //   )
+          // `)
           .select(`
-            notes,
-            gear_type,
-            profiles:profile_id (
-              first_name,
-              last_name,
-              phone,
-              email,
-              avatar_url,
-              address
-            )
+            *,
+            profiles:profile_id (*)
           `)
           .eq('id', targetClientId)
           .single()
@@ -70,7 +86,9 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
         setProfile(rawProfile)
         setDetails({
           ...dossierData,
+          is_active_1: clientData?.is_active,
           gear_type: clientData?.gear_type,
+          training_stage: clientData?.training_stage,
           notes: clientData?.notes || dossierData?.client_notes 
         })
 
@@ -96,8 +114,68 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
     fetchFullDossier()
   }, [targetClientId, targetPackageId])
 
-  const firstName = profile?.first_name || client.client_name || client.name || "Невідомо"
-  const lastName = profile?.last_name || client.client_last_name || client.last_name || ""
+  // const firstName = profile?.first_name || client.client_name || client.name || "Невідомо"
+  // const lastName = profile?.last_name || client.client_last_name || client.last_name || ""
+
+  
+  const formatDisplayPhone = (value: string) => {
+    if (!value) return "";
+    // Видаляємо все, крім цифр та плюса на початку
+    const hasPlus = value.startsWith("+");
+    const digits = value.replace(/\D/g, "");
+    if (digits.length === 0) return hasPlus ? "+" : "";
+    // Якщо номер дуже короткий (менше 6 цифр), не форматируємо
+    if (digits.length < 6) return hasPlus ? `+${digits}` : digits;
+    let formatted = "";
+    // Логіка: [Код країни] (Код міста/мережі) [Номер]
+    // Працює за схемою: +XX (XXX) XXX XX XX...
+    if (digits.length <= 10) {
+      // Короткі міжнародні або локальні формати
+      formatted = `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+    } else {
+      // Повний міжнародний стандарт (напр. +380 або +1)
+      // Виділяємо перші 2 цифри як код країни для візуального комфорту
+      formatted = `${digits.slice(0, 2)} (${digits.slice(2, 5)}) ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 14)}`;
+    }
+    return hasPlus ? `+${formatted.trim()}` : formatted.trim();
+  };
+
+
+
+  
+
+  const renderLinks = (text: string) => {
+    if (!text) return null;
+  
+    // Split by whitespace or commas
+    const parts = text.split(/[\s,]+/);
+  
+    return parts.map((part, index) => {
+      const isUrl = /^(https?:\/\/)?([\w.-]+\.[a-z]{2,})(\/\S*)?$/i.test(part);
+      
+      if (isUrl) {
+        const href = part.startsWith('http') ? part : `https://${part}`;
+        return (
+          <a 
+            key={index} 
+            href={href} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-primary hover:underline break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      return <span key={index}>{part} </span>;
+    });
+  };
+
+  // 1. Отримуємо відрендерені лінки
+  const links = profile?.social_link ? renderLinks(profile.social_link) : null;
+  
+  // 2. Перевіряємо, чи масив лінків не порожній (якщо renderLinks повертає масив елементів)
+  const hasLinks = Array.isArray(links) ? links.length > 0 : !!links;
 
 
   return (
@@ -117,105 +195,140 @@ export function ClientProfileModal({ client, isOpen, onClose }: ClientProfileMod
       </button>
 
       <div className="-m-6 md:-m-10 overflow-y-auto custom-scrollbar">
-        {/* Decorative Header Background */}
-        <div className="relative h-32 md:h-40 bg-gradient-to-br from-primary/30 via-zinc-900 to-transparent" />
+        
+        <div className="px-6 md:px-2 pb-2 mt-6 md:mt-12 relative">
 
-        <div className="px-6 md:px-10 pb-10 -mt-16 relative">
-          {/* Avatar & Status Badges */}
-          <div className="flex justify-between items-end mb-6">
-            <div className="h-32 w-32 md:h-44 md:w-44 rounded-[2.5rem] bg-zinc-900 border-[6px] border-[#0A0A0A] overflow-hidden shadow-2xl relative">
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-zinc-700 bg-zinc-800">
-                  <User size={48} strokeWidth={1} />
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col items-end gap-2 mb-2">
-              <div className={cn(
-                "px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-lg",
-                details?.is_graduated 
-                  ? "bg-green-500/10 border-green-500/20 text-green-500" 
-                  : "bg-primary/10 border-primary/20 text-primary"
-              )}>
-                {details?.is_graduated ? "Випускник" : "Активний"}
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <div className="relative shrink-0">
+              <div className="w-36 h-36 md:w-48 md:h-48 bg-gradient-to-br from-zinc-800 to-black rounded-[2rem] md:rounded-[3rem] border border-white/10 flex items-center justify-center overflow-hidden shadow-2xl">
+                {avatarPreview ? (
+                  <img src={avatarPreview} className="w-full h-full object-cover" alt="Pilot" />
+                ) : (
+                  <span className="text-4xl md:text-5xl font-black italic text-zinc-700 tracking-tighter">{initials}</span>
+                )}
               </div>
-              {details?.gear_type && (
-                <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-slate-400 uppercase italic">
-                  {/* @ts-ignore */}
-                  {t('gear_type.' + details.gear_type)}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Identity Name */}
-          <div className="space-y-1 mb-8">
-            <h3 className="text-3xl md:text-5xl font-black uppercase italic text-white tracking-tighter leading-none break-words">
-              {firstName} <span className="text-primary">{lastName}</span>
-            </h3>
-          </div>
-
-          {/* Contact Information Cards */}
-          <div className="grid gap-3">
-            <a 
-              href={profile?.phone ? `tel:${profile.phone.replace(/\s/g, '')}` : undefined} 
-              className={cn(
-                "flex items-center gap-4 p-4 rounded-2xl border transition-all",
-                profile?.phone 
-                  ? "bg-white/5 border-white/5 hover:bg-primary hover:text-black hover:border-primary group" 
-                  : "bg-white/5 border-white/5 opacity-40 cursor-not-allowed pointer-events-none"
-              )}
-            >
-              <div className="p-2 bg-black/20 group-hover:bg-black/10 rounded-lg">
-                <Phone size={16} />
-              </div>
-              <span className="text-sm font-black tabular-nums tracking-tight">
-                {profile?.phone ? formatFlexiblePhone(profile.phone) : 'НЕМАЄ ТЕЛЕФОНУ'}
-              </span>
-            </a>
-
-            <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/5 rounded-2xl">
-              <div className="p-2 bg-black/20 rounded-lg">
-                <Mail size={16} className="text-primary" />
-              </div>
-              <span className="text-sm font-bold truncate text-white tracking-tight">
-                {profile?.email || 'НЕМАЄ EMAIL'}
-              </span>
             </div>
 
-            {profile?.address && (
-              <div className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl">
-                <div className="p-2 bg-black/20 rounded-lg">
-                  <MapPin size={16} className="text-primary" />
+            <div className="text-center md:text-left flex-1 w-full min-w-0">
+              <div className="flex-1 w-full min-w-0">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2">
+                  <span className="text-2xl md:text-3xl font-black italic uppercase text-white tracking-tighter leading-none">{profile?.first_name}</span>
+                  <span className="text-2xl md:text-3xl font-black italic uppercase text-primary tracking-tighter leading-none">{profile?.last_name}</span>
                 </div>
-                <span className="text-xs font-bold text-slate-300 leading-tight">
-                  {profile.address}
+              </div>
+              <div className="flex items-center justify-center md:justify-start gap-4 mt-4 md:mt-6">
+  
+                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${details?.is_active_1 ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${details?.is_active_1 ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {details?.is_active_1 ? tConstSS(details?.training_stage) : "Неактивний"}
                 </span>
+
+                <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${tConst(details?.gear_type) ? 'text-blue-400' : 'text-orange-400'}`}>
+                  {tConst(details?.gear_type)}
+                </span>
+
               </div>
-            )}
+
+            </div>
           </div>
 
-          {/* Tactical Notes / Intelligence Section */}
-          <div className="mt-8 p-6 bg-primary/5 border border-primary/10 rounded-[2.5rem] relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-4 relative z-10">
-              <ShieldCheck size={14} className="text-primary" />
-              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
-                Нотатки
-              </span>
+        </div>
+
+
+        <div className="px-6 md:px-10 pb-10 mt-2 md:mt-4 relative">
+
+          <div className={`bg-[#0a0a0a] border border-white/5 rounded-[1.5rem] md:rounded-[2rem] px-5 py-4 md:p-8 relative overflow-hidden transition-all duration-200 ${isIntelOpen ? 'space-y-5 md:space-y-8 pb-5' : 'space-y-0 pb-4'}`}>
+            {/* Header Toggle Wrapper */}
+            <div 
+              onClick={() => setIsIntelOpen(!isIntelOpen)} 
+              className={`flex items-center justify-between cursor-pointer md:cursor-default select-none transition-all duration-200 ${isIntelOpen ? 'border-b border-white/5 pb-4' : 'border-b border-transparent pb-0 md:border-white/5 md:pb-4'}`}
+            >
+              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t("core_intel")}</h2>
+              {/* Chevron Indicator - Visible only on mobile */}
+              <div className="md:hidden text-slate-300 transition-transform duration-200">
+                <ChevronDown size={16} className={isIntelOpen ? "rotate-180" : "rotate-0"} />
+              </div>
             </div>
-            <p className="text-[13px] text-slate-300 font-medium leading-relaxed italic relative z-10">
-              {loading ? "Завантаження..." : (details?.notes || "Для цього клієнта нотатки відсутні.")}
-            </p>
-            {/* Background Decorative Icon */}
-            <FileText className="absolute -right-6 -bottom-6 w-32 h-32 text-primary/5 -rotate-12 pointer-events-none" />
+
+            {/* Collapsible content space */}
+            <div className={`${isIntelOpen ? 'block pt-1' : 'hidden'} md:block space-y-5 md:space-y-6`}>
+
+              <div className="flex items-center justify-between gap-3 group/row">
+                <div className="flex-1 min-w-0">
+                  <InfoRow 
+                    icon={<Phone size={14} className="text-slate-500" />} 
+                    label={t("phone")} 
+                    /* Форматований текст для ока */
+                    value={profile?.phone ? formatDisplayPhone(profile.phone) : null} 
+                    fallback="Немає номеру" 
+                  />
+                </div>
+                
+                {profile?.phone && (
+                  /* Чистий номер для виклику (видаляємо все крім + та цифр) */
+                  <a 
+                    href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} 
+                    className="p-3 md:p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary hover:bg-primary hover:text-black transition-all shadow-xl active:scale-95 shrink-0"
+                    title="Зателефонувати"
+                  >
+                    <Phone size={16} strokeWidth={2.5} />
+                  </a>
+                )}
+              </div>
+              
+              <InfoRow icon={<Mail size={14}/>} label={t("email")} value={profile?.email} fallback="N/A" />
+              <InfoRow icon={<MapPin size={14}/>} label={t("address")} value={profile?.address} fallback="N/A" />
+
+              <InfoRow 
+                icon={<Share2 size={14}/>} 
+                label={tForm("lead_source")} 
+                value={client?.lead_source ? tConstLS(`${client.lead_source}`) : null} 
+                fallback="N/A" 
+              />
+              <InfoRow 
+                    icon={<Globe size={14}/>} 
+                    label="Соціальні мережі" 
+                    value={hasLinks ? (
+                      <div className="flex flex-wrap gap-2 pt-0.5 normal-case">
+                        {links}
+                      </div>
+                    ) : null} 
+                    fallback="N/A" 
+                  />
+            
+            </div>
+
           </div>
+
+
+
+
+
         </div>
       </div>
     </BaseModal>
+    
   )
+
+  function InfoRow({ icon, label, value, fallback }: any) {
+    return (
+      <div className="flex items-center gap-5 group">
+        <div className="p-4 bg-white/5 rounded-2xl text-slate-500 group-hover:text-primary transition-all border border-white/5 group-hover:border-primary/20">
+          {icon}
+        </div>
+        <div>
+          <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">
+            {label}
+          </p>
+          {/* CHANGED: p to div to allow block-level content like flex containers */}
+          <div className="text-sm font-bold text-white uppercase tracking-tight">
+            {value || fallback}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
 
   // return (
   //   <div className="fixed inset-0 z-[200] flex items-end md:items-center justify-center p-0 md:p-4">

@@ -21,6 +21,7 @@ import { toast } from "sonner"
 
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  
   const t = useTranslations("Clients.details")
   const tForm = useTranslations("Clients.form")
   const tConst = useTranslations("Constants.gear_type")
