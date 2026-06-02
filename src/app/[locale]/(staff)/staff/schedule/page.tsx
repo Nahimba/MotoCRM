@@ -89,7 +89,7 @@ export default function SchedulePage() {
         startDistanceRef.current = distance
       }
 
-      // 🚩 ЖОРСТКИЙ СТОП ДЛЯ АНДРОЇД / IOS
+      // Глушимо нативний зум вікна ТІЛЬКИ під час pinch-жесту
       if ('cancelable' in event && event.cancelable) {
         event.preventDefault()
       }
@@ -97,7 +97,7 @@ export default function SchedulePage() {
       if (startDistanceRef.current <= 0 || distance <= 0) return
 
       const currentScale = distance / startDistanceRef.current
-      const sensitivity = 1.5
+      const sensitivity = 1.5 
       const adjustedScale = 1 + (currentScale - 1) * sensitivity
       const newHeight = startHeightRef.current * adjustedScale
 
@@ -106,7 +106,7 @@ export default function SchedulePage() {
     {
       target: scrollContainerRef,
       eventOptions: { passive: false },
-      preventDefault: true // 🚩 Повертаємо true, щоб примусово глушити рідні жести
+      preventDefault: true // Дозволяє бібліотеці м'яко перехоплювати мультитач
     }
   )
 
@@ -115,16 +115,18 @@ export default function SchedulePage() {
     const container = scrollContainerRef.current
     if (!container) return
 
-    // Дозволяємо браузеру скролити одним пальцем, але блокуємо його, якщо пальців більше
+    // Чистий і легкий обробник подій БЕЗ capture, який не заважає скролу одним пальцем
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 1) {
-        if (e.cancelable) e.preventDefault() // Стоп нативному зуму вікна
+      if (e.touches.length > 1 && e.cancelable) {
+        e.preventDefault() // Блокуємо зум вікна, якщо задіяно > 1 палець
       }
     }
 
+    // Вішаємо у звичайному режимі (без capture), щоб не ламати карту жестів
     container.addEventListener('touchmove', handleTouchMove, { passive: false })
     
-    // Повертаємо нативний скрол для touchAction
+    // 🚩 ЗАЛІЗНЕ CSS-ПРАВИЛО ДЛЯ CHROME: дозволено лише скрол по X та Y. 
+    // Відсутність тут слова 'pinch-zoom' змушує Android Chrome нативно ігнорувати системний зум сторінки.
     container.style.touchAction = 'pan-x pan-y'
 
     return () => {
