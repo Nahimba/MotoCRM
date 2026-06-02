@@ -79,7 +79,7 @@ export default function SchedulePage() {
   // Реф для збереження початкової відстані між пальцями
   const startDistanceRef = useRef(0)
 
-  // 🚩 НАДІЙНИЙ КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ (da)
+  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ
   usePinch(
     ({ first, da: [distance], event }) => {
       if (!event) return
@@ -89,6 +89,7 @@ export default function SchedulePage() {
         startDistanceRef.current = distance
       }
 
+      // 🚩 ЖОРСТКИЙ СТОП ДЛЯ АНДРОЇД / IOS
       if ('cancelable' in event && event.cancelable) {
         event.preventDefault()
       }
@@ -96,7 +97,7 @@ export default function SchedulePage() {
       if (startDistanceRef.current <= 0 || distance <= 0) return
 
       const currentScale = distance / startDistanceRef.current
-      const sensitivity = 7.0
+      const sensitivity = 1.5
       const adjustedScale = 1 + (currentScale - 1) * sensitivity
       const newHeight = startHeightRef.current * adjustedScale
 
@@ -105,14 +106,30 @@ export default function SchedulePage() {
     {
       target: scrollContainerRef,
       eventOptions: { passive: false },
-      preventDefault: false 
+      preventDefault: true // 🚩 Повертаємо true, щоб примусово глушити рідні жести
     }
   )
 
-  // Первинна ініціалізація під екран користувача
+  // 🚩 ЗАХИСТ ВІД СИСТЕМНОГО ЗУМУ ANDROID CHROME (Скрол працює, зум — ні)
   useEffect(() => {
-    const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
-    handleResize()
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    // Дозволяємо браузеру скролити одним пальцем, але блокуємо його, якщо пальців більше
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        if (e.cancelable) e.preventDefault() // Стоп нативному зуму вікна
+      }
+    }
+
+    container.addEventListener('touchmove', handleTouchMove, { passive: false })
+    
+    // Повертаємо нативний скрол для touchAction
+    container.style.touchAction = 'pan-x pan-y'
+
+    return () => {
+      container.removeEventListener('touchmove', handleTouchMove)
+    }
   }, [])
 
   // 🚩 ПЛАВНИЙ ДЕСКТОПНИЙ CTRL + WHEEL ZOOM (ЩЕ ПЛАВНІШИЙ)
@@ -154,6 +171,47 @@ export default function SchedulePage() {
 
     return cleanup
   }, []) // Порожній масив, щоб не перестворювати лістенер щоразу
+
+
+  // // 🚩 НАДІЙНИЙ КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ (da)
+  // usePinch(
+  //   ({ first, da: [distance], event }) => {
+  //     if (!event) return
+
+  //     if (first) {
+  //       startHeightRef.current = hourHeight
+  //       startDistanceRef.current = distance
+  //     }
+
+  //     if ('cancelable' in event && event.cancelable) {
+  //       event.preventDefault()
+  //     }
+
+  //     if (startDistanceRef.current <= 0 || distance <= 0) return
+
+  //     const currentScale = distance / startDistanceRef.current
+  //     const sensitivity = 7.0
+  //     const adjustedScale = 1 + (currentScale - 1) * sensitivity
+  //     const newHeight = startHeightRef.current * adjustedScale
+
+  //     setHourHeight(Math.max(50, Math.min(200, newHeight)))
+  //   },
+  //   {
+  //     target: scrollContainerRef,
+  //     eventOptions: { passive: false },
+  //     preventDefault: false 
+  //   }
+  // )
+
+  // // Первинна ініціалізація під екран користувача
+  // useEffect(() => {
+  //   const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
+  //   handleResize()
+  // }, [])
+
+
+
+
 
 
   // // 🚩 NATIVE PINCH-ZOOM & SCROLL ENGINE (No external libraries, x3 speed, 1-finger scroll perfectly free)
@@ -760,7 +818,9 @@ export default function SchedulePage() {
           overscrollBehavior: 'contain', // Ізолює скрол всередині контейнера розкладу
           /* 🚩 ТУТ: використовуємо 'pan-x pan-y', що дозволяє браузеру 
              вільно та плавно скролити одним пальцем у будь-який бік */
-          touchAction: 'pan-x pan-y' 
+          // touchAction: 'pan-x pan-y' 
+          // ТУТ: Залишаємо порожньо або 'none', ми налаштуємо це нативно нижче
+          touchAction: 'none'
         }}
       >
 
