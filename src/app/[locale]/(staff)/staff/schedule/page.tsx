@@ -96,7 +96,7 @@ export default function SchedulePage() {
       if (startDistanceRef.current <= 0 || distance <= 0) return
 
       const currentScale = distance / startDistanceRef.current
-      const sensitivity = 0.7
+      const sensitivity = 7.0
       const adjustedScale = 1 + (currentScale - 1) * sensitivity
       const newHeight = startHeightRef.current * adjustedScale
 
