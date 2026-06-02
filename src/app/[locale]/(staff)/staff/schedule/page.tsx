@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
-// import { usePinch } from '@use-gesture/react'
+
+import { usePinch } from '@use-gesture/react'
+
 import { supabase } from "@/lib/supabase"
 import { 
   ChevronLeft, ChevronRight, Plus, 
@@ -72,113 +74,177 @@ export default function SchedulePage() {
   const TZ = 'Europe/Kyiv' // This would come from your settings/database
 
 
-  // 🚩 NATIVE PINCH-ZOOM & SCROLL ENGINE (No external libraries, x3 speed, 1-finger scroll perfectly free)
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-  
-    const zoomState = {
-      startDistance: 0,
-      startHeight: 0,
-      isZooming: false,
-    };
-  
-    const getDistance = (touches: TouchList) => {
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-  
-    // --- ОБРОБКА ТАЧІВ (ДЛЯ ANDROID CHROME) ---
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        zoomState.isZooming = true;
-        zoomState.startDistance = getDistance(e.touches);
-        zoomState.startHeight = hourHeight;
-      }
-    };
-  
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && zoomState.isZooming) {
-        // Глушимо дефолтний зум сторінки браузером
-        if (e.cancelable) e.preventDefault();
-  
-        const currentDistance = getDistance(e.touches);
-        if (currentDistance <= 0 || zoomState.startDistance <= 0) return;
-  
-        const scale = currentDistance / zoomState.startDistance;
-        const newHeight = zoomState.startHeight * scale;
-  
-        setHourHeight(Math.max(40, Math.min(250, newHeight)));
-      }
-    };
-  
-    const handleTouchEnd = () => {
-      zoomState.isZooming = false;
-      zoomState.startDistance = 0;
-    };
-  
-    // --- ЖОРСТКЕ БЛОКУВАННЯ ДЛЯ IOS SAFARI ---
-    // Перехоплюємо жести на етапі capture і глушимо їх для всієї сторінки,
-    // але всередині обробника gesturechange крутимо наш hourHeight
-    const handleGestureStart = (e: any) => {
-      e.preventDefault();
-      zoomState.startHeight = hourHeight;
-      zoomState.isZooming = true;
-    };
-  
-    const handleGestureChange = (e: any) => {
-      e.preventDefault(); // 🚩 СТОП нативному зуму Safari
-      if (zoomState.isZooming) {
-        const newHeight = zoomState.startHeight * e.scale;
-        setHourHeight(Math.max(40, Math.min(250, newHeight)));
-      }
-    };
-  
-    const handleGestureEnd = () => {
-      zoomState.isZooming = false;
-    };
-  
-    // Реєстрація тач-подій на контейнері
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('touchcancel', handleTouchEnd);
-  
-    // 🚩 ГЛОБАЛЬНЕ БЛОКУВАННЯ НА РІВНІ WINDOW (Флаг capture: true)
-    // Це змушує код спрацьовувати РАНІШЕ, ніж браузер ініціює зум сторінки
-    window.addEventListener('gesturestart', handleGestureStart, { passive: false, capture: true });
-    window.addEventListener('gesturechange', handleGestureChange, { passive: false, capture: true });
-    window.addEventListener('gestureend', handleGestureEnd, { passive: true, capture: true });
-  
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
-  
-      window.removeEventListener('gesturestart', handleGestureStart, { capture: true });
-      window.removeEventListener('gesturechange', handleGestureChange, { capture: true });
-      window.removeEventListener('gestureend', handleGestureEnd, { capture: true });
-    };
-  }, [hourHeight]);
+  // Реф для збереження початкової висоти на момент початку жесту
+  const startHeightRef = useRef(80)
 
-  
+  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ @USE-GESTURE (БЕЗПЕЧНИЙ І ЗГЛАДЖЕНИЙ)
+  usePinch(
+    ({ first, movement: [scale], event }) => {
+      if (!event) return
 
-  // Responsive UI initial setup
-  useEffect(() => {
-    const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
-    handleResize()
-  }, [])
-  
+      if (first) {
+        startHeightRef.current = hourHeight
+      }
 
-  // Responsive UI logic для початкового стану
+      if ('cancelable' in event && event.cancelable) {
+        event.preventDefault()
+      }
+
+      // 🚩 ЗАХИСТ ВІД NaN: якщо scale впав до нуля або пішов у мінус через різкий жест
+      if (scale <= 0) return
+
+      // ЗГЛАДЖУВАННЯ ТАЧ-МАСШТАБУ
+      const delta = Math.log(scale);
+      
+      // Коефіцієнт чутливості (0.4 гальмує занадто швидкий zoom-out)
+      const sensitivity = 0.4;
+      
+      // Розраховуємо нову висоту експоненціально
+      const newHeight = Math.ceil( startHeightRef.current * Math.exp(delta * sensitivity));
+
+      setHourHeight(Math.max(50, Math.min(200, newHeight)))
+    },
+    {
+      target: scrollContainerRef,
+      eventOptions: { passive: false },
+      preventDefault: false, 
+      from: () => [1, 0] 
+    }
+  )
+
+  // Первинна ініціалізація під екран користувача
   useEffect(() => {
     const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
     handleResize()
   }, [])
 
-  // ... решта вашого коду сторінки
+  // 🚩 ПЛАВНИЙ ДЕСКТОПНИЙ CTRL + WHEEL ZOOM (ЩЕ ПЛАВНІШИЙ)
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.cancelable) e.preventDefault()
+
+        // 🚩 Зменшено коефіцієнт з 0.0015 до 0.0007 для максимального контролю кроку миші
+        const zoomFactor = -e.deltaY * 0.0007
+
+        setHourHeight((prev) => {
+          const newHeight = prev * Math.exp(zoomFactor)
+          return Math.max(50, Math.min(200, newHeight)) // Межа 200px синхронно з usePinch
+        })
+      }
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    return () => container.removeEventListener('wheel', handleWheel)
+  }, [])
+
+
+  // // 🚩 NATIVE PINCH-ZOOM & SCROLL ENGINE (No external libraries, x3 speed, 1-finger scroll perfectly free)
+  // useEffect(() => {
+  //   const container = scrollContainerRef.current;
+  //   if (!container) return;
+  
+  //   const zoomState = {
+  //     startDistance: 0,
+  //     startHeight: 0,
+  //     isZooming: false,
+  //   };
+  
+  //   const getDistance = (touches: TouchList) => {
+  //     const dx = touches[0].clientX - touches[1].clientX;
+  //     const dy = touches[0].clientY - touches[1].clientY;
+  //     return Math.sqrt(dx * dx + dy * dy);
+  //   };
+  
+  //   // --- ОБРОБКА ТАЧІВ (ДЛЯ ANDROID CHROME) ---
+  //   const handleTouchStart = (e: TouchEvent) => {
+  //     if (e.touches.length === 2) {
+  //       zoomState.isZooming = true;
+  //       zoomState.startDistance = getDistance(e.touches);
+  //       zoomState.startHeight = hourHeight;
+  //     }
+  //   };
+  
+  //   const handleTouchMove = (e: TouchEvent) => {
+  //     if (e.touches.length === 2 && zoomState.isZooming) {
+  //       // Глушимо дефолтний зум сторінки браузером
+  //       if (e.cancelable) e.preventDefault();
+  
+  //       const currentDistance = getDistance(e.touches);
+  //       if (currentDistance <= 0 || zoomState.startDistance <= 0) return;
+  
+  //       const scale = currentDistance / zoomState.startDistance;
+  //       const newHeight = zoomState.startHeight * scale;
+  
+  //       setHourHeight(Math.max(40, Math.min(250, newHeight)));
+  //     }
+  //   };
+  
+  //   const handleTouchEnd = () => {
+  //     zoomState.isZooming = false;
+  //     zoomState.startDistance = 0;
+  //   };
+  
+  //   // --- ЖОРСТКЕ БЛОКУВАННЯ ДЛЯ IOS SAFARI ---
+  //   // Перехоплюємо жести на етапі capture і глушимо їх для всієї сторінки,
+  //   // але всередині обробника gesturechange крутимо наш hourHeight
+  //   const handleGestureStart = (e: any) => {
+  //     e.preventDefault();
+  //     zoomState.startHeight = hourHeight;
+  //     zoomState.isZooming = true;
+  //   };
+  
+  //   const handleGestureChange = (e: any) => {
+  //     e.preventDefault(); // 🚩 СТОП нативному зуму Safari
+  //     if (zoomState.isZooming) {
+  //       const newHeight = zoomState.startHeight * e.scale;
+  //       setHourHeight(Math.max(40, Math.min(250, newHeight)));
+  //     }
+  //   };
+  
+  //   const handleGestureEnd = () => {
+  //     zoomState.isZooming = false;
+  //   };
+  
+  //   // Реєстрація тач-подій на контейнері
+  //   container.addEventListener('touchstart', handleTouchStart, { passive: true });
+  //   container.addEventListener('touchmove', handleTouchMove, { passive: false });
+  //   container.addEventListener('touchend', handleTouchEnd);
+  //   container.addEventListener('touchcancel', handleTouchEnd);
+  
+  //   // 🚩 ГЛОБАЛЬНЕ БЛОКУВАННЯ НА РІВНІ WINDOW (Флаг capture: true)
+  //   // Це змушує код спрацьовувати РАНІШЕ, ніж браузер ініціює зум сторінки
+  //   window.addEventListener('gesturestart', handleGestureStart, { passive: false, capture: true });
+  //   window.addEventListener('gesturechange', handleGestureChange, { passive: false, capture: true });
+  //   window.addEventListener('gestureend', handleGestureEnd, { passive: true, capture: true });
+  
+  //   return () => {
+  //     container.removeEventListener('touchstart', handleTouchStart);
+  //     container.removeEventListener('touchmove', handleTouchMove);
+  //     container.removeEventListener('touchend', handleTouchEnd);
+  //     container.removeEventListener('touchcancel', handleTouchEnd);
+  
+  //     window.removeEventListener('gesturestart', handleGestureStart, { capture: true });
+  //     window.removeEventListener('gesturechange', handleGestureChange, { capture: true });
+  //     window.removeEventListener('gestureend', handleGestureEnd, { capture: true });
+  //   };
+  // }, [hourHeight]);
+
+  
+
+  // // Responsive UI initial setup
+  // useEffect(() => {
+  //   const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
+  //   handleResize()
+  // }, [])
+  
+
+
+
+
 
 
   // 2. Resolve Instructor Context
@@ -675,8 +741,9 @@ export default function SchedulePage() {
         ref={scrollContainerRef}
         className="flex-1 overflow-auto relative bg-[#050505] custom-scrollbar antialiased select-none"
         style={{ 
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain',
+          height: '80vh',
+          WebkitOverflowScrolling: 'touch', // Вмикає плавний інерційний скрол на старих iOS
+          overscrollBehavior: 'contain', // Ізолює скрол всередині контейнера розкладу
           /* 🚩 ТУТ: використовуємо 'pan-x pan-y', що дозволяє браузеру 
              вільно та плавно скролити одним пальцем у будь-який бік */
           touchAction: 'pan-x pan-y' 
