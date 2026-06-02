@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 
-import { usePinch } from '@use-gesture/react'
+import { useGesture,usePinch } from '@use-gesture/react'
 
 import { supabase } from "@/lib/supabase"
 import { 
@@ -79,58 +79,110 @@ export default function SchedulePage() {
   // Реф для збереження початкової відстані між пальцями
   const startDistanceRef = useRef(0)
 
-  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ (СКРОЛ ІДЕАЛЬНО ВІЛЬНИЙ)
-  usePinch(
-    ({ first, da: [distance], event }) => {
-      // Якщо події немає або на екрані скролять 1 пальцем — миттєво виходим і даєм браузеру скролити
-      if (!event) return
+  // // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ (СКРОЛ ІДЕАЛЬНО ВІЛЬНИЙ)
+  // usePinch(
+  //   ({ first, da: [distance], event }) => {
+  //     // Якщо події немає або на екрані скролять 1 пальцем — миттєво виходим і даєм браузеру скролити
+  //     if (!event) return
 
-      if (first) {
-        startHeightRef.current = hourHeight
-        startDistanceRef.current = distance
+  //     if (first) {
+  //       startHeightRef.current = hourHeight
+  //       startDistanceRef.current = distance
+  //     }
+
+  //     // 🚩 БЛОКУЄМО НАТИВНИЙ ЗУМ СТОРІНКИ ТІЛЬКИ ЯКЩО ЦЕ МУЛЬТИТАЧ Жест (2 пальці)
+  //     if ('cancelable' in event && event.cancelable) {
+  //       event.preventDefault()
+  //     }
+
+  //     if (startDistanceRef.current <= 0 || distance <= 0) return
+
+  //     const currentScale = distance / startDistanceRef.current
+  //     const sensitivity = 1.5 
+  //     const adjustedScale = 1 + (currentScale - 1) * sensitivity
+  //     const newHeight = startHeightRef.current * adjustedScale
+
+  //     setHourHeight(Math.max(40, Math.min(200, newHeight)))
+  //   },
+  //   {
+  //     target: scrollContainerRef,
+  //     eventOptions: { passive: false },
+  //     // 🚩 ВИМИКАЄМО ТОТАЛЬНЕ БЛОКУВАННЯ: тепер сингл-тач скрол проходить далі до браузера
+  //     preventDefault: false 
+  //   }
+  // )
+
+  // // 🚩 ЖОРСТКИЙ ЗАХИСТ ВІД СИСТЕМНОГО ЗУМУ (БЕЗ ШКОДИ ДЛЯ СКРОЛУ)
+  // useEffect(() => {
+  //   const container = scrollContainerRef.current
+  //   if (!container) return
+
+  //   const handleTouchMove = (e: TouchEvent) => {
+  //     // Глушимо браузер ТІЛЬКИ якщо на екрані більше ніж один палець
+  //     if (e.touches.length > 1) {
+  //       if (e.cancelable) e.preventDefault()
+  //     }
+  //   }
+
+  //   // Вішаємо БЕЗ capture, щоб не перебивати логіку обробки скролу
+  //   container.addEventListener('touchmove', handleTouchMove, { passive: false })
+
+  //   return () => {
+  //     container.removeEventListener('touchmove', handleTouchMove)
+  //   }
+  // }, [])
+
+  // 🚩 КРОСПЛАТФОРМНИЙ РУШІЙ: СКРОЛ (1 ПАЛЕЦЬ) + ЗУМ (2 ПАЛЬЦІ)
+  useGesture(
+    {
+      // --- ОБРОБКА ПЕРЕТЯГУВАННЯ ОДНИМ ПАЛЬЦЕМ (СКРОЛ) ---
+      onDrag: ({ active, delta: [dx, dy], event }) => {
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        // Блокуємо дефолтну поведінку браузера
+        if (event && 'cancelable' in event && event.cancelable) {
+          event.preventDefault()
+        }
+
+        if (active) {
+          // Використовуємо дельту зсуву за кадр (dx, dy). 
+          // Знак мінус забезпечує інтуїтивне перетягування (куди тягнеш — туди й сунеться)
+          container.scrollLeft -= dx
+          container.scrollTop -= dy
+        }
+      },
+
+      // --- ОБРОБКА МАСШТАБУВАННЯ ДВОМА ПАЛЬЦЯМИ (ЗУМ) ---
+      onPinch: ({ first, da: [distance], event }) => {
+        if (!event) return
+
+        if (first) {
+          startHeightRef.current = hourHeight
+          startDistanceRef.current = distance
+        }
+
+        if ('cancelable' in event && event.cancelable) {
+          event.preventDefault()
+        }
+
+        if (startDistanceRef.current <= 0 || distance <= 0) return
+
+        const currentScale = distance / startDistanceRef.current
+        const sensitivity = 1.5 
+        const adjustedScale = 1 + (currentScale - 1) * sensitivity
+        const newHeight = startHeightRef.current * adjustedScale
+
+        setHourHeight(Math.max(50, Math.min(200, newHeight)))
       }
-
-      // 🚩 БЛОКУЄМО НАТИВНИЙ ЗУМ СТОРІНКИ ТІЛЬКИ ЯКЩО ЦЕ МУЛЬТИТАЧ Жест (2 пальці)
-      if ('cancelable' in event && event.cancelable) {
-        event.preventDefault()
-      }
-
-      if (startDistanceRef.current <= 0 || distance <= 0) return
-
-      const currentScale = distance / startDistanceRef.current
-      const sensitivity = 1.5 
-      const adjustedScale = 1 + (currentScale - 1) * sensitivity
-      const newHeight = startHeightRef.current * adjustedScale
-
-      setHourHeight(Math.max(40, Math.min(200, newHeight)))
     },
     {
       target: scrollContainerRef,
       eventOptions: { passive: false },
-      // 🚩 ВИМИКАЄМО ТОТАЛЬНЕ БЛОКУВАННЯ: тепер сингл-тач скрол проходить далі до браузера
-      preventDefault: false 
+      // Дозволяємо кліки по картках розкладу під час дотиків
+      drag: { filterTaps: true } 
     }
   )
-
-  // 🚩 ЖОРСТКИЙ ЗАХИСТ ВІД СИСТЕМНОГО ЗУМУ (БЕЗ ШКОДИ ДЛЯ СКРОЛУ)
-  useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
-
-    const handleTouchMove = (e: TouchEvent) => {
-      // Глушимо браузер ТІЛЬКИ якщо на екрані більше ніж один палець
-      if (e.touches.length > 1) {
-        if (e.cancelable) e.preventDefault()
-      }
-    }
-
-    // Вішаємо БЕЗ capture, щоб не перебивати логіку обробки скролу
-    container.addEventListener('touchmove', handleTouchMove, { passive: false })
-
-    return () => {
-      container.removeEventListener('touchmove', handleTouchMove)
-    }
-  }, [])
 
   // 🚩 ПЛАВНИЙ ДЕСКТОПНИЙ CTRL + WHEEL ZOOM (ЩЕ ПЛАВНІШИЙ)
   useEffect(() => {
@@ -818,9 +870,9 @@ export default function SchedulePage() {
           overscrollBehavior: 'contain', // Ізолює скрол всередині контейнера розкладу
           /* 🚩 ТУТ: використовуємо 'pan-x pan-y', що дозволяє браузеру 
              вільно та плавно скролити одним пальцем у будь-який бік */
-          touchAction: 'pan-x pan-y' 
+          // touchAction: 'pan-x pan-y' 
           // ТУТ: Залишаємо порожньо або 'none', ми налаштуємо це нативно нижче
-          // touchAction: 'none'
+          touchAction: 'none'
         }}
       >
 
