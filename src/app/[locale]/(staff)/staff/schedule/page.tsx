@@ -76,39 +76,36 @@ export default function SchedulePage() {
 
   // Реф для збереження початкової висоти на момент початку жесту
   const startHeightRef = useRef(80)
+  // Реф для збереження початкової відстані між пальцями
+  const startDistanceRef = useRef(0)
 
-  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ @USE-GESTURE (БЕЗПЕЧНИЙ І ЗГЛАДЖЕНИЙ)
+  // 🚩 НАДІЙНИЙ КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ (da)
   usePinch(
-    ({ first, movement: [scale], event }) => {
+    ({ first, da: [distance], event }) => {
       if (!event) return
 
       if (first) {
         startHeightRef.current = hourHeight
+        startDistanceRef.current = distance
       }
 
       if ('cancelable' in event && event.cancelable) {
         event.preventDefault()
       }
 
-      // 🚩 ЗАХИСТ ВІД NaN: якщо scale впав до нуля або пішов у мінус через різкий жест
-      if (scale <= 0) return
+      if (startDistanceRef.current <= 0 || distance <= 0) return
 
-      // ЗГЛАДЖУВАННЯ ТАЧ-МАСШТАБУ
-      const delta = Math.log(scale);
-      
-      // Коефіцієнт чутливості (0.4 гальмує занадто швидкий zoom-out)
-      const sensitivity = 0.4;
-      
-      // Розраховуємо нову висоту експоненціально
-      const newHeight = Math.ceil( startHeightRef.current * Math.exp(delta * sensitivity));
+      const currentScale = distance / startDistanceRef.current
+      const sensitivity = 0.7
+      const adjustedScale = 1 + (currentScale - 1) * sensitivity
+      const newHeight = startHeightRef.current * adjustedScale
 
       setHourHeight(Math.max(50, Math.min(200, newHeight)))
     },
     {
       target: scrollContainerRef,
       eventOptions: { passive: false },
-      preventDefault: false, 
-      from: () => [1, 0] 
+      preventDefault: false 
     }
   )
 
@@ -120,26 +117,43 @@ export default function SchedulePage() {
 
   // 🚩 ПЛАВНИЙ ДЕСКТОПНИЙ CTRL + WHEEL ZOOM (ЩЕ ПЛАВНІШИЙ)
   useEffect(() => {
-    const container = scrollContainerRef.current
-    if (!container) return
+    // Функція ініціалізації слухача подій
+    const attachWheelListener = () => {
+      const container = scrollContainerRef.current
+      if (!container) return false
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.cancelable) e.preventDefault()
+      const handleWheel = (e: WheelEvent) => {
+        // Перевіряємо Ctrl або Meta (Cmd на Mac)
+        if (e.ctrlKey || e.metaKey) {
+          if (e.cancelable) e.preventDefault()
 
-        // 🚩 Зменшено коефіцієнт з 0.0015 до 0.0007 для максимального контролю кроку миші
-        const zoomFactor = -e.deltaY * 0.0007
+          // Визначаємо напрямок: вверх (зум вхід) чи вниз (зум вихід)
+          const isZoomIn = e.deltaY < 0
+          
+          setHourHeight((prev) => {
+            // Крок зміни висоти у пікселях за один "тік" коліщатка (динамічний крок)
+            const step = prev * 0.08 
+            const newHeight = isZoomIn ? prev + step : prev - step
 
-        setHourHeight((prev) => {
-          const newHeight = prev * Math.exp(zoomFactor)
-          return Math.max(50, Math.min(200, newHeight)) // Межа 200px синхронно з usePinch
-        })
+            return Math.ceil( Math.max(50, Math.min(200, newHeight)))
+          })
+        }
       }
+
+      container.addEventListener('wheel', handleWheel, { passive: false })
+      return () => container.removeEventListener('wheel', handleWheel)
     }
 
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    return () => container.removeEventListener('wheel', handleWheel)
-  }, [])
+    // Запускаємо відразу та робимо мікро-таймаут на випадок повільного рендерингу DOM
+    const cleanup = attachWheelListener()
+    
+    if (!cleanup) {
+      const timer = setTimeout(attachWheelListener, 100)
+      return () => clearTimeout(timer)
+    }
+
+    return cleanup
+  }, []) // Порожній масив, щоб не перестворювати лістенер щоразу
 
 
   // // 🚩 NATIVE PINCH-ZOOM & SCROLL ENGINE (No external libraries, x3 speed, 1-finger scroll perfectly free)
