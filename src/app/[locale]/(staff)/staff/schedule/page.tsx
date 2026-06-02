@@ -79,9 +79,10 @@ export default function SchedulePage() {
   // Реф для збереження початкової відстані між пальцями
   const startDistanceRef = useRef(0)
 
-  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ
+  // 🚩 КРОСПЛАТФОРМНИЙ ЗУМ (СКРОЛ ІДЕАЛЬНО ВІЛЬНИЙ)
   usePinch(
     ({ first, da: [distance], event }) => {
+      // Якщо події немає або на екрані скролять 1 пальцем — миттєво виходим і даєм браузеру скролити
       if (!event) return
 
       if (first) {
@@ -89,7 +90,7 @@ export default function SchedulePage() {
         startDistanceRef.current = distance
       }
 
-      // Глушимо нативний зум вікна ТІЛЬКИ під час pinch-жесту
+      // 🚩 БЛОКУЄМО НАТИВНИЙ ЗУМ СТОРІНКИ ТІЛЬКИ ЯКЩО ЦЕ МУЛЬТИТАЧ Жест (2 пальці)
       if ('cancelable' in event && event.cancelable) {
         event.preventDefault()
       }
@@ -101,33 +102,30 @@ export default function SchedulePage() {
       const adjustedScale = 1 + (currentScale - 1) * sensitivity
       const newHeight = startHeightRef.current * adjustedScale
 
-      setHourHeight(Math.max(50, Math.min(200, newHeight)))
+      setHourHeight(Math.max(40, Math.min(200, newHeight)))
     },
     {
       target: scrollContainerRef,
       eventOptions: { passive: false },
-      preventDefault: true // Дозволяє бібліотеці м'яко перехоплювати мультитач
+      // 🚩 ВИМИКАЄМО ТОТАЛЬНЕ БЛОКУВАННЯ: тепер сингл-тач скрол проходить далі до браузера
+      preventDefault: false 
     }
   )
 
-  // 🚩 ЗАХИСТ ВІД СИСТЕМНОГО ЗУМУ ANDROID CHROME (Скрол працює, зум — ні)
+  // 🚩 ЖОРСТКИЙ ЗАХИСТ ВІД СИСТЕМНОГО ЗУМУ (БЕЗ ШКОДИ ДЛЯ СКРОЛУ)
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
-    // Чистий і легкий обробник подій БЕЗ capture, який не заважає скролу одним пальцем
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 1 && e.cancelable) {
-        e.preventDefault() // Блокуємо зум вікна, якщо задіяно > 1 палець
+      // Глушимо браузер ТІЛЬКИ якщо на екрані більше ніж один палець
+      if (e.touches.length > 1) {
+        if (e.cancelable) e.preventDefault()
       }
     }
 
-    // Вішаємо у звичайному режимі (без capture), щоб не ламати карту жестів
+    // Вішаємо БЕЗ capture, щоб не перебивати логіку обробки скролу
     container.addEventListener('touchmove', handleTouchMove, { passive: false })
-    
-    // 🚩 ЗАЛІЗНЕ CSS-ПРАВИЛО ДЛЯ CHROME: дозволено лише скрол по X та Y. 
-    // Відсутність тут слова 'pinch-zoom' змушує Android Chrome нативно ігнорувати системний зум сторінки.
-    container.style.touchAction = 'pan-x pan-y'
 
     return () => {
       container.removeEventListener('touchmove', handleTouchMove)
@@ -820,9 +818,9 @@ export default function SchedulePage() {
           overscrollBehavior: 'contain', // Ізолює скрол всередині контейнера розкладу
           /* 🚩 ТУТ: використовуємо 'pan-x pan-y', що дозволяє браузеру 
              вільно та плавно скролити одним пальцем у будь-який бік */
-          // touchAction: 'pan-x pan-y' 
+          touchAction: 'pan-x pan-y' 
           // ТУТ: Залишаємо порожньо або 'none', ми налаштуємо це нативно нижче
-          touchAction: 'none'
+          // touchAction: 'none'
         }}
       >
 
