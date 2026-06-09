@@ -182,8 +182,8 @@ export default function SchedulePage() {
       // Дозволяємо кліки по картках розкладу під час дотиків
       drag: { filterTaps: true } 
     }
-  )
-
+  ) 
+ 
   // 🚩 ПЛАВНИЙ ДЕСКТОПНИЙ CTRL + WHEEL ZOOM (ЩЕ ПЛАВНІШИЙ)
   useEffect(() => {
     // Функція ініціалізації слухача подій
@@ -223,43 +223,6 @@ export default function SchedulePage() {
 
     return cleanup
   }, []) // Порожній масив, щоб не перестворювати лістенер щоразу
-
-
-  // // 🚩 НАДІЙНИЙ КРОСПЛАТФОРМНИЙ ЗУМ ЧЕРЕЗ ВІДСТАНЬ МІЖ ПАЛЬЦЯМИ (da)
-  // usePinch(
-  //   ({ first, da: [distance], event }) => {
-  //     if (!event) return
-
-  //     if (first) {
-  //       startHeightRef.current = hourHeight
-  //       startDistanceRef.current = distance
-  //     }
-
-  //     if ('cancelable' in event && event.cancelable) {
-  //       event.preventDefault()
-  //     }
-
-  //     if (startDistanceRef.current <= 0 || distance <= 0) return
-
-  //     const currentScale = distance / startDistanceRef.current
-  //     const sensitivity = 7.0
-  //     const adjustedScale = 1 + (currentScale - 1) * sensitivity
-  //     const newHeight = startHeightRef.current * adjustedScale
-
-  //     setHourHeight(Math.max(50, Math.min(200, newHeight)))
-  //   },
-  //   {
-  //     target: scrollContainerRef,
-  //     eventOptions: { passive: false },
-  //     preventDefault: false 
-  //   }
-  // )
-
-  // // Первинна ініціалізація під екран користувача
-  // useEffect(() => {
-  //   const handleResize = () => setHourHeight(window.innerWidth < 768 ? 60 : 80)
-  //   handleResize()
-  // }, [])
 
 
 
